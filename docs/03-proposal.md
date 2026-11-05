@@ -412,7 +412,7 @@ WAIVED         architecture Api.Stats -> Db waived by deviation StatsDirectDb (e
 MODEL-UPDATE   architecture Web depends on Api.AliasesEnabled (authority: source): add a relation or a deviation  [web/app.tsx -> api/config.ts]
 ```
 
-**Performance** (measured, [05 §5.3](05-usefulness-and-tooling.md#performance-budget-and-measurements)): 20,000 files in 4.6 s cold, 1.5 s with the cache, and 0.8 s for one changed file. That is pure Python; a compiled implementation would be faster.
+**Performance** (measured, [05 §5.3](05-usefulness-and-tooling.md#performance-budget-and-measurements)): 20,000 files in 4.6 s cold, 1.5 s with the cache, and 0.8 s for one changed file, **for a mostly conforming repository**. Reviewers measured 25–41 s on violation-heavy, densely related repositories because the permission check is quadratic. Making it linear is a v0.4 item ([06](06-review-synthesis-v0.3.md)).
 
 ---
 
@@ -560,7 +560,7 @@ Without stubs; counts-only stubs vs named stubs; without origin labels; without 
 | Small models cannot use the expansion loop | The static projection stands alone; stubs name what exists, so a human can help. Conditions (g) and (h) are measured separately. |
 | Yet another format nobody adopts | UCN is generated, not hand-written. Imports from and exports to C4 DSLs, SysML v2, OpenAPI, ADRs and `AGENTS.md`. |
 | **Upkeep costs more than the model pays back** (how model-driven engineering failed) | Agents propose model diffs in the same PR; recurring checks are deterministic. The pilot's kill criterion is upkeep > 10% of review time. |
-| **The regex import scan misses dependencies** (path aliases, dynamic imports, dependency injection) | Read the build tool's exported dependency graph where one exists; config-aware resolution; tree-sitter for exactness. Misses are false negatives, so the check never blocks wrongly because of them. |
+| **The regex import scan misses dependencies** (path aliases, dynamic imports, dependency injection) | Read the build tool's exported dependency graph where one exists; config-aware resolution; tree-sitter for exactness. *Correction ([06](06-review-synthesis-v0.3.md)):* the regex also produces false positives (imports inside comments or strings), which do block CI. v0.4 replaces it with exported dependency graphs. |
 | **Waivers become permanent** | Every deviation needs `expires:` and `approved:`; an expired deviation fails CI. |
 | **The lightweight stack is good enough** | It is the pilot's baseline. If UCN is within noise of it, stop. |
 

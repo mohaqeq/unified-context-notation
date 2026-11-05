@@ -4,7 +4,7 @@
 
 **The research question it came from:** is there a formal language that captures *requirements*, *architecture* and *code logic* together, as accurate and compact context for AI agents? *Semantically almost, practically no.* SysML v2 can express nearly everything, and OMG KDM was built for extraction from code. But no existing language combines unification with provenance, budgets, named omissions, consistency checks and LLM legibility. UCN is therefore a **profile, syntax, projection and toolchain** over existing semantics, not a new language.
 
-**Status:** a specification with working prototypes, not yet validated on a real repository. Whether it is worth its upkeep is decided by a pilot with pre-registered kill criteria ([docs/05](docs/05-usefulness-and-tooling.md)).
+**Status:** a specification with working prototypes, not yet validated on a real repository. The v0.3 reviews (5/10 and 6/10, both "conditionally worth building") found that the validator fails open in several places; the fix plan is in [docs/06](docs/06-review-synthesis-v0.3.md). Whether it is worth its upkeep is decided by a pilot with pre-registered kill criteria ([docs/05](docs/05-usefulness-and-tooling.md)).
 
 ## Contents
 

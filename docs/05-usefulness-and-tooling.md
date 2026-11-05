@@ -60,7 +60,7 @@ The requirement: the logic is coded, fast, and has a negligible effect on build 
 | **Architecture conformance** (imports vs allowed relations, waivers, expiry, authority) | yes (`ucn_validate.py`) | no |
 | **Parameter consistency** (requirement value vs code constant) | yes, via explicit `bind:` | no (an LLM may *propose* bindings once) |
 | **Convention checks** (`only api/db.ts imports pg`) | yes | no |
-| Provenance: `src` file/line exists; hash-based staleness | yes | no |
+| Provenance: `src` file/line exists (implemented); content-hash staleness (specified, **not yet implemented**) | yes | no |
 | Coverage: code no element claims | yes | no |
 | Trace completeness | yes | no |
 | Adopt gate (no inferred facts or open conflicts in authoritative layers) | yes | no |
@@ -80,7 +80,7 @@ So **all recurring checks are deterministic**. LLMs are only used for *bootstrap
 - **CI full run:** < 10 s on 20k files;
 - **zero coupling to the build:** no compilation, no type checking, no test execution. The validator reads source files and the model only, and runs as its own CI job in parallel with build and tests.
 
-**Measured** (`ucn_validate.py`, pure Python, single-threaded, Windows laptop, synthetic repo with 20,000 TypeScript files, 120,000 imports, 200 components):
+**Measured** (`ucn_validate.py`, pure Python, single-threaded, Windows laptop, synthetic repo with 20,000 TypeScript files, 120,000 imports, 200 components, **sparse relations and a mostly conforming import graph**):
 
 | Run | Wall time |
 |---|---|
@@ -89,7 +89,9 @@ So **all recurring checks are deterministic**. LLMs are only used for *bootstrap
 | Pre-commit, 1 changed file | 0.8 s |
 | Shortly example (13 files) | 6 ms |
 
-Reading the files and running the import regex alone takes ~2.5 s of the cold run. A first measurement of 176 s was an artifact: freshly generated files scanned by antivirus on first read. Remaining costs and how to remove them if needed:
+**Correction after review ([06](06-review-synthesis-v0.3.md)):** these numbers hold only for that favourable case. Both reviewers measured a *violation-heavy, densely related* 20k-file repo: **25–41 s cold and 23–33 s warm**. The cost is in `allowed()`, which is quadratic (distinct dependency pairs × declared edges × ancestor walks), not in file reading. Precomputing ancestors and an allowed-pair matrix makes it linear (v0.4). The first read of freshly written files (176–232 s here) is dominated by antivirus scanning. It is not an artifact for users: fresh clones, branch switches and CI cache restores hit it too. The one-file pre-commit time (~0.8 s) does reproduce.
+
+Reading the files and running the import regex alone takes ~2.5 s of a warm-OS cold run. Remaining costs and how to remove them:
 - the ~0.7 s fixed cost is interpreter start-up plus mapping 20k paths;
 - parallel scanning or a compiled implementation (Go/Rust) would cut cold runs further;
 - tree-sitter would make import extraction exact for edge cases the regex misses, such as imports inside comments, build-time aliases (`@/x`), and Python `importlib`.
