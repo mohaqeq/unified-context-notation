@@ -158,3 +158,13 @@ Items 1–4 of §6.5 are implemented, and every reproduction from both reviews t
 | 4. Real adopt gate | Simulates model authority for `--scope`; blocks on violations, MODEL-UPDATEs, inferred facts and open conflicts. `--apply` writes the header or the subtree authority plus an adoption log. `--gate rebaseline` requires `--reason` and reports what loses enforcement. `--authority-map`. |
 | also | `--changed` path normalization; the cache stores raw specifiers; gitignore-style globs with `{a,b}`; overlap errors; linear performance; `--propose`; `bind` by literal evaluation with unit scaling. |
 | 5–9 | Open. The trials add evidence for item 6 (`forbids`: bootstrapping launders prose rules otherwise) and for the pilot redesign (item 8: tasks must target rules that aren't visible in the code). |
+
+## 6.8 Status after v0.5
+
+| Plan item | Status |
+|---|---|
+| 6. Rule vocabulary | Done: `forbids`, `layers` (transitive on the file graph), `independent`, `acyclic`, `policy: deny`, `inherit`. Exported to import-linter (layers, independence, forbidden contracts) and dependency-cruiser (forbidden and circular rules). On sqlfluff, the generated config matches the hand-written one, including all 4 exceptions ([07 §7.6](07-trial-results.md#76-second-round-v05-rule-vocabulary-deny-list-policy-and-agents-on-hidden-rules)). |
+| 5. Glob semantics, overlap | Done in v0.4. |
+| 7. Cross-layer evidence | Open: requirement → test results, content-hash staleness. |
+| 8. Pilot redesign | Partly informed: agent experiment v2 (20 runs) shows the expected direction on non-local rules, at a size the harness says can't confirm it. |
+| 9. Freeze until GO | Respected: no work on syntax, knapsack projection or the logic module. |

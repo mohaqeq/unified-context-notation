@@ -1,4 +1,4 @@
-# 3. Proposal: Unified Context Notation (UCN) v0.4
+# 3. Proposal: Unified Context Notation (UCN) v0.5
 
 > **One-line summary.** UCN is **a checked, traceable intent and architecture layer that keeps coding agents (and humans) consistent with requirements and architecture.** Technically it is a profile, concrete syntax, projection and toolchain over existing semantics (mainly SysML v2 and C4, plus EARS, Design-by-Contract, ADRs and W3C PROV). Deterministic tools check it against the code on every commit. A projection turns it into compact context for agents, and every relevant fact left out is **named** in a stub.
 
@@ -82,6 +82,7 @@ Each kind is in the metamodel because v0.1 reviewers found agent-relevant facts 
 | `affects` | decision | any non-decision node | ADR scope |
 | `supersedes` | decision | decision | ADR status |
 | `about` | conflict | any node | — |
+| `forbids` | structure node | structure node | a stated "never" (import-linter `forbidden`, ArchUnit `noClasses().should()`); overrides permissions |
 
 Inside a `deviation`, `allows Stats uses Db` names a relation the model does not declare but tolerates until the deviation expires (§3.7).
 
@@ -127,6 +128,10 @@ If a `decision` and a `rule` state the same thing, keep both but link them (`aff
 | `bind:` | `bind: RateLimit.maxLinksPerHour = api/guard.ts#LIMIT_PER_HOUR` | The code constant that implements a requirement parameter (checked, §3.7) |
 | `check:` | `check: only api/db.ts imports pg` | A machine-checkable form of a convention or rule (§3.7) |
 | `expires:` / `approved:` | `expires: 2027-03-31` | Required on a deviation |
+| `layers:` | `layers: Linter > Rules > Parser > Helpers` | On a parent: each child may use every lower one; a lower one must never reach a higher one, **directly or through any chain of module imports** (import-linter semantics) |
+| `independent:` | `independent: HString, HSlice, HDict` | On a parent: the named children must not depend on each other |
+| `acyclic:` | `acyclic: yes` | On a parent: no dependency cycle among its children |
+| `inherit:` | `inherit: yes` | On a child: it gets the permissions declared on its parent |
 | `verified:` | `verified: CreateTests` | Evidence that confirms this node (test ids) |
 | `code:` | `code: api/links.ts` | Path globs of the code that implements this element |
 | `aka:` | `aka: short code, slug` | Aliases, used by entity resolution |
@@ -170,9 +175,11 @@ v0.1 pinned every security, safety and legal fact, so a real system's core would
 ```ebnf
 file       = header NEWLINE { line } ;
 header     = "ucn" version "system:" Id { hkey ":" hval } ;
-hkey       = "level" | "origin" | "task" | "budget" | "mode" | "baseline" | "root" ;
+hkey       = "level" | "origin" | "task" | "budget" | "mode" | "baseline" | "root" | "policy" | "tsconfig" ;
                                                          (* task is "quoted"; budget an integer; mode reverse|forward;
-                                                            root = code directory relative to the model file *)
+                                                            root = code directory relative to the model file;
+                                                            policy allow (default: undeclared dependencies are
+                                                            violations) | deny (only stated rules are enforced) *)
 line       = indent ( node | fnnode | relation | clause | attr | transition | stub | allows | comment ) NEWLINE ;
 allows     = "allows" ref relkw ref ;                       (* only inside a deviation *)
 
@@ -187,7 +194,7 @@ item       = kind ref [ labels ] | int kind ;              (* named item, or a c
 comment    = "#" text ;
 
 labels     = "[" labelword { "," labelword } "]" ;
-indent     = { "  " } ;                                    (* 2 spaces per level, max 4 levels, one level per step *)
+indent     = { "  " } ;                                    (* 2 spaces per level, max 6 levels, one level per step *)
 Id         = Word ;  ref = Word { "." Word } ;
 Word       = letter { letter | digit | "_" } ;
 level      = "L0" | "L1" | "L2" | "L3" ;
@@ -196,11 +203,12 @@ kind       = "goal" | "req" | "decision" | "term" | "actor" | "system" | "contai
            | "data" | "api" | "event" | "config" | "env" | "fn" | "rule" | "machine" | "flow"
            | "test" | "convention" | "conflict" | "side" | "deviation" ;
 relkw      = "refines" | "satisfies" | "verifies" | "uses" | "calls" | "reads" | "writes" | "exposes"
-           | "implements" | "emits" | "consumes" | "deploysTo" | "affects" | "supersedes" | "about" ;
+           | "implements" | "emits" | "consumes" | "deploysTo" | "affects" | "supersedes" | "about" | "forbids" ;
 invkw      = "satisfiedBy" | "verifiedBy" | "refinedBy" | "calledBy" | "affectedBy" | "implementedBy" ;
 clausekw   = "pre" | "post" | "err" | "inv" | "assume" | "guarantee" | "effect" ;
 attrkw     = "src" | "tech" | "owner" | "why" | "lifecycle" | "verified" | "code" | "aka" | "note"
-           | "states" | "initial" | "authority" | "param" | "bind" | "check" | "expires" | "approved" ;
+           | "states" | "initial" | "authority" | "param" | "bind" | "check" | "expires" | "approved"
+           | "asserts" | "breadth" | "layers" | "independent" | "acyclic" | "inherit" ;
 labelword  = (* the four label sets in §3.2 *) ;
 ```
 
@@ -404,6 +412,8 @@ Function signatures and call graphs always come from the code. In forward mode t
 |---|---|---|---|
 | **Model integrity** | model | Dangling or ambiguous references, relation-table violations, invalid lifecycles, malformed ISO dates, deviations without `expires`/`approved`/`allows`, blanket or container-wide waivers without `breadth: wide`, expiry more than 365 days ahead, overlapping `code:` ownership, a missing `mode:` when bindings/checks/deviations exist | VIOLATION in every mode (fail closed) |
 | **Architecture conformance** | architecture ↔ code | Dependency edges come from a build tool's exported graph (`--deps`: dependency-cruiser, madge, or a plain edge list) or, as a labelled fallback, from a scan: Python by `ast`; TS/JS by regex after removing comments, with tsconfig `paths`, ESM `.js`→`.ts` and asset classification. Edges are lifted to elements through gitignore-style `code:` globs (with `{a,b}`). **Permissions come only from non-inferred architecture relations**, never from `fn`-level relations, which are observations. Entering another element requires `exposes`; `implements` works both ways; tests may depend on what they `verify`. Imports through container-level files (barrels) are followed, so they can't launder a dependency. | VIOLATION if **either end** is model-authoritative, otherwise MODEL-UPDATE. WAIVED if an active deviation covers it; an expired or unaccepted deviation is a VIOLATION |
+| **Stated rules** | architecture ↔ code | `forbids`, `layers` (direct and **transitive** on the file graph), `independent`, `acyclic`. Under `policy: deny`, these are the only architecture checks, as in import-linter | VIOLATION if either end is model-authoritative. **CONFLICT** if both are code-authoritative: the code contradicts a stated rule, which needs a decision, not a model update, and blocks adoption. KNOWN-CONFLICT if a `conflict` is `about` both ends |
+| **Unused deviations** | governance | A deviation whose dependency no longer exists | INFO (remove it, or it will hide a future violation) |
 | **Logic vs architecture** | logic ↔ architecture | A `fn`-level relation that implies a dependency the architecture doesn't allow | INFO |
 | **Declared but unused** | architecture → code | A declared relation that no code dependency realizes (reflexion "absence") | INFO |
 | **Parameter consistency** | requirements ↔ code | `param:` vs the constant named by `bind:` (optional `* k` or `/ k` unit scaling). The constant must be a single top-level definition and a numeric literal expression (`0x64`, `1e2`, `60 * 60`); anything else is INFO "not statically evaluable", never a violation | VIOLATION / MODEL-UPDATE by the requirement's authority. KNOWN-CONFLICT only if an *accepted* conflict with `expires`/`approved` is `about` it **and a side `asserts` the current code value** (when the code moves, it stops suppressing) |
@@ -419,7 +429,7 @@ Function signatures and call graphs always come from the code. In forward mode t
 - `--cache` stores raw import specifiers keyed by mtime and size; resolution is redone on every run, so adding a file is always seen.
 
 **Model maintenance.**
-- `--propose` prints the exact `uses` lines that would make the current MODEL-UPDATE findings conforming; violations need a human decision.
+- `--propose` prints the exact `uses` lines that would make the current MODEL-UPDATE findings conforming. Violations need a human decision. It **never proposes a dependency that a stated rule forbids**; it drafts a `conflict` record instead, so bootstrapping from code can't launder a contradiction ([07 §7.1](07-trial-results.md#71-sqlfluff-a-project-that-already-has-the-lightweight-stack)).
 - `tools/ucn_export.py` compiles the same permission semantics into a **dependency-cruiser** config (`allowed` rules plus `forbidden` rules for conventions) or an **import-linter** config (`forbidden` contracts). The model can then be the single source of truth instead of a second rules file. Neither generated config has been run through its tool yet ([07](07-trial-results.md)).
 
 **Behavioral consistency** (does the running code meet a requirement?) is not decidable in general. It is covered by evidence: tests that *assert* a requirement (`verifies` plus `verified:`), runtime monitors for `machine` definitions (module), and, for critical kernels, formal tools via export. Prose-level contradictions ("the doc says X, the code does Y") are found by bound parameters where possible, and otherwise by LLM-proposed conflict candidates that a human reviews.
@@ -475,7 +485,7 @@ MODEL-UPDATE   architecture Web.Form depends on Web.Client (both ends authority:
 
 These are hypotheses, each with an ablation in §3.12.
 
-1. Indentation depth ≤ 4. One fact per line. Every line's role is given by its first word.
+1. Indentation depth ≤ 6 (trials showed 4 was too shallow). One fact per line. Every line's role is given by its first word.
 2. Ids are meaningful words (`Links.create`), not opaque codes.
 3. English keywords, no new symbols. (Tokenization of keywords and identifiers is measured per tokenizer: o200k, Llama 3, Qwen, Gemma.)
 4. Fixed section order: header → core → task slice → tail stub.
@@ -593,8 +603,9 @@ Without stubs; counts-only stubs vs named stubs; without origin labels; without 
 | v0.1 | First specification and hand-written example (reviewed: [04-review-synthesis.md](04-review-synthesis.md)) |
 | v0.2 | Revised spec; parser, linter and **projection checker**; example machine-checked |
 | v0.3 | Reframed goal; core vs modules; authority and modes; `deviation`, `param`/`bind`, `check`; validator; pilot harness (reviewed: [06](06-review-synthesis-v0.3.md)) |
-| **v0.4 (this)** | Review fixes 1–4: governance layer over existing checkers (`--deps` input; export to dependency-cruiser and import-linter); permissions only from architecture relations; fail-closed integrity; real adopt and re-baseline gates with `--apply`; widening diff; `--propose`; linear performance; trials on sqlfluff, excalidraw and cosmicpython ([07](07-trial-results.md)) |
-| v0.5 | Rule vocabulary (`forbids`, `layer`, `acyclic`) so stated "never" rules are encoded before bootstrapping; depth cap and opt-in permission inheritance; run the generated configs in their tools; requirement → test-result evidence; content-hash staleness; pilot redesign ([06 §6.5](06-review-synthesis-v0.3.md#65-what-v04-should-do-consolidated-plan) items 5–9) |
+| v0.4 | Review fixes 1–4: governance layer over existing checkers (`--deps` input; export to dependency-cruiser and import-linter); permissions only from architecture relations; fail-closed integrity; real adopt and re-baseline gates with `--apply`; widening diff; `--propose`; linear performance; trials on sqlfluff, excalidraw and cosmicpython ([07](07-trial-results.md)) |
+| **v0.5 (this)** | Rule vocabulary (`forbids`, transitive `layers`, `independent`, `acyclic`), `policy: deny`, `inherit`, depth 6, CONFLICT class, unused-deviation detection, `--propose` refuses forbidden dependencies; exporter maps rules to import-linter layers/independence/forbidden and dependency-cruiser circular rules; second trial round and agent experiment v2 ([07 §7.6](07-trial-results.md#76-second-round-v05-rule-vocabulary-deny-list-policy-and-agents-on-hidden-rules)) |
+| v0.5.x | Run the generated configs in their tools, and an agent arm with import-linter feedback; requirement → test-result evidence; content-hash staleness; pilot redesign ([06 §6.5](06-review-synthesis-v0.3.md#65-what-v04-should-do-consolidated-plan) items 7–9) |
 | v0.6 | **Pilot** on a larger, older repository with rules that aren't visible in the code, against the lightweight stack. Go / kill / extend by `pilot_eval.py` |
 | *only on GO:* v0.7 | MCP server; logic module (contracts for public APIs); small-model projection module; Context Sufficiency Benchmark (§3.12) |
 | v1.0 | Freeze the core metamodel based on pilot and benchmark evidence; SysML v2 export module |

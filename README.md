@@ -1,14 +1,15 @@
 # Unified Context Notation (UCN)
 
-**What it is (v0.4):** a checked, traceable **intent and architecture layer** that keeps coding agents, and humans, consistent with a system's requirements and architecture. It records requirements, decisions, invariants, conventions, an architecture skeleton, trace links, conflicts and approved deviations, each with its provenance.
+**What it is (v0.5):** a checked, traceable **intent and architecture layer** that keeps coding agents, and humans, consistent with a system's requirements and architecture. It records requirements, decisions, invariants, conventions, an architecture skeleton, trace links, conflicts and approved deviations, each with its provenance.
 - **Deterministic tools** check this model against the code on every commit, in about 1 s on real repositories, without touching the build.
 - The same rules **compile to existing checkers** (dependency-cruiser, import-linter), so the model can be the single source of truth.
 - A projection turns the model into compact context for agents, and anything relevant it leaves out is named.
 
 **The research question it came from:** is there a formal language that captures *requirements*, *architecture* and *code logic* together, as accurate and compact context for AI agents? *Semantically almost, practically no.* SysML v2 can express nearly everything, and OMG KDM was built for extraction from code. But no existing language combines unification with provenance, budgets, named omissions, consistency checks and LLM legibility. UCN is therefore a **profile, syntax, projection and toolchain** over existing semantics, not a new language.
 
-**Status and evidence ([docs/07](docs/07-trial-results.md)):** trialled on three real repositories.
-- **sqlfluff:** UCN found a rule in the project's own `AGENTS.md` that 12 modules contradict, which neither its AGENTS.md nor its import-linter contracts catch. Upkeep was 3 one-line model edits in 600 commits.
+**Status and evidence ([docs/07](docs/07-trial-results.md)):** trialled on three real repositories, in two rounds.
+- **sqlfluff:** UCN found a rule in the project's own `AGENTS.md` that 12 modules contradict, which neither its AGENTS.md nor its import-linter contracts catch. It reproduces their import-linter contracts and shows why each of their 4 exceptions is needed. With the deny-list policy, upkeep was **0 model edits in 600 commits**.
+- **sqlfluff agent experiment** (rules that aren't visible locally): new architecture violations in **0/8** runs with UCN and the validator, 1/8 with the project's real `AGENTS.md`, 2/4 with no agent docs, at 14% fewer tokens than AGENTS.md. Small n; not significant.
 - **excalidraw:** it found circular, undeclared runtime dependencies between published packages.
 - **cosmicpython, agent experiment:** on a small, clean codebase it did **not** change agent behavior, and neither did an equivalent `AGENTS.md`, because even agents with no instructions followed the existing patterns.
 
@@ -28,7 +29,7 @@ Whether UCN is worth its upkeep on a large, eroded codebase is the open question
 | [examples/shortly/](examples/shortly/) | Worked example: model, a small real TypeScript codebase, L0 card, task slice |
 | [trials/](trials/) | Models, results and scripts from the real-repository trials |
 | [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, gates, diff, propose), `ucn_export.py` (dependency-cruiser and import-linter configs), `pilot_eval.py` (pilot decision) |
-| [tests/](tests/) | 60 tests, including a regression test for each reproduction from the v0.3 reviews |
+| [tests/](tests/) | 70 tests, including a regression test for each reproduction from the v0.3 reviews |
 | [reviews/](reviews/) | The raw reviews |
 
 ## Try it

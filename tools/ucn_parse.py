@@ -1,4 +1,4 @@
-"""UCN 0.4 parser, linter and projection checker. The consistency validator is tools/ucn_validate.py.
+"""UCN 0.5 parser, linter and projection checker. The consistency validator is tools/ucn_validate.py.
 
 Usage:
   python tools/ucn_parse.py MODEL.ucn [--json] [--lint] [--tokens]
@@ -39,6 +39,7 @@ RELS = {
     "supersedes": ({"decision"}, {"decision"}),
     "about": ({"conflict"}, ANY),
     "deploysTo": ({"container"}, {"env"}),
+    "forbids": (STRUCT | {"actor"}, STRUCT | {"actor"}),   # a stated "never": overrides permissions
 }
 # inverse names a projector may render at the target, for small models (denormalized view)
 INVERSE = {"satisfiedBy": "satisfies", "verifiedBy": "verifies", "refinedBy": "refines",
@@ -46,7 +47,9 @@ INVERSE = {"satisfiedBy": "satisfies", "verifiedBy": "verifies", "refinedBy": "r
 CLAUSES = {"pre", "post", "err", "inv", "assume", "guarantee", "effect"}
 ATTRS = {"src", "tech", "owner", "why", "lifecycle", "verified", "code", "aka", "note",
          "states", "initial", "authority", "param", "bind", "expires", "approved", "check", "asserts",
-         "breadth"}
+         "breadth", "layers", "independent", "acyclic", "inherit"}
+MAX_DEPTH = 6
+POLICIES = {"allow", "deny"}
 MODES = {"reverse", "forward"}
 AUTHORITIES = {"model", "source"}
 PARAM_RE = re.compile(r"^([A-Za-z_]\w*)\s*=\s*(-?\d+(?:\.\d+)?)\s*(.*)$")          # name = 100 per hour
@@ -124,6 +127,8 @@ def parse_header(line):
         h["budget"] = int(h["budget"])
     if "origin" in h and h["origin"] not in LABELS["origin"]:
         raise UcnError(f"line 1: unknown origin '{h['origin']}'")
+    if "policy" in h and h["policy"] not in POLICIES:
+        raise UcnError(f"line 1: policy must be one of {sorted(POLICIES)}")
     if "mode" in h and h["mode"] not in MODES:
         raise UcnError(f"line 1: mode must be one of {sorted(MODES)}")
     return h
@@ -156,8 +161,8 @@ def parse(text):
         indent = len(raw) - len(raw.lstrip(" "))
         if indent % 2:
             raise UcnError(f"line {no}: indentation must be a multiple of 2")
-        if indent // 2 > 4:
-            raise UcnError(f"line {no}: nesting deeper than 4")
+        if indent // 2 > MAX_DEPTH:
+            raise UcnError(f"line {no}: nesting deeper than {MAX_DEPTH}")
         line = raw.strip()
         word = line.split()[0].rstrip(":")
         owner = parent_at(indent)
@@ -243,7 +248,9 @@ def parse(text):
                 raise UcnError(f"line {no}: param is 'name = number [unit]'")
             if word == "bind" and not BIND_RE.match(val):
                 raise UcnError(f"line {no}: bind is 'Req.param = path#CONSTANT'")
-            if word in ("states", "aka"):
+            if word == "layers":
+                nodes[owner].setdefault("attrs", {})["layers"] = [x.strip() for x in re.split(r"[>,]", val) if x.strip()]
+            elif word in ("states", "aka", "independent"):
                 nodes[owner].setdefault("attrs", {}).setdefault(word, []).extend(split_items(val))
             else:
                 nodes[owner].setdefault("attrs", {}).setdefault(word, []).append(val)

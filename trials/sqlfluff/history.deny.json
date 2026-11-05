@@ -1,0 +1,452 @@
+[
+{
+"commit": "5dd7702",
+"date": "2026-05-23",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "b4720e0",
+"date": "2026-05-24",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "58bb567",
+"date": "2026-06-16",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "ee00054",
+"date": "2026-06-17",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "9deee5e",
+"date": "2026-06-22",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "195be52",
+"date": "2026-06-24",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "d118e55",
+"date": "2026-06-25",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "f2a1386",
+"date": "2026-06-27",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "cccab1b",
+"date": "2026-07-02",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "3f205ce",
+"date": "2026-07-05",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "9c310b7",
+"date": "2026-07-11",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "5c951f4",
+"date": "2026-07-14",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "f888cd5",
+"date": "2026-07-14",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "5f0d183",
+"date": "2026-07-14",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "c71d96d",
+"date": "2026-07-15",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "35d00c7",
+"date": "2026-07-15",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "a8f0792",
+"date": "2026-07-16",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "70efaf4",
+"date": "2026-07-16",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "1882ffc",
+"date": "2026-07-21",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "dc40d2c",
+"date": "2026-07-23",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "a62553b",
+"date": "2026-07-27",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "1843aa7",
+"date": "2026-07-28",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "036957d",
+"date": "2026-08-01",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "ca31b3e",
+"date": "2026-08-12",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "9a7efe0",
+"date": "2026-08-12",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "4561940",
+"date": "2026-08-13",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "b3225fe",
+"date": "2026-08-14",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "d803adf",
+"date": "2026-08-14",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "049536e",
+"date": "2026-09-05",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "822ac4d",
+"date": "2026-09-10",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "34f052c",
+"date": "2026-09-18",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "a776b31",
+"date": "2026-10-15",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "11c9f3f",
+"date": "2026-10-15",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "dc27832",
+"date": "2026-10-15",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "cf59ad3",
+"date": "2026-10-16",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "b639ec8",
+"date": "2026-10-18",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "d38400e",
+"date": "2026-10-19",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "ad1231e",
+"date": "2026-10-20",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "53b207c",
+"date": "2026-10-23",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "57bbb91",
+"date": "2026-10-23",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "91483af",
+"date": "2026-10-24",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "0c3ba19",
+"date": "2026-10-28",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "e4fe050",
+"date": "2026-10-28",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "5ecad33",
+"date": "2026-10-28",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "79d7d9e",
+"date": "2026-10-28",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "60c100b",
+"date": "2026-10-29",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "f117441",
+"date": "2026-10-29",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "b219a24",
+"date": "2026-11-02",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "41e96a6",
+"date": "2026-11-03",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+},
+{
+"commit": "a294524",
+"date": "2026-11-04",
+"violations": [
+"Package.Rules depends on Package.Dialects: Package.Rules forbids Package.Dialects",
+"Package.Utils depends on Package.Dialects: Package.Utils forbids Package.Dialects"
+],
+"governance": []
+}
+]

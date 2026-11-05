@@ -386,6 +386,107 @@ class Export(Tmp):
         self.assertIn("app.a", il)
 
 
+# ------------------------------------------------------------------------------------------- rule vocabulary (v0.5)
+RULES = """
+ucn 0.5 system: S origin: stated mode: forward policy: deny root: src
+container App [derived]: app
+  code: app/**
+  acyclic: yes
+  layers: Top > Mid > Low
+  independent: P, Q
+  component Top: top layer
+    code: app/top/**
+  component Mid: middle layer
+    code: app/mid/**
+  component Low: bottom layer
+    code: app/low/**
+  component Side: outside the layers
+    code: app/side/**
+  component P: independent part
+    code: app/p/**
+  component Q: independent part
+    code: app/q/**
+    forbids Side
+"""
+DEV = "deviation D: w\n  allows {}\n  why: w\n  expires: 2027-01-01\n  approved: p\n  lifecycle: accepted\n"
+
+
+class Rules(Tmp):
+    def rules(self, files, extra="", model=RULES):
+        return run(self.project(model + extra, files))
+
+    def test_deny_policy_allows_undeclared(self):
+        r = self.rules({"app/top/a.ts": 'import "../low/b";\n', "app/low/b.ts": "export {};\n"})
+        self.assertEqual(classes(r, "architecture"), [])
+
+    def test_layers_direct_and_transitive(self):
+        r = self.rules({"app/low/a.ts": 'import "../top/b";\n', "app/top/b.ts": "export {};\n"})
+        self.assertTrue(has(r, "VIOLATION", "App.Low is below App.Top"))
+        r = self.rules({"app/low/a.ts": 'import "../side/s";\n', "app/side/s.ts": 'import "../top/b";\n',
+                        "app/top/b.ts": "export {};\n"})
+        self.assertTrue(has(r, "VIOLATION", "App.Low reaches App.Top indirectly"))
+
+    def test_waiver_breaks_the_chain_and_counts_as_used(self):
+        files = {"app/low/a.ts": 'import "../side/s";\n', "app/side/s.ts": 'import "../top/b";\n', "app/top/b.ts": "export {};\n"}
+        r = self.rules(files, DEV.format("Side uses Top"))
+        self.assertFalse(has(r, "VIOLATION", "indirectly"))
+        self.assertFalse(has(r, "INFO", "matches no dependency"))
+
+    def test_unused_deviation_is_reported(self):
+        r = self.rules({"app/top/b.ts": "export {};\n"}, DEV.format("Low uses Top"))
+        self.assertTrue(has(r, "INFO", "deviation D matches no dependency"))
+
+    def test_independent_forbids_and_cycles(self):
+        r = self.rules({"app/p/a.ts": 'import "../q/b";\n', "app/q/b.ts": 'import "../side/s";\n',
+                        "app/side/s.ts": 'import "../q/b";\n'})
+        self.assertTrue(has(r, "VIOLATION", "must stay independent"))
+        self.assertTrue(has(r, "VIOLATION", "App.Q forbids App.Side"))
+        self.assertTrue(has(r, "VIOLATION", "cycle inside App"))
+
+    def test_reverse_mode_contradiction_is_a_conflict_and_not_proposed(self):
+        path = self.project(RULES.replace("mode: forward", "mode: reverse"),
+                            {"app/q/b.ts": 'import "../side/s";\n', "app/side/s.ts": "export {};\n"})
+        r = ucn_validate.validate(path, today=TODAY)
+        m = r.pop("_model")
+        self.assertTrue(has(r, "CONFLICT", "contradicts a stated rule"))
+        proposal = "\n".join(ucn_validate.propose(m, r["findings"]))
+        self.assertIn("not proposed", proposal)
+        self.assertNotIn("uses Side", proposal)
+        self.assertFalse(run(path, gate_kind="adopt")["gate"]["pass"])
+
+    def test_known_conflict_downgrades(self):
+        extra = "conflict QS: stated rule vs code\n  about Q, Side\n  lifecycle: open\n  side Rule: never\n  side Code: does\n"
+        r = self.rules({"app/q/b.ts": 'import "../side/s";\n', "app/side/s.ts": "export {};\n"}, extra)
+        self.assertTrue(has(r, "KNOWN-CONFLICT", "App.Q forbids App.Side"))
+
+    def test_inherit(self):
+        model = GENERIC.replace("      uses B\n", "      uses B\n      component C1: part of c\n        code: app/c/c1/**\n")
+        files = {"app/c/c1/x.ts": 'import "../../b/y";\n', "app/b/y.ts": "export {};\n"}
+        self.assertTrue(has(run(self.project(model, files)), "VIOLATION", "App.C.C1 depends on App.B"))
+        model = model.replace("        code: app/c/c1/**\n", "        code: app/c/c1/**\n        inherit: yes\n")
+        self.assertFalse(has(run(self.project(model, files)), "VIOLATION", "App.C.C1 depends on App.B"))
+
+    def test_diff_reports_removed_rule(self):
+        path = self.project(RULES, {"app/top/b.ts": "export {};\n"})
+        git = lambda *a: subprocess.run(["git", "-C", self.d, "-c", "user.email=t@t", "-c", "user.name=t", *a],
+                                        capture_output=True, check=True)
+        git("init", "-q")
+        git("add", "-A")
+        git("commit", "-qm", "base")
+        write(path, read(path).replace("    forbids Side\n", ""))
+        self.assertTrue(has(run(path, diff_rev="HEAD"), "WIDENED", "removed rule"))
+
+    def test_export_rules(self):
+        path = self.project(RULES)
+        il = ucn_export.export(path, "import-linter", package="app")
+        self.assertIn("type = layers", il)
+        self.assertIn("type = independence", il)
+        self.assertIn("name = App.Q forbids App.Side", il)
+        dc = ucn_export.export(path, "dependency-cruiser")
+        self.assertIn('"circular": true', dc)
+        self.assertNotIn("allowedSeverity", dc)   # deny policy: no allow-list
+
+
 # ------------------------------------------------------------------------------------------- pilot harness
 class Pilot(unittest.TestCase):
     def data(self, light, ucn, n=40, tempting=None, upkeep=(30, 1000), absent=0):

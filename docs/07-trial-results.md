@@ -1,4 +1,4 @@
-# 7. Trials on Real Repositories (v0.4)
+# 7. Trials on Real Repositories (v0.4–v0.5)
 
 After implementing the first four items of the v0.4 plan ([06 §6.5](06-review-synthesis-v0.3.md#65-what-v04-should-do-consolidated-plan)), UCN was driven against three open-source repositories, to see whether it brings value. Everything here was done with UCN's own tools, which only **read** files. Running third-party code (the repositories' test suites, import-linter from PyPI) was blocked in this environment, and that limits some comparisons below.
 
@@ -158,3 +158,101 @@ A first read of freshly cloned files is dominated by the operating system and an
 2. Make the **depth cap** larger (or remove it) and offer **opt-in permission inheritance** for sub-components.
 3. **Run the generated import-linter and dependency-cruiser configs** in an environment that allows it, and compare them with the validator on these repositories.
 4. Run the **pilot** on a larger, older codebase with **rules that aren't visible in the code**, with tempting tasks written by people outside the project.
+
+---
+
+## 7.6 Second round (v0.5): rule vocabulary, deny-list policy, and agents on hidden rules
+
+The first round produced three concrete demands:
+- encode stated "never" rules before bootstrapping;
+- reduce allow-list upkeep;
+- test agents on rules that *aren't* visible in neighboring code.
+
+v0.5 adds:
+- `forbids`, `layers: A > B > C` (**transitive**, checked on the module graph, as in import-linter), `independent`, `acyclic`;
+- `policy: deny` (undeclared dependencies are allowed; only stated rules are enforced);
+- opt-in `inherit: yes`, and a depth cap of 6;
+- a `CONFLICT` class for code that contradicts a stated rule where the code is authoritative;
+- detection of deviations that match no dependency.
+
+`--propose` now **refuses** to accept a forbidden dependency and drafts a `conflict` instead.
+
+### sqlfluff, re-modelled ([model.deny.ucn](../trials/sqlfluff/model.deny.ucn))
+
+sqlfluff's import-linter contracts are encoded one-to-one (`forbids`, `layers`, `independent`, the 4 `ignore_imports` as deviations), plus the AGENTS.md dialect rule as `forbids`.
+
+| | Allow-list model (v0.4) | Deny-list model (v0.5) |
+|---|---|---|
+| Model size | 124 lines, 83 relations | 80 lines |
+| Model edits needed over 600 commits | 3 | **0** ([history.deny.json](../trials/sqlfluff/history.deny.json)) |
+| Dialect-rule contradiction | laundered by `--propose` until encoded by hand | caught as a violation in forward mode; `--propose` refuses and drafts a `conflict` |
+| Their 4 exceptions | waived | waived, **and each is shown to be necessary** (below) |
+
+**Agreement with import-linter's semantics on real code.** Removing each exception reproduces the exact chain that made sqlfluff add it:
+
+| Exception removed | Chain the validator reports |
+|---|---|
+| errors → rules, errors → parser | direct layer violations from `core/errors.py` |
+| formatter → linter | `core/rules/base.py → core/templaters/base.py → core/formatter.py → core/linter/__init__.py` |
+| plugin hookspecs → rules | `core/parser/context.py → core/config/fluffconfig.py → core/plugin/host.py → core/plugin/hookspecs.py → core/rules/base.py` |
+
+A first version searched the element graph and produced false chains through container-level files (`core/__init__.py`, `core/timing.py`). Searching the file graph fixed it.
+
+**Generated import-linter config** ([generated.deny.importlinter](../trials/sqlfluff/generated.deny.importlinter)):
+- a layers contract with the same 4 `ignore_imports` as sqlfluff's hand-written one, plus the independence and forbidden contracts;
+- 4 contracts sqlfluff doesn't have (2 dialect rules, 2 library conventions).
+
+Reviewing the generated file found three exporter bugs, all fixed:
+- missing transitive ignores;
+- redundant source modules;
+- convention contracts whose sources included the allowed files.
+
+The config has still not been *run* through import-linter (blocked in this environment).
+
+### Agent experiment v2: sqlfluff, rules that aren't visible locally
+
+**Setup** ([agent-experiment/](../trials/sqlfluff/agent-experiment/)):
+- **Tasks:** 4, each tempting a violation of a non-local rule:
+  - T1, logging rule codes and the ANSI root segment from the linter (core → rules or dialects);
+  - T2, a segment-describing helper in the lowest layer (helpers → parser);
+  - T3, colored CLI-style output from the public API (api → cli);
+  - T4, the CLI's progress bar inside the core linter (core → cli).
+- **Conditions:**
+  - **C:** all `AGENTS.md` files removed;
+  - **A:** sqlfluff's real `AGENTS.md` files (7,757 words, mentioning the core and api contracts, the layer order and the dialect rule);
+  - **B:** the deny-list UCN model plus the validator, with `AGENTS.md` removed.
+- **Agents:** Claude Haiku. A and B twice per task, C once: 20 runs on the 269-file package.
+- **Grading:** against the pristine model; only *new* violations count. The pre-existing dialect conflict is recorded as known.
+
+| Condition | Runs with a new architecture violation | Avg tokens | Avg time | Avg tool calls |
+|---|---|---|---|---|
+| C: no agent docs | **2/4** (T2, T3) | 66.5k | 84 s | 16.0 |
+| A: real AGENTS.md | **1/8** (T2) | 82.0k | 122 s | 21.8 |
+| B: UCN + validator | **0/8** | 70.2k | 122 s | 18.4 |
+
+**What happened:**
+- **T2 discriminated.** C and one A run imported `BaseSegment` from the parser into `core/helpers/string.py`; A did it under `TYPE_CHECKING` "to avoid a circular import". import-linter counts such imports too, so sqlfluff's CI would have failed. Both B runs used a structural `Protocol` and cited the layer rule. The validator reported each violation with its transitive chains (helpers → parser → … → errors, types).
+- **T3:** C imported `sqlfluff.cli.formatters` into `api/simple.py` (forbidden, and it creates an `Api ↔ Cli` cycle). All four A runs and all four B runs moved the formatting into `core/formatter.py` and made the CLI delegate to it: a larger change, but one that conforms.
+- **T1 and T4 didn't discriminate.** Everyone used `core.dialects.dialect_selector` and the plugin manager in T1. In T4 the progress bar already existed; most agents added tests, and B agents explained that reusing CLI helpers would break `Core forbids Cli`.
+- **No tampering:** no B agent edited the model, and no A agent edited the docs.
+- **Cost:** B used **14% fewer tokens than A**. The 80-line model is cheaper to read than 7.7k words of prose. Both were slower than C.
+
+**How strong is this?**
+- B 0/8 vs C 2/4: one-sided Fisher exact p = 0.09. B 0/8 vs A 1/8: p = 0.5. **Directionally consistent, not significant.**
+- **The comparison isn't "UCN vs the lightweight stack".** sqlfluff's real stack also runs import-linter in CI, and an agent with import-linter in its loop would probably also reach 0/8. That arm couldn't be run here.
+- **What it does show:** a *checked* rule in the agent's loop prevented a violation that the same rule in *prose* didn't (T2-A2). The checked model also cost fewer tokens than the prose.
+
+## 7.7 Updated conclusion
+
+| Question | Evidence so far |
+|---|---|
+| Does UCN find real problems? | **Yes:** a prose rule contradicted by 12 modules (sqlfluff); circular, undeclared runtime dependencies between published packages (excalidraw). |
+| Does it agree with mature tools? | On sqlfluff: same contracts, same 4 exceptions, and the same reasons for them, found from the code. Generated configs not yet executed in those tools. |
+| Is upkeep acceptable? | Allow-list: 3 one-line edits per 600 commits. Deny-list: **0**. |
+| Does it change agent behavior? | Not on a small, clean codebase (0 violations anywhere). On non-local rules in a real codebase: **0/8 with UCN vs 1/8 with real AGENTS.md vs 2/4 with nothing**, at 14% fewer tokens than AGENTS.md. Small n, not significant. |
+| Is it fast enough? | ~1 s per check on real repositories; ~6 s cold for 20k files; ~1 s pre-commit. |
+
+**Remaining gaps, in priority order:**
+1. Run the generated import-linter and dependency-cruiser configs in their tools, and an **agent arm with import-linter feedback**. Both need permission to execute third-party code here.
+2. A pilot of the size the harness says is needed (≥ 30 tempting tasks with external authors, k ≥ 3 runs).
+3. Requirement → test-result evidence and content-hash staleness (review items 7).

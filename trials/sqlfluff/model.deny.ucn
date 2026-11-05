@@ -1,0 +1,90 @@
+ucn 0.5 system: SQLFluff level: L1 origin: stated mode: forward baseline: 1682e11 policy: deny root: src
+# Trial model v2 for github.com/sqlfluff/sqlfluff (commit 1682e11): the deny-list policy. Undeclared dependencies
+# are allowed; only stated rules are enforced, as in import-linter. The import-linter contracts in pyproject.toml are
+# encoded one-to-one (forbids, layers, independent), plus the AGENTS.md rule they don't cover (LazyDialects).
+
+goal Lint: lint and auto-fix SQL across 25+ dialects
+  src: AGENTS.md#project-overview
+rule LazyDialects: never import dialect modules directly; load them with dialect_selector() or load_raw_dialect()
+  src: AGENTS.md#lazy-loading
+convention ClickOnlyInCli: click is used only by the CLI and its test helpers
+  check: only sqlfluff/{cli,utils/testing}/** imports click
+convention JinjaOnlyInTemplaters: jinja2 is used only by the templaters
+  check: only sqlfluff/core/templaters/** imports jinja2
+
+container Package [derived]: the sqlfluff Python package
+  code: sqlfluff/**
+  acyclic: yes
+  component Api: public Python API
+    code: sqlfluff/api/**
+    forbids Cli
+  component Cli: command-line interface
+    code: sqlfluff/cli/**
+  component Dialects: SQL dialect definitions
+    code: sqlfluff/dialects/**
+  component Rules: linting rules
+    code: sqlfluff/rules/**
+    forbids Dialects
+  component Utils: shared utilities for rules and reflow
+    code: sqlfluff/utils/**
+    forbids Dialects
+  component Core: parser, lexer, config infrastructure
+    code: sqlfluff/core/**
+    forbids Api, Cli, Dialects, Rules, Utils
+    layers: Linter > CoreRules > Parser > Errors > Types > Helpers
+    component Linter: orchestrates parsing, rules and fixes
+      code: sqlfluff/core/linter/**
+    component CoreRules: rule base classes
+      code: sqlfluff/core/rules/**
+    component Parser: lexer and parser
+      code: sqlfluff/core/parser/**
+    component Errors: error types
+      code: sqlfluff/core/errors.py
+    component Types: core types
+      code: sqlfluff/core/types.py
+    component Helpers: independent helper modules
+      code: sqlfluff/core/helpers/**
+      independent: HString, HSlice, HDict
+      component HString: string helpers
+        code: sqlfluff/core/helpers/string.py
+      component HSlice: slice helpers
+        code: sqlfluff/core/helpers/slice.py
+      component HDict: dict helpers
+        code: sqlfluff/core/helpers/dict.py
+    component Plugin: plugin host
+      code: sqlfluff/core/plugin/**
+    component Formatter: output formatting
+      code: sqlfluff/core/formatter.py
+
+deviation ErrorsTypeImports: errors references rules and parser, only for type checking
+  allows Errors uses CoreRules
+  allows Errors uses Parser
+  why: splitting errors up seems overkill for now (pyproject.toml comment)
+  expires: 2027-11-01
+  approved: sqlfluff maintainers (pyproject.toml ignore_imports)
+  lifecycle: accepted
+  src: pyproject.toml#tool.importlinter
+deviation PluginHookspecRules: the plugin host needs BaseRule for type checking
+  allows Plugin uses CoreRules
+  why: one of the hooks returns rules
+  expires: 2027-11-01
+  approved: sqlfluff maintainers (pyproject.toml ignore_imports)
+  lifecycle: accepted
+  src: pyproject.toml#tool.importlinter
+deviation FormatterLinter: the formatter needs LintedFile for type checking
+  allows Formatter uses Linter
+  why: the formatter is imported by lots of other things
+  expires: 2027-11-01
+  approved: sqlfluff maintainers (pyproject.toml ignore_imports)
+  lifecycle: accepted
+  src: pyproject.toml#tool.importlinter
+
+# Found in the trial: the AGENTS.md rule is contradicted by 12 modules (present for the whole replayed history).
+conflict LazyDialectsVsCode: AGENTS.md forbids direct dialect imports; 12 rule and utility modules import dialect_ansi
+  about LazyDialects, Rules, Utils, Dialects
+  lifecycle: open
+  note: needs a maintainer decision: narrow the rule (ANSI segment classes are fine) or change the code
+  side Doc: never import dialect modules directly
+    src: AGENTS.md#lazy-loading
+  side Code [derived]: rules/aliasing/AL01.py and 11 more import sqlfluff.dialects.dialect_ansi
+    src: sqlfluff/rules/aliasing/AL01.py:8

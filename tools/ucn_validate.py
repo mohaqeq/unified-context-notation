@@ -24,7 +24,8 @@ Options:
   --max N                   print at most N findings per class (default 40)
   --json                    machine-readable output
 
-Finding classes: VIOLATION (fails CI), WIDENED (fails CI unless --allow-widening), KNOWN-CONFLICT, WAIVED,
+Finding classes: VIOLATION (fails CI), WIDENED (fails CI unless --allow-widening), CONFLICT (the code contradicts
+a stated rule where the code is authoritative: decide; blocks adoption), KNOWN-CONFLICT, WAIVED,
 MODEL-UPDATE (the code is authoritative and the model is behind), INFO.
 Exit code: 1 on VIOLATION, unapproved WIDENED, or a blocked gate; 2 on a model syntax error; otherwise 0.
 """
@@ -70,8 +71,10 @@ JS_SIDE = re.compile(r"(?m)^[ \t]*import\s*['\"]([^'\"\n]+)['\"]")
 JS_CALL = re.compile(r"\b(?:require|import|jest\.mock|vi\.mock|require\.resolve)\s*\(\s*['\"]([^'\"\n]+)['\"]\s*[,)]")
 JS_DYNAMIC = re.compile(r"\b(?:import|require)\s*\(\s*(?!['\"])[^)\s]")
 
-VIOLATION, WIDENED, KNOWN, WAIVED, UPDATE, INFO = "VIOLATION", "WIDENED", "KNOWN-CONFLICT", "WAIVED", "MODEL-UPDATE", "INFO"
-ORDER = [VIOLATION, WIDENED, KNOWN, WAIVED, UPDATE, INFO]
+VIOLATION, WIDENED, CONFLICT, KNOWN, WAIVED, UPDATE, INFO = \
+    "VIOLATION", "WIDENED", "CONFLICT", "KNOWN-CONFLICT", "WAIVED", "MODEL-UPDATE", "INFO"
+ORDER = [VIOLATION, WIDENED, CONFLICT, KNOWN, WAIVED, UPDATE, INFO]
+TRUE = {"yes", "true", "uses"}
 
 
 # ----------------------------------------------------------------------------------------------- helpers
@@ -184,6 +187,10 @@ class Model:
                 p = self.nodes[p].get("parent")
             self.anc[nid] = chain            # self first, then ancestors
         self.anc_set = {k: set(v) for k, v in self.anc.items()}
+        self.children = {}
+        for nid, n in self.nodes.items():
+            if n.get("parent"):
+                self.children.setdefault(n["parent"], []).append(nid)
         self.override = None                 # (scope_id or None, authority) used by the gates
 
     def attrs(self, nid, key):
@@ -442,18 +449,49 @@ def build_allowed(m):
     for e in g["edges"]:
         if e["rel"] == "exposes" and e.get("from_id") and e.get("to_id") and e.get("origin") != "inferred":
             exposes.setdefault(e["from_id"], set()).add(e["to_id"])
-    perms_from = {}
+    forb = []   # (x, y, reason): stated "never" rules; they override permissions
+    for e in g["edges"]:
+        if e["rel"] == "forbids" and e.get("from_id") and e.get("to_id") and e.get("origin") != "inferred":
+            forb.append((e["from_id"], e["to_id"], f"{e['from_id']} forbids {e['to_id']}"))
+    for nid in m.nodes:
+        def local(name):
+            return f"{nid}.{name}" if f"{nid}.{name}" in m.nodes else m.ref(name)
+        layers = [local(x) for x in m.attrs(nid, "layers")]
+        if layers and all(layers):
+            for i, hi in enumerate(layers):
+                for lo in layers[i + 1:]:
+                    perms.append((hi, lo))   # a higher layer may use every lower one
+                    forb.append((lo, hi, f"layers of {nid}: {lo} is below {hi}"))
+        indep = [local(x) for x in m.attrs(nid, "independent")]
+        if indep and all(indep):
+            for x in indep:
+                for y in indep:
+                    if x != y:
+                        forb.append((x, y, f"{nid}: {x} and {y} must stay independent"))
+    perms_from, perms_at = {}, {}
     for x, y in perms:
+        perms_at.setdefault(x, []).append((x, y))
         for a in m.anc[x]:
             perms_from.setdefault(a, []).append((x, y))
     memo = {}
+
+    def inherited(a):
+        """Permissions declared on ancestors, for elements that opt in with 'inherit: yes'."""
+        out, cur = [], a
+        while (m.attr(cur, "inherit") or "").lower() in TRUE and m.nodes[cur].get("parent"):
+            cur = m.nodes[cur]["parent"]
+            out += perms_at.get(cur, [])
+        return out
+
+    def forbidden(a, b):
+        return next((r for x, y, r in forb if m.under(a, x) and m.under(b, y)), None)
 
     def allowed(a, b):
         if (a, b) in memo:
             return memo[(a, b)]
         ok = m.under(a, b) or m.under(b, a)  # inside one element (the pass-through closure handles barrels)
         if not ok:
-            for x, y in perms_from.get(a, []):
+            for x, y in perms_from.get(a, []) + inherited(a):
                 if m.under(b, y):
                     if b == y or any(m.under(b, e) for e in exposes.get(y, ())):
                         ok = True
@@ -464,6 +502,8 @@ def build_allowed(m):
         memo[(a, b)] = ok
         return ok
     allowed.exposes = exposes
+    allowed.forbidden = forbidden
+    allowed.forb = forb
     return allowed, perms
 
 
@@ -657,13 +697,21 @@ def check(m, ctx):
             active = valid and lc == "accepted" and exp and today and exp >= today
             waivers.append((x, y, nid, active, exp_s, lc))
 
+    policy = m.header.get("policy", "allow")
+    known_about = {}
+    for c, n in m.nodes.items():
+        if n["kind"] == "conflict" and m.attr(c, "lifecycle", "open") in ("open", "accepted"):
+            known_about[c] = {e["to_id"] for e in g["edges"] if e["rel"] == "about" and e.get("from_id") == c and e.get("to_id")}
+    used_waivers = set()
     for (a, b), where in sorted(observed.items()):
-        if allowed(a, b):
+        reason = allowed.forbidden(a, b)
+        if not reason and (policy == "deny" or allowed(a, b)):
             stats["conforming"] += 1
             continue
         hit = [w for w in waivers if m.under(a, w[0]) and (m.under(b, w[1]) or m.under(w[1], b))]
         live = [w for w in hit if w[3]]
         if live:
+            used_waivers.add(live[0][2])
             add(WAIVED, "architecture", f"{a} -> {b} waived by deviation {live[0][2]} (expires {live[0][4]})", where[0], a)
             continue
         for w in hit:
@@ -671,10 +719,98 @@ def check(m, ctx):
             add(VIOLATION, "architecture", f"deviation {w[2]} for {a} -> {b} {why}", where[0], a)
         strict = "model" in (m.authority(a), m.authority(b))
         tag = " (through " + where[0].split(" -> ")[1] + ")" if where[0].count("->") > 1 and len(where) == 1 else ""
+        if reason:
+            known = next((c for c, about in known_about.items()
+                          if any(m.under(a, t) or m.under(t, a) for t in about) and any(m.under(b, t) or m.under(t, b) for t in about)), None)
+            if known:
+                add(KNOWN, "architecture", f"{a} depends on {b}: {reason} (conflict {known})", where[0], a, b)
+            elif strict:
+                add(VIOLATION, "architecture", f"{a} depends on {b}: {reason}{tag}", where[0], a, b)
+            else:
+                add(CONFLICT, "architecture", f"{a} depends on {b}, but {reason}{tag}: the code contradicts a stated rule; "
+                    "fix the code, change the rule, or record a conflict", where[0], a, b)
+            findings[-1]["forbidden"] = reason
+            continue
         if strict:
             add(VIOLATION, "architecture", f"{a} depends on {b}, which the model does not allow{tag}", where[0], a, b)
         else:
             add(UPDATE, "architecture", f"{a} depends on {b} (both ends authority: source): add a relation or a deviation{tag}", where[0], a, b)
+
+    def waived_pair(a, b):
+        return next((w for w in waivers if w[3] and m.under(a, w[0]) and (m.under(b, w[1]) or m.under(w[1], b))), None)
+
+    # layers are transitive (import-linter semantics): a lower layer must not reach a higher one through any
+    # chain of module imports. The search runs on the file graph, so container-level files are not false hubs.
+    for (a, b) in observed:
+        w = waived_pair(a, b)
+        if w:
+            used_waivers.add(w[2])   # the waived dependency exists, so the deviation is in use
+    fgraph = {}
+    for f, items in deps.items():
+        for kind, t in items:
+            if kind == "file" and owner.get(f) and owner.get(t) and owner[f] != owner[t] and not waived_pair(owner[f], owner[t]):
+                fgraph.setdefault(f, set()).add(t)
+            elif kind == "file" and owner.get(f) and owner.get(t):
+                fgraph.setdefault(f, set()).add(t) if owner[f] == owner[t] else None
+    if changed_set is None:
+        for nid in m.nodes:
+            def local(name):
+                return f"{nid}.{name}" if f"{nid}.{name}" in m.nodes else m.ref(name)
+            layers = [local(x) for x in m.attrs(nid, "layers")]
+            if not layers or not all(layers):
+                continue
+            for i, hi in enumerate(layers):
+                for lo in layers[i + 1:]:
+                    start = sorted(f for f in fgraph if m.under(owner[f], lo))
+                    prev, seen, hit = {}, set(start), None
+                    queue = list(start)
+                    while queue and not hit:
+                        cur = queue.pop(0)
+                        for nxt in sorted(fgraph.get(cur, ())):
+                            if nxt in seen:
+                                continue
+                            seen.add(nxt)
+                            prev[nxt] = cur
+                            if m.under(owner[nxt], hi):
+                                hit = nxt
+                                break
+                            queue.append(nxt)
+                    if hit and not m.under(owner[prev[hit]], lo):   # direct ones are reported above
+                        chain, cur = [hit], hit
+                        while cur in prev:
+                            cur = prev[cur]
+                            chain.append(cur)
+                        chain.reverse()
+                        auth = "model" in (m.authority(lo), m.authority(hi))
+                        add(VIOLATION if auth else CONFLICT, "architecture",
+                            f"layers of {nid}: {lo} reaches {hi} indirectly", " -> ".join(chain), lo, hi)
+                        findings[-1]["forbidden"] = f"layers of {nid}"
+        for nid in sorted({w[2] for w in waivers if w[3]} - used_waivers):
+            add(INFO, "governance", f"deviation {nid} matches no dependency in this run: remove it, or it will hide a future violation")
+
+    # cycles among the parts of elements marked 'acyclic: yes' (waived edges are ignored)
+    for p in m.nodes:
+        if (m.attr(p, "acyclic") or "").lower() not in TRUE:
+            continue
+        kids = set(m.children.get(p, []))
+        graph, ev = {}, {}
+        for (a, b), where in observed.items():
+            ca = next((x for x in m.anc[a] if x in kids), None)
+            cb = next((x for x in m.anc[b] if x in kids), None)
+            if not ca or not cb or ca == cb:
+                continue
+            if any(w[3] and m.under(a, w[0]) and (m.under(b, w[1]) or m.under(w[1], b)) for w in waivers):
+                continue
+            graph.setdefault(ca, set()).add(cb)
+            ev.setdefault((ca, cb), where[0])
+        for comp in strongly_connected(graph):
+            if len(comp) < 2:
+                continue
+            cyc = sorted(comp)
+            path = " -> ".join(cyc + [cyc[0]])
+            evid = "; ".join(ev[(x, y)] for x in cyc for y in cyc if (x, y) in ev)
+            cls = VIOLATION if m.authority(p) == "model" else CONFLICT
+            add(cls, "architecture", f"cycle inside {p}, which must be acyclic: {path}", evid.split("; ")[0], p)
 
     if changed_set is None:
         coded = {o for o in owner.values() if o} | {a for o in owner.values() if o for a in m.anc[o]}
@@ -813,6 +949,46 @@ def check(m, ctx):
     return findings, stats
 
 
+def strongly_connected(graph):
+    """Tarjan's algorithm, iterative. graph: {node: set(successors)}."""
+    index, low, on, stack, out, counter = {}, {}, set(), [], [], [0]
+    nodes = set(graph) | {v for vs in graph.values() for v in vs}
+    for root in sorted(nodes):
+        if root in index:
+            continue
+        work = [(root, iter(sorted(graph.get(root, ()))))]
+        index[root] = low[root] = counter[0]
+        counter[0] += 1
+        stack.append(root)
+        on.add(root)
+        while work:
+            v, it = work[-1]
+            nxt = next(it, None)
+            if nxt is not None:
+                if nxt not in index:
+                    index[nxt] = low[nxt] = counter[0]
+                    counter[0] += 1
+                    stack.append(nxt)
+                    on.add(nxt)
+                    work.append((nxt, iter(sorted(graph.get(nxt, ())))))
+                elif nxt in on:
+                    low[v] = min(low[v], index[nxt])
+                continue
+            work.pop()
+            if work:
+                low[work[-1][0]] = min(low[work[-1][0]], low[v])
+            if low[v] == index[v]:
+                comp = []
+                while True:
+                    w = stack.pop()
+                    on.discard(w)
+                    comp.append(w)
+                    if w == v:
+                        break
+                out.append(comp)
+    return out
+
+
 def resolver_specs(f, root, resolver):
     return [r for s in scan_specs(os.path.join(root, f), f)["specs"] for r in resolver.resolve(f, s) if r[0] == "file"]
 
@@ -853,7 +1029,14 @@ def diff_widening(m_old, m_new):
         if m_new.kind[nid] == "conflict" and m_new.attr(nid, "lifecycle") == "accepted" and \
                 (nid not in m_old.nodes or m_old.attr(nid, "lifecycle") != "accepted" or (m_new.attr(nid, "expires") or "") > (m_old.attr(nid, "expires") or "")):
             out.append(f"conflict {nid} newly accepted or extended")
-    for key in ("check", "bind", "param"):
+    def rules(m):
+        r = {(e.get("from_id"), e.get("to_id")) for e in m.g["edges"] if e["rel"] == "forbids"}
+        return r
+    for a, b in sorted(rules(m_old) - rules(m_new), key=str):
+        out.append(f"removed rule: {a} forbids {b}")
+    if m_old.header.get("policy", "allow") == "allow" and m_new.header.get("policy", "allow") == "deny":
+        out.append("policy changed from allow-list to deny-list")
+    for key in ("check", "bind", "param", "layers", "independent", "acyclic"):
         for nid in m_old.nodes:
             lost = set(m_old.attrs(nid, key)) - set(m_new.attrs(nid, key) if nid in m_new.nodes else [])
             for v in sorted(lost):
@@ -884,6 +1067,8 @@ def gate(m, ctx, kind, scope, findings_now):
     blockers = [f"{f['check']}: {f['message']}" for f in sim if f["class"] == VIOLATION]
     blockers += [f"{f['check']}: {f['message']} (the model is behind the code)" for f in sim
                  if f["class"] == UPDATE and (f.get("element") is None or in_scope(f["element"]))]
+    blockers += [f"{f['check']}: {f['message']}" for f in sim
+                 if f["class"] == CONFLICT and (f.get("element") is None or in_scope(f["element"]))]
     for nid, n in m.nodes.items():
         if not in_scope(nid) or m.layer(nid) not in ("intent", "arch"):
             continue
@@ -975,11 +1160,26 @@ def validate(model_path, today=None, gate_kind=None, scope=None, changed=None, c
 def propose(m, findings, include_violations=False):
     """Deterministic model update: the 'uses' lines that would make observed dependencies conforming.
     Only MODEL-UPDATE findings by default (code is authoritative); violations need a human decision."""
-    wanted = {}
+    wanted, conflicts = {}, []
     for f in findings:
-        if f["check"] == "architecture" and f.get("target") and (f["class"] == UPDATE or (include_violations and f["class"] == VIOLATION)):
+        if f["check"] != "architecture" or not f.get("target"):
+            continue
+        if f.get("forbidden"):
+            if f["class"] in (CONFLICT, VIOLATION):
+                conflicts.append(f)
+            continue
+        if f["class"] == UPDATE or (include_violations and f["class"] == VIOLATION):
             wanted.setdefault(f["element"], set()).add(f["target"])
     out = []
+    for f in conflicts:
+        a, b = f["element"], f["target"]
+        name = "".join(x[:1].upper() + x[1:] for x in re.split(r"\W+", f"{a.rsplit('.', 1)[-1]} vs {b.rsplit('.', 1)[-1]}") if x)
+        out += [f"# not proposed: {a} -> {b} contradicts '{f['forbidden']}'. Fix the code, change the rule, or record:",
+                f"conflict {name}: {f['forbidden']}, but {a} depends on {b}",
+                f"  about {a.rsplit('.', 1)[-1]}, {b.rsplit('.', 1)[-1]}",
+                "  lifecycle: open",
+                f"  side Rule: {f['forbidden']}",
+                f"  side Code [derived]: {f.get('at', '')}"]
     for a in sorted(wanted, key=lambda n: m.nodes[n]["line"]):
         names = sorted(t.rsplit(".", 1)[-1] if m.ref(t.rsplit(".", 1)[-1]) == t else t for t in wanted[a])
         out.append(f"# under {m.kind[a]} {a} (line {m.nodes[a]['line']}):")

@@ -1,0 +1,434 @@
+[
+ {
+  "run": "T1-A1",
+  "task": "T1",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/sqlfluff/core/linter/linter.py",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.dialects import load_raw_dialect"
+  ],
+  "tokens": 66905,
+  "seconds": 74.6,
+  "tool_uses": 17
+ },
+ {
+  "run": "T1-A2",
+  "task": "T1",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/sqlfluff/core/linter/linter.py",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.dialects import dialect_selector"
+  ],
+  "tokens": 77136,
+  "seconds": 86.2,
+  "tool_uses": 16
+ },
+ {
+  "run": "T1-B1",
+  "task": "T1",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/core/linter/linter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.dialects import dialect_selector"
+  ],
+  "tokens": 60910,
+  "seconds": 91.4,
+  "tool_uses": 18
+ },
+ {
+  "run": "T1-B2",
+  "task": "T1",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/core/linter/linter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.dialects import dialect_selector"
+  ],
+  "tokens": 59994,
+  "seconds": 82.2,
+  "tool_uses": 16
+ },
+ {
+  "run": "T1-C1",
+  "task": "T1",
+  "cond": "C",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/core/linter/linter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.dialects import dialect_selector"
+  ],
+  "tokens": 53073,
+  "seconds": 70.1,
+  "tool_uses": 11
+ },
+ {
+  "run": "T2-A1",
+  "task": "T2",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/sqlfluff/core/helpers/string.py",
+   "src/sqlfluff/core/linter/linter.py",
+   "test/api/simple_test.py",
+   "test/cli/commands_test.py",
+   "test/core/helpers/string_test.py",
+   "test/core/parser/parse_test.py",
+   "test/fixtures/api/config_dialect/config_dialect_lint_prs.json"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.helpers.string import curtail_string, describe_segment"
+  ],
+  "tokens": 69874,
+  "seconds": 111.0,
+  "tool_uses": 22
+ },
+ {
+  "run": "T2-A2",
+  "task": "T2",
+  "cond": "A",
+  "violations": [
+   "Package.Core.Helpers.HString depends on Package.Core.Parser: layers of Package.Core: Package.Core.Helpers is below Package.Core.Parser  [sqlfluff/core/helpers/string.py -> sqlfluff/core/parser/segments/__init__.py]",
+   "layers of Package.Core: Package.Core.Helpers reaches Package.Core.Errors indirectly  [sqlfluff/core/helpers/string.py -> sqlfluff/core/parser/segments/__init__.py -> sqlfluff/core/parser/segments/base.py -> sqlfluff/core/dialects/__init__.py -> sqlfluff/core/errors.py]",
+   "layers of Package.Core: Package.Core.Helpers reaches Package.Core.Types indirectly  [sqlfluff/core/helpers/string.py -> sqlfluff/core/parser/segments/__init__.py -> sqlfluff/core/parser/segments/meta.py -> sqlfluff/core/templaters/base.py -> sqlfluff/core/formatter.py -> sqlfluff/core/types.py]"
+  ],
+  "tampered": [],
+  "changed": [
+   "src/sqlfluff/core/helpers/string.py",
+   "src/sqlfluff/core/linter/linter.py",
+   "test/api/simple_test.py",
+   "test/core/helpers/string_test.py",
+   "test/core/parser/parse_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.parser.segments import BaseSegment",
+   "from sqlfluff.core.helpers.string import curtail_string, describe_segment"
+  ],
+  "tokens": 79468,
+  "seconds": 126.1,
+  "tool_uses": 21
+ },
+ {
+  "run": "T2-B1",
+  "task": "T2",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/core/helpers/string.py",
+   "src/sqlfluff/core/linter/linter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/api/simple_test.py",
+   "test/cli/commands_test.py",
+   "test/core/helpers/string_test.py",
+   "test/core/parser/parse_test.py",
+   "test/fixtures/api/config_dialect/config_dialect_lint_prs.json"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.helpers.string import curtail_string, describe_segment"
+  ],
+  "tokens": 73605,
+  "seconds": 153.4,
+  "tool_uses": 22
+ },
+ {
+  "run": "T2-B2",
+  "task": "T2",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/core/helpers/string.py",
+   "src/sqlfluff/core/linter/linter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/api/simple_test.py",
+   "test/cli/commands_test.py",
+   "test/core/helpers/string_test.py",
+   "test/core/parser/parse_test.py",
+   "test/fixtures/api/config_dialect/config_dialect_lint_prs.json"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.helpers.string import curtail_string, describe_segment"
+  ],
+  "tokens": 63548,
+  "seconds": 123.5,
+  "tool_uses": 16
+ },
+ {
+  "run": "T2-C1",
+  "task": "T2",
+  "cond": "C",
+  "violations": [
+   "Package.Core.Helpers.HString depends on Package.Core.Parser: layers of Package.Core: Package.Core.Helpers is below Package.Core.Parser  [sqlfluff/core/helpers/string.py -> sqlfluff/core/parser/segments/base.py]",
+   "layers of Package.Core: Package.Core.Helpers reaches Package.Core.Errors indirectly  [sqlfluff/core/helpers/string.py -> sqlfluff/core/parser/segments/base.py -> sqlfluff/core/dialects/__init__.py -> sqlfluff/core/errors.py]",
+   "layers of Package.Core: Package.Core.Helpers reaches Package.Core.Types indirectly  [sqlfluff/core/helpers/string.py -> sqlfluff/core/parser/segments/base.py -> sqlfluff/core/parser/context.py -> sqlfluff/core/config/__init__.py -> sqlfluff/core/config/file.py -> sqlfluff/core/types.py]"
+  ],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/core/helpers/string.py",
+   "src/sqlfluff/core/linter/linter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/api/simple_test.py",
+   "test/cli/commands_test.py",
+   "test/core/helpers/string_test.py",
+   "test/core/parser/parse_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.parser.segments.base import BaseSegment",
+   "from sqlfluff.core.helpers.string import curtail_string, describe_segment"
+  ],
+  "tokens": 90470,
+  "seconds": 126.7,
+  "tool_uses": 29
+ },
+ {
+  "run": "T3-A1",
+  "task": "T3",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/sqlfluff/api/simple.py",
+   "src/sqlfluff/cli/formatters.py",
+   "src/sqlfluff/core/formatter.py",
+   "test/api/simple_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.formatter import format_violation_text",
+   "from sqlfluff.core.formatter import colorize_text, format_violation_text"
+  ],
+  "tokens": 104999,
+  "seconds": 189.0,
+  "tool_uses": 29
+ },
+ {
+  "run": "T3-A2",
+  "task": "T3",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/sqlfluff/api/simple.py",
+   "src/sqlfluff/cli/formatters.py",
+   "src/sqlfluff/core/formatter.py",
+   "test/api/simple_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.formatter import render_violation",
+   "from sqlfluff.core.formatter import colorize, render_violation"
+  ],
+  "tokens": 104229,
+  "seconds": 188.6,
+  "tool_uses": 36
+ },
+ {
+  "run": "T3-B1",
+  "task": "T3",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/api/simple.py",
+   "src/sqlfluff/cli/formatters.py",
+   "src/sqlfluff/core/formatter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/api/simple_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.formatter import format_violation_dict",
+   "from sqlfluff.core.formatter import colorize_helper, format_violation_dict"
+  ],
+  "tokens": 91260,
+  "seconds": 199.7,
+  "tool_uses": 27
+ },
+ {
+  "run": "T3-B2",
+  "task": "T3",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/api/simple.py",
+   "src/sqlfluff/cli/formatters.py",
+   "src/sqlfluff/core/formatter.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/api/simple_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.core.formatter import format_violations_text",
+   "from sqlfluff.core.formatter import colorize_text, format_violation_text"
+  ],
+  "tokens": 94773,
+  "seconds": 191.5,
+  "tool_uses": 30
+ },
+ {
+  "run": "T3-C1",
+  "task": "T3",
+  "cond": "C",
+  "violations": [
+   "Package.Api depends on Package.Cli: Package.Api forbids Package.Cli  [sqlfluff/api/simple.py -> sqlfluff/cli/formatters.py]",
+   "cycle inside Package, which must be acyclic: Package.Api -> Package.Cli -> Package.Api  [sqlfluff/api/simple.py -> sqlfluff/cli/formatters.py]"
+  ],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/api/simple.py",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/api/simple_test.py"
+  ],
+  "added_imports": [
+   "from sqlfluff.cli.formatters import OutputStreamFormatter",
+   "from sqlfluff.cli.outputstream import OutputPolicy, OutputStream"
+  ],
+  "tokens": 65314,
+  "seconds": 75.0,
+  "tool_uses": 13
+ },
+ {
+  "run": "T4-A1",
+  "task": "T4",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [],
+  "tokens": 73251,
+  "seconds": 99.4,
+  "tool_uses": 16
+ },
+ {
+  "run": "T4-A2",
+  "task": "T4",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [],
+  "tokens": 79814,
+  "seconds": 103.7,
+  "tool_uses": 17
+ },
+ {
+  "run": "T4-B1",
+  "task": "T4",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md"
+  ],
+  "added_imports": [],
+  "tokens": 55430,
+  "seconds": 50.3,
+  "tool_uses": 7
+ },
+ {
+  "run": "T4-B2",
+  "task": "T4",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [],
+  "tokens": 62422,
+  "seconds": 85.5,
+  "tool_uses": 11
+ },
+ {
+  "run": "T4-C1",
+  "task": "T4",
+  "cond": "C",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "AGENTS.md",
+   "sqlfluffrs/AGENTS.md",
+   "src/sqlfluff/AGENTS.md",
+   "src/sqlfluff/dialects/AGENTS.md",
+   "test/AGENTS.md",
+   "test/core/linter/linter_test.py"
+  ],
+  "added_imports": [],
+  "tokens": 57012,
+  "seconds": 65.3,
+  "tool_uses": 11
+ }
+]
