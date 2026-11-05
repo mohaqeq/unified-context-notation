@@ -1,0 +1,49 @@
+ucn 0.1 system: Shortly level: mixed task: "implement custom aliases (ticket#30)" budget: 1200
+# Output of π(M, task, 1200): core first, task slice last, stubs for what was left out.
+
+# ---------- core (L0 + pinned) ----------
+goal Share: users share short links that keep working for years
+goal Abuse [pin]: the service must not be usable to spread malware or phishing
+system Shortly: URL shortening service
+  container Api: HTTP API (node/express)
+  container Db: primary store (postgres)
+  container Cache: hot code -> target map (redis)
+  more: 1 container (Web) -> expand Shortly@L1
+req Blocklist [security]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
+req RateLimit [security, unwanted]: IF a user creates more than 100 links per hour THEN THE system SHALL answer 429
+rule Links.CodeImmutable [pin]: a code never changes its target after creation
+decision ImmutableCodes [pin]: never retarget an existing code
+conflict: Guard.limit is 100/hour (ticket#14) | code uses 1000/hour (api/guard.ts:44)
+
+# ---------- task slice ----------
+decision RandomCodes: random base62 codes, not URL hashes
+  why: the same URL from different owners must get different codes
+  affects Codes
+container Db
+  data Link: code PK, target, owner, createdAt, expiresAt?, hits, disabled
+    inv: code unique
+container Api
+  component Codes
+    fn generate(): Code
+      post: matches /^[0-9A-Za-z]{7}$/
+      post: not exists(Link where code == result)
+  component Links
+    fn create(url: string, owner: UserId, alias?: string): Code
+      pre: isHttpUrl(url)
+      post: result.length == 7 or result == alias
+      post: unique(result)
+      err: rateLimited(owner) -> 429
+      err: blocked(domain(url)) -> 422
+      err: alias taken -> 409
+      calls Codes.generate, Guard.check, Guard.limit
+      src: api/links.ts:40
+    more: fn resolve, machine LinkLife -> expand Links@L2
+  api LinksApi: REST: POST /links, GET /{code} ...
+    src: api/openapi.yaml
+req Alias [event, option]: WHERE custom aliases are enabled, WHEN a premium user submits an alias THE system SHALL use it as the code
+  status: proposed
+  # satisfied by: Links (inverse of 'satisfies', rendered as a comment)
+  # lint: no test verifies Alias yet
+test CreateTests: create returns 7 chars; duplicate URL gets new code
+  src: api/links.test.ts
+more: 6 req, 2 component, 1 decision, 2 test not relevant to task -> expand Shortly@L1

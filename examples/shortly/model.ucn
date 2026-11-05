@@ -1,0 +1,128 @@
+ucn 0.1 system: Shortly level: L2
+# Full model (all nodes at L2). Hand-written to show the notation; v0.3 adapters would generate most of it.
+
+# ---------- intent ----------
+goal Share: users share short links that keep working for years
+  src: README.md#vision
+goal Abuse [pin]: the service must not be usable to spread malware or phishing
+  src: ticket#12
+
+req Create [event]: WHEN a user submits a valid http(s) URL THE system SHALL return a unique 7-char code
+  refines Share
+  src: ticket#3
+req Resolve [event]: WHEN a client requests /{code} THE system SHALL redirect (301) to the target URL
+  refines Share
+  src: ticket#3
+req Fast [nfr]: THE system SHALL resolve a code in under 50 ms at p99
+  refines Share
+  src: docs/slo.md
+req Expire [state]: WHILE a link is past its expiry date THE system SHALL answer 410 Gone
+  refines Share
+  src: ticket#21
+req Blocklist [security]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
+  refines Abuse
+  src: ticket#12
+req RateLimit [security, unwanted]: IF a user creates more than 100 links per hour THEN THE system SHALL answer 429
+  refines Abuse
+  src: ticket#14
+req Alias [event, option]: WHERE custom aliases are enabled, WHEN a premium user submits an alias THE system SHALL use it as the code
+  refines Share
+  status: proposed
+  src: ticket#30
+
+# ---------- structure ----------
+actor User: person creating links via web UI or API
+actor Visitor: anyone opening a short link
+actor SafeBrowsing: external URL-reputation service
+  tech: https api
+
+system Shortly: URL shortening service
+  container Web: single-page UI for creating links
+    tech: react
+    uses Api
+  container Api: HTTP API for create, resolve, stats
+    tech: node/express
+    exposes LinksApi
+    uses Db, Cache, SafeBrowsing
+    api LinksApi: REST: POST /links, GET /{code}, GET /links/{code}/stats
+      src: api/openapi.yaml
+    component Links: create and resolve short links
+      satisfies Create, Resolve, Expire, Alias
+      fn create(url: string, owner: UserId, alias?: string): Code
+        pre: isHttpUrl(url)
+        post: result.length == 7 or result == alias
+        post: unique(result)
+        err: rateLimited(owner) -> 429
+        err: blocked(domain(url)) -> 422
+        err: alias taken -> 409
+        effect: writes Link, emits LinkCreated
+        calls Codes.generate, Guard.check, Guard.limit
+        src: api/links.ts:40
+      fn resolve(code: Code): Redirect
+        err: link.expiresAt < now -> 410
+        err: unknown code -> 404
+        effect: increments Link.hits (async)
+        reads Cache, Link
+        src: api/links.ts:88
+      rule CodeImmutable [pin]: a code never changes its target after creation
+        src: docs/adr/003.md
+      machine LinkLife [inferred]: states active, expired, disabled
+        active -> expired: on expiresAt passed
+        active -> disabled: on abuse report confirmed
+        disabled -> active: on admin restore
+        src: api/links.ts:120
+    component Codes: generate collision-free codes
+      satisfies Create
+      fn generate(): Code
+        post: matches /^[0-9A-Za-z]{7}$/
+        post: not exists(Link where code == result)
+        effect: retries up to 5 times on collision, then error 503
+        src: api/codes.ts:5
+    component Guard: abuse protection
+      satisfies Blocklist, RateLimit
+      fn check(url: string): void
+        err: blocked(domain(url)) -> 422
+        calls SafeBrowsing
+        src: api/guard.ts:10
+      fn limit(owner: UserId): void
+        err: count(owner, last 1h) > 100 -> 429
+        src: api/guard.ts:42
+      conflict: limit is 100/hour (ticket#14) | code uses 1000/hour (api/guard.ts:44)
+  container Db: primary store
+    tech: postgres
+    data Link: code PK, target, owner, createdAt, expiresAt?, hits, disabled
+      inv: code unique
+      src: db/schema.sql:1
+  container Cache: hot code -> target map
+    tech: redis
+    satisfies Fast
+    guarantee: entries expire with the link
+    src: api/cache.ts:3
+
+# ---------- decisions ----------
+decision RandomCodes: random base62 codes, not URL hashes
+  why: the same URL from different owners must get different codes, and stats must stay per owner
+  affects Codes
+  status: accepted
+  src: docs/adr/001.md
+decision CacheAside: Redis cache-aside for resolve, Postgres as truth
+  why: p99 under 50 ms without a read replica
+  affects Api, Cache
+  status: accepted
+  src: docs/adr/002.md
+decision ImmutableCodes [pin]: never retarget an existing code
+  why: printed QR codes and old emails must not start pointing somewhere else
+  affects Links
+  status: accepted
+  src: docs/adr/003.md
+
+# ---------- evidence ----------
+test CreateTests: create returns 7 chars; duplicate URL gets new code
+  verifies Create, Links.create
+  src: api/links.test.ts
+test GuardTests: blocked domain -> 422; 101st link in an hour -> 429
+  verifies Blocklist, RateLimit
+  src: api/guard.test.ts
+test ResolveLatency: k6 load test, p99 < 50 ms
+  verifies Fast
+  src: perf/resolve.k6.js
