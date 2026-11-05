@@ -1,5 +1,7 @@
 # 4. Review Synthesis
 
+> Historical record of the v0.1 review. Section numbers (§3.x) refer to the v0.2 proposal; v0.3 renumbered §3.6–§3.12 to §3.8–§3.14.
+
 UCN v0.1 (commit `129772b`) was reviewed independently by two different models. Each received the same brief and the same files. Neither saw the other's review. Each was asked to be critical, to cite file and section, and to check facts and prior art with web search.
 
 | Reviewer | Score | One-line verdict | Raw review |

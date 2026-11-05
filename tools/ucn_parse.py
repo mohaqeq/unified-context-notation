@@ -1,4 +1,4 @@
-"""UCN 0.2 parser, linter and projection checker (prototype for the v0.2 roadmap item).
+"""UCN 0.3 parser, linter and projection checker. The consistency validator is tools/ucn_validate.py.
 
 Usage:
   python tools/ucn_parse.py MODEL.ucn [--json] [--lint] [--tokens]
@@ -16,7 +16,7 @@ import sys
 
 KINDS = {"goal", "req", "decision", "term", "actor", "system", "container", "component",
          "data", "api", "event", "config", "env", "fn", "rule", "machine", "flow", "test",
-         "convention", "conflict", "side"}
+         "convention", "conflict", "side", "deviation"}
 NOT_COUNTED = {"side"}  # parts of a conflict, not facts of their own
 
 STRUCT = {"system", "container", "component", "data", "api", "event", "config", "env"}
@@ -45,7 +45,12 @@ INVERSE = {"satisfiedBy": "satisfies", "verifiedBy": "verifies", "refinedBy": "r
            "calledBy": "calls", "affectedBy": "affects", "implementedBy": "implements"}
 CLAUSES = {"pre", "post", "err", "inv", "assume", "guarantee", "effect"}
 ATTRS = {"src", "tech", "owner", "why", "lifecycle", "verified", "code", "aka", "note",
-         "states", "initial"}
+         "states", "initial", "authority", "param", "bind", "expires", "approved", "check"}
+MODES = {"reverse", "forward"}
+AUTHORITIES = {"model", "source"}
+PARAM_RE = re.compile(r"^([A-Za-z_]\w*)\s*=\s*(-?\d+(?:\.\d+)?)\s*(.*)$")          # name = 100 per hour
+BIND_RE = re.compile(r"^([A-Za-z_][\w.]*)\.([A-Za-z_]\w*)\s*=\s*([^#\s]+)#([A-Za-z_]\w*)$")  # Req.param = file#CONST
+ALLOWS_RE = re.compile(r"^allows\s+([A-Za-z_][\w.]*)\s+(\w+)\s+([A-Za-z_][\w.]*)$")
 LABELS = {
     "category": {"nfr", "security", "safety", "legal", "privacy"},
     "pattern": {"event", "state", "unwanted", "option", "complex"},
@@ -117,6 +122,8 @@ def parse_header(line):
         h["budget"] = int(h["budget"])
     if "origin" in h and h["origin"] not in LABELS["origin"]:
         raise UcnError(f"line 1: unknown origin '{h['origin']}'")
+    if "mode" in h and h["mode"] not in MODES:
+        raise UcnError(f"line 1: mode must be one of {sorted(MODES)}")
     return h
 
 
@@ -223,7 +230,14 @@ def parse(text):
                 if tag:
                     c["origin"] = tag.strip()
                 nodes[owner].setdefault("contract", []).append(c)
-            elif word in ("states", "aka"):
+                continue
+            if word == "authority" and val not in AUTHORITIES:
+                raise UcnError(f"line {no}: authority must be 'model' or 'source'")
+            if word == "param" and not PARAM_RE.match(val):
+                raise UcnError(f"line {no}: param is 'name = number [unit]'")
+            if word == "bind" and not BIND_RE.match(val):
+                raise UcnError(f"line {no}: bind is 'Req.param = path#CONSTANT'")
+            if word in ("states", "aka"):
                 nodes[owner].setdefault("attrs", {}).setdefault(word, []).extend(split_items(val))
             else:
                 nodes[owner].setdefault("attrs", {}).setdefault(word, []).append(val)
@@ -248,6 +262,12 @@ def parse(text):
                 if c["kind"] not in KINDS:
                     raise UcnError(f"line {no}: unknown kind '{c['kind']}' in stub")
             stubs.append(stub)
+        elif word == "allows":
+            m = ALLOWS_RE.match(line)
+            if not m or owner is None or nodes[owner]["kind"] != "deviation" or m.group(2) not in RELS:
+                raise UcnError(f"line {no}: 'allows <ref> <relation> <ref>' only inside a deviation")
+            nodes[owner].setdefault("allows", []).append(
+                {"from": m.group(1), "rel": m.group(2), "to": m.group(3), "line": no})
         elif word == "on":
             m = TRANS_RE.match(line)
             if not m or owner is None or nodes[owner]["kind"] != "machine":
@@ -314,6 +334,12 @@ def lint(g):
                 warns.append(f"conflict {n['id']}: needs two or more sides")
             if not any(e["rel"] == "about" and e.get("from_id") == n["id"] for e in g["edges"]):
                 warns.append(f"conflict {n['id']}: 'about' does not name the facts it concerns")
+        if n["kind"] == "deviation":
+            for a in ("why", "expires", "approved"):
+                if a not in attrs:
+                    warns.append(f"deviation {n['id']}: needs '{a}:'")
+            if not n.get("allows"):
+                warns.append(f"deviation {n['id']}: needs at least one 'allows <ref> <relation> <ref>'")
         if n["kind"] == "machine":
             states = set(attrs.get("states", []))
             for t in n.get("transitions", []):

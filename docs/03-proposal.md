@@ -1,29 +1,43 @@
-# 3. Proposal: Unified Context Notation (UCN) v0.2
+# 3. Proposal: Unified Context Notation (UCN) v0.3
 
-> **One-line summary.** UCN is a **profile, concrete syntax, projection and toolchain** over existing semantics (mainly SysML v2 and C4, plus EARS, Design-by-Contract, statecharts, ADRs and W3C PROV). It is written as compact, line-oriented text for small LLMs. A **budgeted projection** shrinks it to a token budget, and every relevant fact it leaves out is **named** in a stub.
+> **One-line summary.** UCN is **a checked, traceable intent and architecture layer that keeps coding agents (and humans) consistent with requirements and architecture.** Technically it is a profile, concrete syntax, projection and toolchain over existing semantics (mainly SysML v2 and C4, plus EARS, Design-by-Contract, ADRs and W3C PROV). Deterministic tools check it against the code on every commit. A projection turns it into compact context for agents, and every relevant fact left out is **named** in a stub.
 
-The core idea: **the contribution is the metamodel profile + provenance convention + projection, not the syntax.** The syntax is one rendering, chosen as a hypothesis about small-LLM legibility and tested against alternatives (§3.10). The same model is stored as canonical JSON and can be exported to SysML v2, C4 DSLs, Mermaid, or Markdown.
+The core idea: **the contribution is the metamodel profile + provenance convention + projection, not the syntax.** The syntax is one rendering, chosen as a hypothesis about small-LLM legibility and tested against alternatives (§3.12). The same model is stored as canonical JSON and can be exported to SysML v2, C4 DSLs, Mermaid, or Markdown.
 
-What changed from v0.1, and why, is in [04-review-synthesis.md](04-review-synthesis.md).
+What changed from v0.1 to v0.2 is in [04-review-synthesis.md](04-review-synthesis.md). The v0.3 restructuring (core vs modules, authority and modes, deterministic validation) follows the usefulness analysis in [05-usefulness-and-tooling.md](05-usefulness-and-tooling.md).
+
+## 3.0 Structure: core and modules
+
+| | Contents | When |
+|---|---|---|
+| **Core** | Intent (`goal`, `req` with typed `param:`, `decision`, `rule`, `convention`, `term`); architecture skeleton (`system`, `container`, `component` with `code:` globs, `api`, `actor`); traces (`refines`, `satisfies`, `verifies`, `test`); governance (`conflict`, `deviation`); provenance; authority and modes (§3.6); **deterministic validator** (§3.7); default projection (§3.5) | Always |
+| **Module: logic** | `fn` contracts, `machine`, `flow`. Contracts only for public APIs, cross-service interfaces and pinned invariants; LLM inference per function is off by default | Where code alone doesn't show the behavior |
+| **Module: runtime** | `event`, `config`, `env`, `data` | Event-driven or configuration-heavy systems |
+| **Module: small-model projection** | Budgeted knapsack with personalized PageRank (§3.5) | Consumers with 1–4B models |
+| **Module: SysML v2 export** | §3.11 | Regulated domains |
+
+Signatures and call graphs are core *inputs* but are not maintained as UCN text. They come from existing tools (LSP, SCIP, tree-sitter) at validation and projection time. **All recurring checks are deterministic**. LLMs are used for bootstrapping and for proposing changes, never as a gate (§3.7, [05 §5.3](05-usefulness-and-tooling.md#53-how-much-can-tools-do-without-an-llm)).
 
 ---
 
 ## 3.1 Design principles
 
-1. **Borrow semantics, don't invent them.** Every node kind maps to an established concept (§3.9). Provenance vocabulary comes from W3C PROV.
+1. **Borrow semantics, don't invent them.** Every node kind maps to an established concept (§3.11). Provenance vocabulary comes from W3C PROV.
 2. **One fact per line.** Facts can be added, diffed, ranked, and dropped independently.
 3. **Familiar words over symbols.** No new operators. Whether this helps small models is measured, not assumed.
 4. **Inference is never silent.** Every line has an origin (stated, derived, inferred). Defaults keep the text short, but an LLM-produced line is always marked `[inferred]` where it appears, and projections must show it.
 5. **Defaults come from how a fact was produced, not where it came from.** Only deterministic tools produce `derived`. A contract an LLM wrote while reading code is `inferred`, even though its `src:` is a code file.
 6. **Nothing relevant is dropped silently.** Projection replaces what doesn't fit with stubs that **name** what was omitted. Only the irrelevant tail may be summarized as counts.
 7. **Source code stays the source of truth for behavior.** UCN indexes it and adds intent. It does not replace it.
-8. **Extracted text is data.** Text from tickets, emails and wikis is shown as content, never as instructions, and it cannot pin itself (§3.11).
+8. **Extracted text is data.** Text from tickets, emails and wikis is shown as content, never as instructions, and it cannot pin itself (§3.13).
+9. **Checks are code, not prompts.** Every recurring consistency check is a deterministic tool that runs in seconds, outside the build (§3.7).
+10. **Authority is explicit.** For every part of the model it is recorded whether the model or the code wins on disagreement, and that can change over time (§3.6).
 
 ---
 
 ## 3.2 Metamodel
 
-### Node kinds (20, plus `side` inside a conflict)
+### Node kinds (21, plus `side` inside a conflict)
 
 | Layer | Kind | Meaning | Borrowed from |
 |---|---|---|---|
@@ -47,6 +61,7 @@ What changed from v0.1, and why, is in [04-review-synthesis.md](04-review-synthe
 | Practice | `convention` | How to work on the system: build/test commands, required patterns, forbidden patterns | `AGENTS.md` content, CONTRIBUTING files |
 | Evidence | `test` | A verification artifact (test, check, proof) | SysML `verification`, Gherkin |
 | | `conflict` | Two or more sources disagree. Has `side` children (each with its own `src`) and `about` links to the facts concerned | Truth maintenance, argumentation |
+| Governance | `deviation` | An approved, expiring waiver that allows code to depart from the model: `allows <ref> <relation> <ref>` | MISRA deviation records, ArchUnit freeze |
 
 Each kind is in the metamodel because v0.1 reviewers found agent-relevant facts with nowhere to go (events, flags, the "premium user" term, conventions, deployment). The metamodel is **not** claimed to be minimal. RQ3 is answered by "drop kind K" ablations in the benchmark, and kinds that don't pay for themselves are removed before v1.0.
 
@@ -67,6 +82,8 @@ Each kind is in the metamodel because v0.1 reviewers found agent-relevant facts 
 | `affects` | decision | any non-decision node | ADR scope |
 | `supersedes` | decision | decision | ADR status |
 | `about` | conflict | any node | — |
+
+Inside a `deviation`, `allows Stats uses Db` names a relation the model does not declare but tolerates until the deviation expires (§3.7).
 
 The linter enforces this table. A projector may render an edge **at its target** under an inverse name (`satisfiedBy`, `verifiedBy`, `refinedBy`, `calledBy`, `affectedBy`, `implementedBy`) so that a small model finds it next to the fact it concerns. Inverse lines are the same edge, not a new fact.
 
@@ -104,7 +121,12 @@ If a `decision` and a `rule` state the same thing, keep both but link them (`aff
 | `tech:` | `tech: node/express` | Technology |
 | `owner:` | `owner: team-links` | Ownership |
 | `why:` | `why: ...` | Rationale |
-| `lifecycle:` | `lifecycle: planned` | `planned`, `active`, `deprecated` for elements (as-is vs to-be); `proposed`, `accepted`, `superseded` for decisions; `open`, `resolved` for conflicts |
+| `lifecycle:` | `lifecycle: planned` | `planned`, `active`, `deprecated` for elements (as-is vs to-be); `proposed`, `accepted`, `superseded` for decisions; `open`, `accepted`, `resolved` for conflicts; `proposed`, `accepted`, `revoked` for deviations |
+| `authority:` | `authority: source` | Which side wins on disagreement for this node and everything under it: `model` or `source` (§3.6) |
+| `param:` | `param: maxLinksPerHour = 100 per hour` | A typed, comparable value of a requirement: `name = number [unit]` |
+| `bind:` | `bind: RateLimit.maxLinksPerHour = api/guard.ts#LIMIT_PER_HOUR` | The code constant that implements a requirement parameter (checked, §3.7) |
+| `check:` | `check: only api/db.ts imports pg` | A machine-checkable form of a convention or rule (§3.7) |
+| `expires:` / `approved:` | `expires: 2027-03-31` | Required on a deviation |
 | `verified:` | `verified: CreateTests` | Evidence that confirms this node (test ids) |
 | `code:` | `code: api/links.ts` | Path globs of the code that implements this element |
 | `aka:` | `aka: short code, slug` | Aliases, used by entity resolution |
@@ -130,14 +152,14 @@ v0.1 pinned every security, safety and legal fact, so a real system's core would
 
 - **Global pins** (`[pin]`): a few hand-chosen facts, such as the system's purpose, safety invariants and open conflicts about them. They are always inline. Capped, and the cap is linted.
 - **Scoped pins** (category `security`, `safety`, `legal`, `privacy`): inline when the slice **touches** them, meaning a selected node satisfies, implements or is affected by them. Otherwise they are **named** in a stub (`more: req Blocklist [security], …`). For a large set the stub may name a group node instead (`more: 42 req [security] -> expand Security@L1`), but only for facts outside the task's relevant set.
-- **Trust.** A source can only produce a pin if it is in the trusted tier (code, reviewed docs, human authors). Text from tickets or emails can be *labelled* `security` by a reviewed classifier, but it cannot pin itself (§3.11).
+- **Trust.** A source can only produce a pin if it is in the trusted tier (code, reviewed docs, human authors). Text from tickets or emails can be *labelled* `security` by a reviewed classifier, but it cannot pin itself (§3.13).
 
 ### Identity
 
 - A node's **canonical id** is its name qualified by its container path, excluding the single `system` root: `Api`, `Api.Links`, `Api.Links.create`. Top-level nodes (goals, reqs, decisions, tests, conflicts) are unqualified.
 - References may use any **unique dotted suffix** (`Links.create`, `Guard.limit`). An ambiguous or dangling reference is a lint error.
 - Re-declaring an id with a different kind is an error. A line that repeats a node without text (`container Api`) **re-opens** it, so children can be added in another place. This is how projections show nested items without repeating summaries.
-- Entity resolution across sources (the "billing service" in a doc = container `Billing`) uses ids, `aka:` aliases, `term` nodes and `code:` globs (§3.6).
+- Entity resolution across sources (the "billing service" in a doc = container `Billing`) uses ids, `aka:` aliases, `term` nodes and `code:` globs (§3.8).
 
 ---
 
@@ -148,8 +170,11 @@ v0.1 pinned every security, safety and legal fact, so a real system's core would
 ```ebnf
 file       = header NEWLINE { line } ;
 header     = "ucn" version "system:" Id { hkey ":" hval } ;
-hkey       = "level" | "origin" | "task" | "budget" ;     (* task value is "quoted"; budget is an integer *)
-line       = indent ( node | fnnode | relation | clause | attr | transition | stub | comment ) NEWLINE ;
+hkey       = "level" | "origin" | "task" | "budget" | "mode" | "baseline" | "root" ;
+                                                         (* task is "quoted"; budget an integer; mode reverse|forward;
+                                                            root = code directory relative to the model file *)
+line       = indent ( node | fnnode | relation | clause | attr | transition | stub | allows | comment ) NEWLINE ;
+allows     = "allows" ref relkw ref ;                       (* only inside a deviation *)
 
 node       = kind Id [ labels ] [ ":" text ] ;
 fnnode     = "fn" ( Id ":" signature | signature ) [ labels ] ;   (* id = leading identifier of the signature *)
@@ -169,19 +194,19 @@ level      = "L0" | "L1" | "L2" | "L3" ;
 
 kind       = "goal" | "req" | "decision" | "term" | "actor" | "system" | "container" | "component"
            | "data" | "api" | "event" | "config" | "env" | "fn" | "rule" | "machine" | "flow"
-           | "test" | "convention" | "conflict" | "side" ;
+           | "test" | "convention" | "conflict" | "side" | "deviation" ;
 relkw      = "refines" | "satisfies" | "verifies" | "uses" | "calls" | "reads" | "writes" | "exposes"
            | "implements" | "emits" | "consumes" | "deploysTo" | "affects" | "supersedes" | "about" ;
 invkw      = "satisfiedBy" | "verifiedBy" | "refinedBy" | "calledBy" | "affectedBy" | "implementedBy" ;
 clausekw   = "pre" | "post" | "err" | "inv" | "assume" | "guarantee" | "effect" ;
 attrkw     = "src" | "tech" | "owner" | "why" | "lifecycle" | "verified" | "code" | "aka" | "note"
-           | "states" | "initial" ;
+           | "states" | "initial" | "authority" | "param" | "bind" | "check" | "expires" | "approved" ;
 labelword  = (* the four label sets in §3.2 *) ;
 ```
 
 **Lexical rules.**
 
-- **A line's role is decided by its first word.** The keyword sets above, plus `on`, `more` and `#`, are disjoint. Transitions start with `on`, so a state named `data` or `test` cannot be misread as a node.
+- **A line's role is decided by its first word.** The keyword sets above, plus `on`, `more`, `allows` and `#`, are disjoint. Transitions start with `on`, so a state named `data` or `test` cannot be misread as a node.
 - In a node line, the summary starts after the **first** `:` following the id and labels. Later colons are text.
 - A trailing `[ … ]` is read as labels **only if every word in it is a label word**. Otherwise it is part of the text or expression (so `int[]` or `xs[i]` are safe).
 - In stub and relation lists, items are separated by commas outside brackets.
@@ -191,7 +216,7 @@ labelword  = (* the four label sets in §3.2 *) ;
 ### Small example
 
 ```ucn
-ucn 0.2 system: Shortly level: L2 origin: stated
+ucn 0.3 system: Shortly level: L2 origin: stated
 
 goal Share: users share short links that keep working
 req Create [event]: WHEN a user submits a valid URL THE system SHALL return a unique 7-char code
@@ -244,6 +269,16 @@ Each node can be rendered at three levels. The projection picks a level **per no
 ---
 
 ## 3.5 Projection `π(M, T, B)`
+
+### Default projection (core)
+
+For frontier models, and as the default:
+1. the core card (L0), including global pins, accepted or open conflicts, and active deviations;
+2. **the whole intent layer and architecture skeleton at L1**, if it fits; otherwise the part reachable from the task's seeds;
+3. the seeds' neighborhood at L2;
+4. named stubs for every relevant node left out, and counts for the rest.
+
+No ranking model is needed. Seeds come from ids and paths in the task and from BM25, and the neighborhood is a bounded typed-graph walk. The guarantees below apply unchanged, and the same checker verifies them. The rest of this section describes the **small-model module**, for budgets where the default does not fit.
 
 ### Budget
 
@@ -308,7 +343,7 @@ Each of these is checked mechanically by `ucn_parse.py --against MODEL` (`check_
 6. **No invented facts:** every node and edge in `C` exists in `M`.
 7. **Determinism** for a fixed `(M, T, B, task_type, tokenizer, seed config)`.
 
-What is **not** guaranteed: that `R` contains everything the task needs. `R` comes from a heuristic, and a needed fact outside `R` ends up only in a count. That is the residual silent-loss risk. The benchmark measures it directly as the silent-absence rate (§3.10). Seed retrieval quality (recall@k of the annotated needed facts) is measured separately from the LLM.
+What is **not** guaranteed: that `R` contains everything the task needs. `R` comes from a heuristic, and a needed fact outside `R` ends up only in a count. That is the residual silent-loss risk. The benchmark measures it directly as the silent-absence rate (§3.12). Seed retrieval quality (recall@k of the annotated needed facts) is measured separately from the LLM.
 
 ### Expansion and multi-turn
 
@@ -316,7 +351,72 @@ An agent that can call tools sends `expand Links.resolve@L2` or `expand Shortly@
 
 ---
 
-## 3.6 Extraction pipeline `E(S)` (source-agnostic)
+## 3.6 Authority and modes (forward, reverse, and switching)
+
+UCN supports both **reverse engineering** (building context for an existing system) and **forward engineering** (the model leads, the code follows). The choice is explicit, recorded, and can change later.
+
+**Origin vs authority.** *Origin* records how a fact was produced (stated, derived, inferred). *Authority* records which side wins when the model and the code disagree:
+
+| Authority | On disagreement | The code is read in order to… |
+|---|---|---|
+| `source` | the model is stale, so update it (MODEL-UPDATE) | **update** the model |
+| `model` | the code is wrong unless a deviation allows it (VIOLATION) | **check conformance** |
+
+**Modes are presets**, set in the header (`mode: reverse | forward`):
+
+| Mode | Intent | Architecture | Logic | Tests | Governance |
+|---|---|---|---|---|---|
+| `reverse` | source | source | source | source | model |
+| `forward` | model | model | source | source | model |
+
+Function signatures and call graphs always come from the code. In forward mode they are what the code is checked *with*. `authority:` on a node overrides the preset for its subtree, so a legacy container can stay in reverse while the rest is forward. That mixed state is a **hybrid** model, and it is how most real systems will look during adoption.
+
+**Switching is an explicit event with a gate.**
+- **Adopt** (reverse → forward, for the whole model or one subtree) runs `ucn_validate.py --gate adopt`. The gate blocks if, in the parts becoming model-authoritative:
+  - any inferred node or clause remains (each must be reviewed into `stated`, corrected, or removed);
+  - any conflict is `open` (it must be resolved, or `accepted` with a tracking note);
+  - any architecture violation remains (it must be fixed, or frozen as a `deviation` with an expiry date).
+
+  Passing the gate records `mode: forward` and `baseline: <commit>` in the header.
+- **Re-baseline** (forward → reverse) is allowed too, for example after a large refactor. It is the same event in the other direction, and it is recorded.
+
+**Daily work in forward mode.**
+- To change behavior, change the model first. The change starts as `lifecycle: planned`; then the code follows, and CI checks it.
+- The agent that changes the code proposes the model diff in the same PR.
+- Every code change lands in one of four classes: **conforming**, **waived** by a deviation, **violation** (fails CI), or **observed new fact**. New functions and files are added as `derived` within an existing component; a file no element claims is a coverage violation.
+- The mode goes into the agent's context. In forward mode, planned facts are targets and a mismatch is a defect to fix. In reverse mode, the same mismatch means the model is stale.
+
+## 3.7 Consistency validation (deterministic)
+
+`tools/ucn_validate.py` checks the model against the code with no LLM, no build, and no network. It runs as its own CI job and as a pre-commit hook on changed files.
+
+| Check | Between | How | On mismatch |
+|---|---|---|---|
+| **Architecture conformance** | architecture ↔ code | Imports (regex for TS/JS/Python; a build tool's exported dependency graph where available) are lifted to elements through `code:` globs. Each dependency must be allowed by a declared relation from the depending element (or its parts) to the target (or its parts, or a container that **exposes** it). `implements` permits calls in both directions. Test files map to their `test` node and may depend on what they verify. | VIOLATION / MODEL-UPDATE by the authority of the depending element; WAIVED if an active deviation covers it; an expired deviation is a VIOLATION |
+| **Declared but unused** | architecture → code | A declared relation that no code dependency realizes (reflexion "absence") | INFO |
+| **Parameter consistency** | requirements ↔ code | `param:` value vs the constant named by `bind:` | VIOLATION / MODEL-UPDATE by the requirement's authority; KNOWN-CONFLICT if an open or accepted conflict is `about` it |
+| **Convention checks** | conventions ↔ code | `check: only <glob> imports <module>` | by the convention's authority |
+| **Provenance** | model ↔ code | `src:` file exists and the line is in range | stale |
+| **Coverage** | code → architecture | Code files no element claims | VIOLATION in forward mode, MODEL-UPDATE in reverse |
+| **Trace completeness** | requirements ↔ architecture ↔ tests | Linter rules | INFO |
+| **Adopt gate** | — | §3.6 | gate blocked |
+
+**Behavioral consistency** (does the running code meet a requirement?) is not decidable in general. It is covered by evidence: tests that *assert* a requirement (`verifies` plus `verified:`), runtime monitors for `machine` definitions (module), and, for critical kernels, formal tools via export. Prose-level contradictions ("the doc says X, the code does Y") are found by bound parameters where possible, and otherwise by LLM-proposed conflict candidates that a human reviews.
+
+**Example output** (Shortly, [examples/shortly](../examples/shortly), mode forward):
+
+```
+VIOLATION      architecture Api.Guard depends on Api.Links, which the model does not allow  [api/guard.ts -> api/links.ts]
+KNOWN-CONFLICT parameters   RateLimit.maxLinksPerHour = 100 per hour vs api/guard.ts#LIMIT_PER_HOUR = 1000 (conflict RateLimitValue)
+WAIVED         architecture Api.Stats -> Db waived by deviation StatsDirectDb (expires 2027-03-31)  [api/stats.ts -> api/db.ts]
+MODEL-UPDATE   architecture Web depends on Api.AliasesEnabled (authority: source): add a relation or a deviation  [web/app.tsx -> api/config.ts]
+```
+
+**Performance** (measured, [05 §5.3](05-usefulness-and-tooling.md#performance-budget-and-measurements)): 20,000 files in 4.6 s cold, 1.5 s with the cache, and 0.8 s for one changed file. That is pure Python; a compiled implementation would be faster.
+
+---
+
+## 3.8 Extraction pipeline `E(S)` (source-agnostic)
 
 ```
  sources ──▶ 1. Adapters ──▶ 2. Normalize ──▶ 3. Link & resolve ──▶ 4. Validate ──▶ 5. Store ──▶ 6. Project / render
@@ -327,7 +427,7 @@ An agent that can call tools sends `expand Links.resolve@L2` or `expand Shortly@
 | Stage | Inputs → Outputs | Origin of output |
 |---|---|---|
 | **1. Adapters** | Code via tree-sitter/SCIP → `fn` signatures, `calls`, modules, `code:` globs. OpenAPI/AsyncAPI/Protobuf → `api`, `event`. IaC/Backstage → `container`, `env`, `owner`. Config files → `config`. Tests → `test` + `verifies` (from names, tags, coverage). ADRs → `decision`. Structurizr/LikeC4 → C4 nodes. ReqIF / issue tracker → `req` text as written. CONTRIBUTING/`AGENTS.md` → `convention` candidates. | `derived` (from code and specs) or `stated` (human text as written) |
-| **2. Normalize** | Free-text requirements → EARS sentences. Code bodies → candidate `pre/post/inv/err` (LLM), plus **Daikon-style dynamic invariants** from test runs. Implicit state handling → `machine` (LLM, or k-tails/Synoptic mining from traces). Module clusters → `component` if no architecture model exists (clustering such as ACDC/Bunch, reviewed). | `inferred`. Promotion rules are below. |
+| **2. Normalize** | Free-text requirements → EARS sentences. *(Logic module, off by default:)* code bodies → candidate `pre/post/inv/err` (LLM), plus **Daikon-style dynamic invariants** from test runs. Implicit state handling → `machine` (LLM, or k-tails/Synoptic mining from traces). Module clusters → `component` if no architecture model exists (clustering such as ACDC/Bunch, reviewed). | `inferred`. Promotion rules are below. |
 | **3. Link & resolve** | Entity resolution by id, `aka:`, `term`, `code:` globs and embeddings. Trace-link recovery (req ⇄ component ⇄ test) from names, test coverage, commit/ticket references, and LLM candidates. Each link records its method. | `derived` for deterministic links (coverage, explicit references), `inferred` otherwise |
 | **4. Validate** | Deterministic checks: schema, relation table, dangling and ambiguous ids, trace gaps, pin cap, machine consistency, hash-based staleness, **reflexion-model check** (declared `uses` vs extracted dependencies). LLM-assisted: **conflict candidates** ("the doc says X, the code does Y"). This is semantic comparison and probably the hardest step in the pipeline. Candidates become `conflict` nodes only after review, or when two derived values contradict each other outright (two constants). | checks: deterministic; conflicts: `inferred` until reviewed |
 | **5. Store** | Canonical JSON graph: nodes, edges, provenance, hashes, per-level renderings. Text UCN is a rendering of it. | — |
@@ -343,15 +443,15 @@ An agent that can call tools sends `expand Links.resolve@L2` or `expand Shortly@
 
 ---
 
-## 3.7 Human readability (G6)
+## 3.9 Human readability (G6)
 
 - UCN text is meant to be read directly. It reads like a structured outline.
 - `ucn render --md` (roadmap) produces Markdown: headings per container and component, EARS requirement tables, Mermaid C4 and state diagrams, an ADR list, and a conventions section.
 - **Round-trip claim, narrowed.** *Full* model text ⇄ canonical JSON is meant to be lossless (comments excepted). A round-trip test is on the roadmap. Projections are lossy by design: they are checked against the model (§3.5), not round-tripped.
 
-## 3.8 Small-LLM legibility rules (G7)
+## 3.10 Small-LLM legibility rules (G7)
 
-These are hypotheses, each with an ablation in §3.10.
+These are hypotheses, each with an ablation in §3.12.
 
 1. Indentation depth ≤ 4. One fact per line. Every line's role is given by its first word.
 2. Ids are meaningful words (`Links.create`), not opaque codes.
@@ -361,7 +461,7 @@ These are hypotheses, each with an ablation in §3.10.
 6. **Few hops.** Render key inverse edges inline (`satisfiedBy`, `verifiedBy`) and avoid making the model join facts across distant lines.
 7. Budgets as in §3.5, in the model's own tokenizer, leaving room for code, task and output.
 
-## 3.9 Interoperability and formal anchor
+## 3.11 Interoperability and formal anchor
 
 **Intended mapping, not yet validated.** A round-trip test against the SysML v2 pilot implementation is on the roadmap. Until then this table is a design intent.
 
@@ -392,7 +492,9 @@ This makes UCN a **lightweight, LLM-oriented profile** of SysML v2 + C4. Teams t
 
 ---
 
-## 3.10 Evaluation: measuring "no important context lost" (RQ6)
+## 3.12 Evaluation: measuring "no important context lost" (RQ6)
+
+The full benchmark comes after a **pilot** on one real repository that decides go / kill / extend on upkeep cost, violations caught, tempting-task violations and silent absence ([05 §5.5](05-usefulness-and-tooling.md#55-pilot-protocol), `tools/pilot_eval.py`).
 
 ### Questions and tasks
 
@@ -421,6 +523,7 @@ All at the same `B_ucn ∈ {1k, 2k, 4k}`, unless stated:
 | (d) hand-written `AGENTS.md` | state of practice |
 | (e) generated wiki (DeepWiki/CodeWiki style) truncated to `B` | generated prose |
 | (f) **agent with grep/read/ls tools on the raw repo, at equal total token spend** | the strongest baseline (§1.4) |
+| (f2) **lightweight stack**: structured `AGENTS.md` + ADRs + architecture rules in CI + requirement IDs in tests | the cheap alternative UCN must beat ([05 §5.4](05-usefulness-and-tooling.md#54-is-it-worth-it)) |
 | (g) UCN projection | static context |
 | (h) UCN projection + `expand` tool | context + retrieval |
 | (i) the same UCN graph rendered as plain Markdown prose | content vs syntax |
@@ -443,7 +546,7 @@ Without stubs; counts-only stubs vs named stubs; without origin labels; without 
 
 ---
 
-## 3.11 Risks and mitigations
+## 3.13 Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
@@ -456,15 +559,19 @@ Without stubs; counts-only stubs vs named stubs; without origin labels; without 
 | Metamodel too small or too large | Kinds added in v0.2 for concrete gaps; "drop kind K" ablation removes the ones that don't pay off. Extension via `x-` kinds only after evidence. |
 | Small models cannot use the expansion loop | The static projection stands alone; stubs name what exists, so a human can help. Conditions (g) and (h) are measured separately. |
 | Yet another format nobody adopts | UCN is generated, not hand-written. Imports from and exports to C4 DSLs, SysML v2, OpenAPI, ADRs and `AGENTS.md`. |
+| **Upkeep costs more than the model pays back** (how model-driven engineering failed) | Agents propose model diffs in the same PR; recurring checks are deterministic. The pilot's kill criterion is upkeep > 10% of review time. |
+| **The regex import scan misses dependencies** (path aliases, dynamic imports, dependency injection) | Read the build tool's exported dependency graph where one exists; config-aware resolution; tree-sitter for exactness. Misses are false negatives, so the check never blocks wrongly because of them. |
+| **Waivers become permanent** | Every deviation needs `expires:` and `approved:`; an expired deviation fails CI. |
+| **The lightweight stack is good enough** | It is the pilot's baseline. If UCN is within noise of it, stop. |
 
-## 3.12 Roadmap
+## 3.14 Roadmap
 
 | Version | Scope |
 |---|---|
 | v0.1 | First specification and hand-written example (reviewed: [04-review-synthesis.md](04-review-synthesis.md)) |
-| **v0.2 (this)** | Revised spec. Parser with header parsing, multi-valued attributes, canonical ids, the relation table, lint, and the **projection checker**. Example rewritten and machine-checked. |
-| v0.3 | JSON Schema for the canonical form. Round-trip test. **Prototype projector** that generates the card and slice (replacing the hand-written ones). Markdown/Mermaid renderer. |
-| v0.4 | Adapters: Python/TypeScript (tree-sitter), OpenAPI, ADR (MADR), Structurizr/LikeC4 import, pytest/jest test linking. **Stage 2 pilot** on one real repository with per-stage accuracy. |
-| v0.5 | MCP server (`get_context(task, budget)`, `expand(id, level)`). SysML v2 export, validated against the pilot implementation. |
-| v0.6 | Context Sufficiency Benchmark (§3.10), first results on small models. |
-| v1.0 | Freeze the metamodel based on benchmark evidence. |
+| v0.2 | Revised spec; parser, linter and **projection checker**; example machine-checked |
+| **v0.3 (this)** | Reframed goal; core vs modules; authority and modes with the adopt gate; `deviation`, `param`/`bind`, `check`; **deterministic validator** (`ucn_validate.py`) checking a real example codebase; **pilot harness** (`pilot_eval.py`) with pre-registered criteria; tests |
+| v0.4 | Pilot readiness: reverse-mode bootstrap (deterministic adapters for TS/Python structure, ADRs, OpenAPI; LLM only for EARS normalization, reviewed); default projector generating card and slice; agent-facing `ucn context` / `ucn validate` commands and a pre-commit hook; build-tool dependency graph input |
+| v0.5 | **Pilot** on one real repository against the lightweight stack (4–6 weeks). Go / kill / extend by `pilot_eval.py` |
+| *only on GO:* v0.6 | MCP server; logic module (contracts for public APIs); small-model projection module; Context Sufficiency Benchmark (§3.12) |
+| v1.0 | Freeze the core metamodel based on pilot and benchmark evidence; SysML v2 export module |

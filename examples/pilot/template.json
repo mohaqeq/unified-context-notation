@@ -1,0 +1,1268 @@
+{
+ "_note": "ILLUSTRATIVE DATA to show the input format and exercise the harness. These are NOT pilot results.",
+ "criteria": {
+  "min_gain": 0.1,
+  "violation_reduction": 0.5,
+  "max_upkeep_ratio": 0.1,
+  "max_silent_absence": 0.05,
+  "alpha": 0.05
+ },
+ "tasks": [
+  {
+   "id": "T1",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10515,
+     "seconds": 118
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9473,
+     "seconds": 80
+    }
+   }
+  },
+  {
+   "id": "T2",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9053,
+     "seconds": 118
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10430,
+     "seconds": 80
+    }
+   }
+  },
+  {
+   "id": "T3",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11937,
+     "seconds": 90
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9215,
+     "seconds": 103
+    }
+   }
+  },
+  {
+   "id": "T4",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 12526,
+     "seconds": 69
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7949,
+     "seconds": 90
+    }
+   }
+  },
+  {
+   "id": "T5",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10597,
+     "seconds": 107
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 7062,
+     "seconds": 92
+    }
+   }
+  },
+  {
+   "id": "T6",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12921,
+     "seconds": 97
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7175,
+     "seconds": 69
+    }
+   }
+  },
+  {
+   "id": "T7",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 10103,
+     "seconds": 90
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9436,
+     "seconds": 96
+    }
+   }
+  },
+  {
+   "id": "T8",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12228,
+     "seconds": 118
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8748,
+     "seconds": 75
+    }
+   }
+  },
+  {
+   "id": "T9",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12948,
+     "seconds": 119
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7549,
+     "seconds": 106
+    }
+   }
+  },
+  {
+   "id": "T10",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11027,
+     "seconds": 73
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8056,
+     "seconds": 93
+    }
+   }
+  },
+  {
+   "id": "T11",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10233,
+     "seconds": 86
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9077,
+     "seconds": 103
+    }
+   }
+  },
+  {
+   "id": "T12",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11396,
+     "seconds": 86
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9393,
+     "seconds": 64
+    }
+   }
+  },
+  {
+   "id": "T13",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12804,
+     "seconds": 61
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10507,
+     "seconds": 67
+    }
+   }
+  },
+  {
+   "id": "T14",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9668,
+     "seconds": 104
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10525,
+     "seconds": 70
+    }
+   }
+  },
+  {
+   "id": "T15",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 11331,
+     "seconds": 66
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9923,
+     "seconds": 91
+    }
+   }
+  },
+  {
+   "id": "T16",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11349,
+     "seconds": 77
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 8167,
+     "seconds": 57
+    }
+   }
+  },
+  {
+   "id": "T17",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10980,
+     "seconds": 65
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 8409,
+     "seconds": 101
+    }
+   }
+  },
+  {
+   "id": "T18",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9082,
+     "seconds": 78
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 8749,
+     "seconds": 99
+    }
+   }
+  },
+  {
+   "id": "T19",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11478,
+     "seconds": 99
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10119,
+     "seconds": 52
+    }
+   }
+  },
+  {
+   "id": "T20",
+   "kind": "question",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11256,
+     "seconds": 116
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10776,
+     "seconds": 67
+    }
+   }
+  },
+  {
+   "id": "T21",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10268,
+     "seconds": 60
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 7315,
+     "seconds": 56
+    }
+   }
+  },
+  {
+   "id": "T22",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9808,
+     "seconds": 86
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8194,
+     "seconds": 89
+    }
+   }
+  },
+  {
+   "id": "T23",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 12554,
+     "seconds": 81
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8285,
+     "seconds": 73
+    }
+   }
+  },
+  {
+   "id": "T24",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 10547,
+     "seconds": 84
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 8885,
+     "seconds": 105
+    }
+   }
+  },
+  {
+   "id": "T25",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11439,
+     "seconds": 103
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9290,
+     "seconds": 56
+    }
+   }
+  },
+  {
+   "id": "T26",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 11076,
+     "seconds": 77
+    },
+    "ucn": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 8766,
+     "seconds": 90
+    }
+   }
+  },
+  {
+   "id": "T27",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 10233,
+     "seconds": 87
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8057,
+     "seconds": 83
+    }
+   }
+  },
+  {
+   "id": "T28",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 12229,
+     "seconds": 86
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9375,
+     "seconds": 70
+    }
+   }
+  },
+  {
+   "id": "T29",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11589,
+     "seconds": 68
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7246,
+     "seconds": 90
+    }
+   }
+  },
+  {
+   "id": "T30",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 11782,
+     "seconds": 118
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8444,
+     "seconds": 88
+    }
+   }
+  },
+  {
+   "id": "T31",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9090,
+     "seconds": 97
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7248,
+     "seconds": 93
+    }
+   }
+  },
+  {
+   "id": "T32",
+   "kind": "change",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 11572,
+     "seconds": 89
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8223,
+     "seconds": 87
+    }
+   }
+  },
+  {
+   "id": "T33",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 9758,
+     "seconds": 80
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10105,
+     "seconds": 73
+    }
+   }
+  },
+  {
+   "id": "T34",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12330,
+     "seconds": 61
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 1,
+     "tokens": 10978,
+     "seconds": 86
+    }
+   }
+  },
+  {
+   "id": "T35",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 10103,
+     "seconds": 75
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8342,
+     "seconds": 61
+    }
+   }
+  },
+  {
+   "id": "T36",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 1,
+     "tokens": 12887,
+     "seconds": 81
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 9764,
+     "seconds": 103
+    }
+   }
+  },
+  {
+   "id": "T37",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 1,
+     "tokens": 12039,
+     "seconds": 101
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7893,
+     "seconds": 106
+    }
+   }
+  },
+  {
+   "id": "T38",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12922,
+     "seconds": 72
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8290,
+     "seconds": 101
+    }
+   }
+  },
+  {
+   "id": "T39",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 0,
+     "violations": 0,
+     "tokens": 12391,
+     "seconds": 101
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 7350,
+     "seconds": 101
+    }
+   }
+  },
+  {
+   "id": "T40",
+   "kind": "tempting",
+   "model": "example-8b",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 12481,
+     "seconds": 77
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 8903,
+     "seconds": 72
+    }
+   }
+  }
+ ],
+ "facts": [
+  {
+   "task": "T1",
+   "fact": "F0",
+   "ucn": "absent"
+  },
+  {
+   "task": "T2",
+   "fact": "F1",
+   "ucn": "present"
+  },
+  {
+   "task": "T3",
+   "fact": "F2",
+   "ucn": "present"
+  },
+  {
+   "task": "T4",
+   "fact": "F3",
+   "ucn": "present"
+  },
+  {
+   "task": "T5",
+   "fact": "F4",
+   "ucn": "present"
+  },
+  {
+   "task": "T6",
+   "fact": "F5",
+   "ucn": "present"
+  },
+  {
+   "task": "T7",
+   "fact": "F6",
+   "ucn": "present"
+  },
+  {
+   "task": "T8",
+   "fact": "F7",
+   "ucn": "named"
+  },
+  {
+   "task": "T9",
+   "fact": "F8",
+   "ucn": "present"
+  },
+  {
+   "task": "T10",
+   "fact": "F9",
+   "ucn": "present"
+  },
+  {
+   "task": "T11",
+   "fact": "F10",
+   "ucn": "present"
+  },
+  {
+   "task": "T12",
+   "fact": "F11",
+   "ucn": "present"
+  },
+  {
+   "task": "T13",
+   "fact": "F12",
+   "ucn": "present"
+  },
+  {
+   "task": "T14",
+   "fact": "F13",
+   "ucn": "present"
+  },
+  {
+   "task": "T15",
+   "fact": "F14",
+   "ucn": "named"
+  },
+  {
+   "task": "T16",
+   "fact": "F15",
+   "ucn": "present"
+  },
+  {
+   "task": "T17",
+   "fact": "F16",
+   "ucn": "present"
+  },
+  {
+   "task": "T18",
+   "fact": "F17",
+   "ucn": "present"
+  },
+  {
+   "task": "T19",
+   "fact": "F18",
+   "ucn": "present"
+  },
+  {
+   "task": "T20",
+   "fact": "F19",
+   "ucn": "present"
+  },
+  {
+   "task": "T21",
+   "fact": "F20",
+   "ucn": "present"
+  },
+  {
+   "task": "T22",
+   "fact": "F21",
+   "ucn": "named"
+  },
+  {
+   "task": "T23",
+   "fact": "F22",
+   "ucn": "present"
+  },
+  {
+   "task": "T24",
+   "fact": "F23",
+   "ucn": "present"
+  },
+  {
+   "task": "T25",
+   "fact": "F24",
+   "ucn": "present"
+  },
+  {
+   "task": "T26",
+   "fact": "F25",
+   "ucn": "present"
+  },
+  {
+   "task": "T27",
+   "fact": "F26",
+   "ucn": "present"
+  },
+  {
+   "task": "T28",
+   "fact": "F27",
+   "ucn": "present"
+  },
+  {
+   "task": "T29",
+   "fact": "F28",
+   "ucn": "named"
+  },
+  {
+   "task": "T30",
+   "fact": "F29",
+   "ucn": "absent"
+  },
+  {
+   "task": "T31",
+   "fact": "F30",
+   "ucn": "present"
+  },
+  {
+   "task": "T32",
+   "fact": "F31",
+   "ucn": "present"
+  },
+  {
+   "task": "T1",
+   "fact": "F32",
+   "ucn": "present"
+  },
+  {
+   "task": "T2",
+   "fact": "F33",
+   "ucn": "present"
+  },
+  {
+   "task": "T3",
+   "fact": "F34",
+   "ucn": "present"
+  },
+  {
+   "task": "T4",
+   "fact": "F35",
+   "ucn": "named"
+  },
+  {
+   "task": "T5",
+   "fact": "F36",
+   "ucn": "present"
+  },
+  {
+   "task": "T6",
+   "fact": "F37",
+   "ucn": "present"
+  },
+  {
+   "task": "T7",
+   "fact": "F38",
+   "ucn": "present"
+  },
+  {
+   "task": "T8",
+   "fact": "F39",
+   "ucn": "present"
+  },
+  {
+   "task": "T9",
+   "fact": "F40",
+   "ucn": "present"
+  },
+  {
+   "task": "T10",
+   "fact": "F41",
+   "ucn": "present"
+  },
+  {
+   "task": "T11",
+   "fact": "F42",
+   "ucn": "named"
+  },
+  {
+   "task": "T12",
+   "fact": "F43",
+   "ucn": "present"
+  },
+  {
+   "task": "T13",
+   "fact": "F44",
+   "ucn": "present"
+  },
+  {
+   "task": "T14",
+   "fact": "F45",
+   "ucn": "present"
+  },
+  {
+   "task": "T15",
+   "fact": "F46",
+   "ucn": "present"
+  },
+  {
+   "task": "T16",
+   "fact": "F47",
+   "ucn": "present"
+  },
+  {
+   "task": "T17",
+   "fact": "F48",
+   "ucn": "present"
+  },
+  {
+   "task": "T18",
+   "fact": "F49",
+   "ucn": "named"
+  },
+  {
+   "task": "T19",
+   "fact": "F50",
+   "ucn": "present"
+  },
+  {
+   "task": "T20",
+   "fact": "F51",
+   "ucn": "present"
+  },
+  {
+   "task": "T21",
+   "fact": "F52",
+   "ucn": "present"
+  },
+  {
+   "task": "T22",
+   "fact": "F53",
+   "ucn": "present"
+  },
+  {
+   "task": "T23",
+   "fact": "F54",
+   "ucn": "present"
+  },
+  {
+   "task": "T24",
+   "fact": "F55",
+   "ucn": "present"
+  },
+  {
+   "task": "T25",
+   "fact": "F56",
+   "ucn": "named"
+  },
+  {
+   "task": "T26",
+   "fact": "F57",
+   "ucn": "present"
+  },
+  {
+   "task": "T27",
+   "fact": "F58",
+   "ucn": "absent"
+  },
+  {
+   "task": "T28",
+   "fact": "F59",
+   "ucn": "present"
+  },
+  {
+   "task": "T29",
+   "fact": "F60",
+   "ucn": "present"
+  },
+  {
+   "task": "T30",
+   "fact": "F61",
+   "ucn": "present"
+  },
+  {
+   "task": "T31",
+   "fact": "F62",
+   "ucn": "present"
+  },
+  {
+   "task": "T32",
+   "fact": "F63",
+   "ucn": "named"
+  },
+  {
+   "task": "T1",
+   "fact": "F64",
+   "ucn": "present"
+  },
+  {
+   "task": "T2",
+   "fact": "F65",
+   "ucn": "present"
+  },
+  {
+   "task": "T3",
+   "fact": "F66",
+   "ucn": "present"
+  },
+  {
+   "task": "T4",
+   "fact": "F67",
+   "ucn": "present"
+  },
+  {
+   "task": "T5",
+   "fact": "F68",
+   "ucn": "present"
+  },
+  {
+   "task": "T6",
+   "fact": "F69",
+   "ucn": "present"
+  },
+  {
+   "task": "T7",
+   "fact": "F70",
+   "ucn": "named"
+  },
+  {
+   "task": "T8",
+   "fact": "F71",
+   "ucn": "present"
+  },
+  {
+   "task": "T9",
+   "fact": "F72",
+   "ucn": "present"
+  },
+  {
+   "task": "T10",
+   "fact": "F73",
+   "ucn": "present"
+  },
+  {
+   "task": "T11",
+   "fact": "F74",
+   "ucn": "present"
+  },
+  {
+   "task": "T12",
+   "fact": "F75",
+   "ucn": "present"
+  },
+  {
+   "task": "T13",
+   "fact": "F76",
+   "ucn": "present"
+  },
+  {
+   "task": "T14",
+   "fact": "F77",
+   "ucn": "named"
+  },
+  {
+   "task": "T15",
+   "fact": "F78",
+   "ucn": "present"
+  },
+  {
+   "task": "T16",
+   "fact": "F79",
+   "ucn": "present"
+  },
+  {
+   "task": "T17",
+   "fact": "F80",
+   "ucn": "present"
+  },
+  {
+   "task": "T18",
+   "fact": "F81",
+   "ucn": "present"
+  },
+  {
+   "task": "T19",
+   "fact": "F82",
+   "ucn": "present"
+  },
+  {
+   "task": "T20",
+   "fact": "F83",
+   "ucn": "present"
+  },
+  {
+   "task": "T21",
+   "fact": "F84",
+   "ucn": "named"
+  },
+  {
+   "task": "T22",
+   "fact": "F85",
+   "ucn": "present"
+  },
+  {
+   "task": "T23",
+   "fact": "F86",
+   "ucn": "present"
+  },
+  {
+   "task": "T24",
+   "fact": "F87",
+   "ucn": "absent"
+  },
+  {
+   "task": "T25",
+   "fact": "F88",
+   "ucn": "present"
+  },
+  {
+   "task": "T26",
+   "fact": "F89",
+   "ucn": "present"
+  }
+ ],
+ "upkeep": [
+  {
+   "week": 1,
+   "model_minutes": 240,
+   "review_minutes": 900
+  },
+  {
+   "week": 2,
+   "model_minutes": 90,
+   "review_minutes": 950
+  },
+  {
+   "week": 3,
+   "model_minutes": 60,
+   "review_minutes": 1000
+  },
+  {
+   "week": 4,
+   "model_minutes": 55,
+   "review_minutes": 980
+  }
+ ],
+ "ci": [
+  {
+   "week": 1,
+   "arch_violations_caught": 4,
+   "false_positives": 1
+  },
+  {
+   "week": 2,
+   "arch_violations_caught": 3,
+   "false_positives": 0
+  },
+  {
+   "week": 3,
+   "arch_violations_caught": 2,
+   "false_positives": 0
+  },
+  {
+   "week": 4,
+   "arch_violations_caught": 3,
+   "false_positives": 1
+  }
+ ]
+}

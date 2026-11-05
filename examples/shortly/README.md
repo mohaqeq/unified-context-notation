@@ -1,45 +1,52 @@
 # Example: Shortly (URL shortener)
 
-A small, fictional system that shows UCN v0.2 end to end.
+A small, fictional system that shows UCN v0.3 end to end: a model, a small **real TypeScript codebase** it is checked against, and two projections for agents.
 
 | File | What it shows | Tokens (o200k) |
 |---|---|---|
-| [model.ucn](model.ucn) | The full model at L2: 2 goals, 2 terms, 7 requirements, 4 containers, 3 components, 5 functions with contracts, 1 state machine, 1 event, 1 feature flag, 1 environment, 3 decisions, 2 conventions, 3 tests, 1 source conflict | 1,751 |
-| [card.L0.ucn](card.L0.ucn) | System card: goals, containers, global pins, the open conflict; scoped pins named; the rest counted | 280 |
-| [slice.alias.ucn](slice.alias.ucn) | `π(M, "implement custom aliases", 1200)`: core first, task slice last, relevant omissions named, the irrelevant tail counted | 821 |
+| [model.ucn](model.ucn) | The full model. Mode `forward` since baseline `6794ead`; container `Web` is still reverse engineered (`authority: source`). 7 requirements (two with typed `param:`), 4 containers, 4 components, 5 functions, 3 decisions, 2 conventions (one with a machine `check:`), 3 tests, 1 accepted conflict, 1 deviation | 2,049 |
+| [src/](src/) | The code: `api/*.ts`, `web/app.tsx`, tests, a k6 script | — |
+| [card.L0.ucn](card.L0.ucn) | System card: goals, containers, global pins, the conflict, the active deviation; scoped pins named; the rest counted | 299 |
+| [slice.alias.ucn](slice.alias.ucn) | Projection for "implement custom aliases", budget 1200: core first, task slice last, relevant omissions named | 843 |
 
-The card and slice are **hand-written** following §3.5, then **machine-checked** against the model (budget, pins, closure, no invented facts, stub accounting):
+## Consistency validation (model vs code)
 
 ```sh
-pip install tiktoken==0.14.0        # optional; without it token counts are estimates and say so
-python tools/ucn_parse.py examples/shortly/model.ucn --lint --tokens
-python tools/ucn_parse.py examples/shortly/card.L0.ucn --against examples/shortly/model.ucn --tokens
-python tools/ucn_parse.py examples/shortly/slice.alias.ucn --against examples/shortly/model.ucn --tokens
+python tools/ucn_validate.py examples/shortly/model.ucn --today 2026-11-05
 ```
 
-Both projections pass. A generated slice (by a prototype projector) replaces the hand-written one in v0.3.
+```
+mode forward, baseline 6794ead, 13 code files (13 scanned), 12 conforming dependencies/bindings, 6 ms
+VIOLATION      architecture Api.Guard depends on Api.Links, which the model does not allow  [api/guard.ts -> api/links.ts]
+KNOWN-CONFLICT parameters   RateLimit.maxLinksPerHour = 100 per hour vs api/guard.ts#LIMIT_PER_HOUR = 1000 (conflict RateLimitValue)
+WAIVED         architecture Api.Stats -> Db waived by deviation StatsDirectDb (expires 2027-03-31)  [api/stats.ts -> api/db.ts]
+MODEL-UPDATE   architecture Web depends on Api.AliasesEnabled (authority: source): add a relation or a deviation  [web/app.tsx -> api/config.ts]
+INFO           traces       req Resolve / Expire / Blocklist / RateLimit: nothing verifies it; Alias planned
+```
 
-The same graphs as canonical JSON (`--tokens`, o200k, tiktoken 0.14.0):
+Each finding class is planted on purpose:
 
-| File | UCN | JSON (compact) | JSON (pretty) |
-|---|---|---|---|
-| model | 1,751 | 3,080 (1.8×) | 5,345 (3.1×) |
-| card L0 | 280 | 461 (1.6×) | 837 (3.0×) |
-| slice | 821 | 1,465 (1.8×) | 2,469 (3.0×) |
+- **Violation.** `guard.ts` imports a helper from `links.ts`. The architecture doesn't allow Guard → Links, and the Api container is model-authoritative, so CI fails. Fix the code or record a deviation.
+- **Known conflict.** `RateLimit` says 100 per hour and the bound constant says 1000. Because `conflict RateLimitValue` (accepted at adoption) is `about` RateLimit, this is reported, not failed.
+- **Waived.** `stats.ts` reads Postgres directly. `deviation StatsDirectDb` allows it until 2027-03-31; with `--today 2027-04-01` it becomes a violation.
+- **Model update.** `web/app.tsx` imports a server flag. `Web` is still `authority: source`, so the finding says the *model* is behind, not the code.
+- **Conforming.** Everything else: `create` and `generate` against `codeLength = 7`, `DbAccess` (`only api/db.ts imports pg`), test files against what they verify, `src:` references to code.
 
-These ratios compare *syntaxes* of the same content. Whether the denser one is also easier for small models to use is a separate question for the benchmark (§3.10).
+Switching modes changes the reading of the same code. With `mode: reverse`, the Guard → Links finding becomes a MODEL-UPDATE. The adopt gate (`--gate adopt`) blocks while the violation remains.
+
+## Projections
+
+```sh
+python tools/ucn_parse.py examples/shortly/card.L0.ucn --against examples/shortly/model.ucn
+python tools/ucn_parse.py examples/shortly/slice.alias.ucn --against examples/shortly/model.ucn
+```
+
+Both pass the projection check: budget, global pins present, scoped pins present or named, every reference closed, nothing invented, every model node present, named, or counted. They are hand-written following §3.5; a generated version comes with the default projector (roadmap v0.4).
 
 Things to notice:
 
-- **Cross-layer trace.** `req Create` ← `satisfies` ← `component Links` ⊃ `fn create` ← `verifies` ← `test CreateTests`. In the slice the link is shown at the requirement as `satisfiedBy Links, Codes`, so a small model doesn't have to search for it.
-- **Inference is visible.** Every contract clause an LLM wrote while reading code is marked `[inferred]`, line by line. The signatures and relations come from deterministic tools (`derived`, inherited from `system Shortly [derived]`).
-- **As-is vs to-be.** `req Alias` is `lifecycle: planned`. The current code has no alias parameter, and nothing satisfies or verifies Alias yet. The slice says so in a tool-written `note:`.
-- **A structured conflict.** `conflict RateLimitValue` has an id, `about` links to `RateLimit` and `Guard.limit`, and one `side` per source: ticket#14 says 100 per hour, the code and its passing test say 1000. Because the test asserts 1000, `GuardTests` does **not** verify `RateLimit`, and lint reports that.
-- **Pins in two scopes.** Global pins (`Abuse`, `CodeImmutable`, the conflict) are in every projection. The security requirements are scoped pins: *named* in the card, and *inlined* in the alias slice, because the slice touches `Guard`, which satisfies them.
-- **Named omissions.** The slice names what is relevant but didn't fit (`event LinkCreated`, `fn Links.resolve`, `decision ImmutableCodes`, …) and only counts the irrelevant tail.
-- **Lint finds real gaps.** `Resolve`, `Expire` and `RateLimit` have no verifying test; `Alias` is planned.
+- **Inference is visible.** Contract clauses an LLM wrote while reading code are `[inferred]`, line by line. Logic is code-authoritative even in forward mode, so these don't block the adopt gate.
+- **As-is vs to-be.** `req Alias` is `lifecycle: planned`. The code has no alias yet, and the slice says nothing satisfies or verifies it.
+- **Governance in context.** The accepted conflict and the active deviation are in the card, so an agent neither copies the deviation nor "fixes" it.
 
-Caveats:
-
-- Token counts use o200k. Small open models use other tokenizers, so per-model counts are needed (§3.10).
-- This model is tiny. Compression and accuracy claims can only be measured on real repositories (roadmap v0.6).
+Caveats: token counts use o200k (tiktoken 0.14.0). The codebase is a toy written to exercise each check; real repositories bring path aliases, generated code and dependency injection (see [05 §5.3](../../docs/05-usefulness-and-tooling.md#53-how-much-can-tools-do-without-an-llm)).

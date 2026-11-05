@@ -24,7 +24,9 @@ Today that knowledge is scattered across these sources. It comes in different fo
 
 ## 1.3 Goal
 
-Produce a **representation `M`** of a software system, plus a **projection `π`** that turns `M` into context for an agent, such that:
+**Reframed in v0.3** (see [05-usefulness-and-tooling.md](05-usefulness-and-tooling.md)): the primary goal is **a checked, traceable intent and architecture layer that keeps coding agents (and humans) consistent with requirements and architecture**. Compact context for agents is one feature of it. The small-model budget (G4, G7) is a module for a niche, not the main driver. Frontier models can hold the whole intent and architecture layer even for large systems.
+
+Produce a **representation `M`** of a software system, a **projection `π`** that turns `M` into context for an agent, and **deterministic checks** that keep `M` and the code consistent, such that:
 
 | # | Requirement | Meaning |
 |---|---|---|
@@ -37,8 +39,11 @@ Produce a **representation `M`** of a software system, plus a **projection `π`*
 | **G7** | Small-LLM-legible | A small model can parse and use it without training: familiar words, shallow nesting, few hops between related facts. This is a hypothesis to measure, not a property to assert. |
 | **G8** | Maintainable | The model can be updated incrementally as sources change, and drift between model and source is detected, including for summaries built on many files. |
 | **G9** | Trustworthy | Text extracted from untrusted sources (tickets, emails, wikis) is treated as data. It cannot raise its own priority (for example, mark itself pinned) or act as instructions to the agent. |
+| **G10** | Consistent | The layers are checked against each other: architecture against code dependencies, requirement parameters against code constants, conventions against code, traces for completeness. Code may depart from the model only through an explicit, approved, expiring **deviation**. All recurring checks are deterministic tools, fast enough for pre-commit and with no effect on build and test time. |
+| **G11** | Directional | For every part of the model it is explicit whether the model or the code is authoritative (forward vs reverse engineering). The choice is made at the start, recorded, and can change later through a gated, recorded event. |
+| **G12** | Worth it | Upkeep stays a small fraction of review time, and the benefit over a lightweight stack (structured `AGENTS.md`, ADRs, architecture rules in CI) is measured, with pre-registered kill criteria. |
 
-**Priorities.** When goals conflict: **G3, G9 > G5 > G4 > G7 > G1, G2 > G6, G8.** Wrong or silently missing facts are worse than a larger context. A larger context is worse than an unfamiliar format.
+**Priorities.** When goals conflict: **G3, G9 > G10 > G12 > G5 > G11 > G4 > G7 > G1, G2 > G6, G8.** Wrong or silently missing facts are worse than a larger context. Unchecked consistency is worth little. A framework that costs more than it saves is not worth building. A larger context is worse than an unfamiliar format.
 
 **Known tensions.**
 
@@ -82,7 +87,7 @@ subject to tokens(C) ≤ B_ucn
            faithful(C, S)                   -- every statement is entailed by its src, or is labelled inferred / conflict
 ```
 
-`U` and `faithful` cannot be computed by the algorithm. They are made operational by the benchmark and the extraction audit (§3.10). The other constraints are mechanically checkable, and the prototype checks them (`tools/ucn_parse.py --against`).
+`U` and `faithful` cannot be computed by the algorithm. They are made operational by the benchmark and the extraction audit (§3.12). The other constraints are mechanically checkable, and the prototype checks them (`tools/ucn_parse.py --against`).
 
 **Importance.** The ordering `pinned > task-relevant > structurally central > other` is a heuristic *proxy*. The definition we measure against is counterfactual task loss:
 
@@ -100,7 +105,7 @@ For any large enough system, the information needed to understand it **cannot** 
 2. **Task-conditioned slices** of the model, chosen by relevance and importance to fill the rest of the budget.
 3. **Explicit, addressable omissions.** What did not fit is named in stubs, so the agent (or a tool loop, or a human) can expand it. Loss becomes *visible and recoverable* instead of silent.
 
-**The alternative we must beat: no preloading at all.** A strong agent can retrieve everything with tools. UCN's value is then less "a context blob" and more an **index and intent layer for retrieval**: the card orients the agent, stubs say what exists and where, and intent facts (requirements, rationale, contracts, conflicts) cannot be found by grepping code. The evaluation therefore compares UCN against a tool-using agent at equal total token spend (§3.10).
+**The alternative we must beat: no preloading at all.** A strong agent can retrieve everything with tools. UCN's value is then less "a context blob" and more an **index and intent layer for retrieval**: the card orients the agent, stubs say what exists and where, and intent facts (requirements, rationale, contracts, conflicts) cannot be found by grepping code. The evaluation therefore compares UCN against a tool-using agent at equal total token spend (§3.12).
 
 **Multi-turn use.** Context is consumed across turns. After each expansion, `π` is re-run with the remaining budget, and an expanded node *replaces* its stub rather than adding to it.
 
@@ -113,6 +118,8 @@ For any large enough system, the information needed to understand it **cannot** 
 - **RQ5.** How should **projection** (level of detail, ranking, stubs) work so that compactness does not cost the important facts?
 - **RQ6.** How do we **measure** "no important context lost"?
 - **RQ7.** How accurately can each extraction stage be done, and on what hardware? (Extraction may need a stronger machine than consumption.)
+- **RQ8.** Which consistency checks between layers can be fully deterministic, and how fast can they run? (Answer so far: all recurring ones; see [05 §5.3](05-usefulness-and-tooling.md#53-how-much-can-tools-do-without-an-llm).)
+- **RQ9.** Does the model pay for itself? What does upkeep cost per PR, and what does UCN add over a lightweight stack?
 
 ## 1.6 Non-goals
 
@@ -122,6 +129,18 @@ For any large enough system, the information needed to understand it **cannot** 
 - Running extraction on the same cheap machine that consumes the context. Extraction may run once, on CI or a stronger model.
 
 ## 1.7 Success criteria
+
+**First, the pilot** (decides whether to continue; pre-registered in [05 §5.5](05-usefulness-and-tooling.md#55-pilot-protocol) and applied by `tools/pilot_eval.py`):
+
+| Metric | Target |
+|---|---|
+| Model upkeep, last two weeks of the pilot | ≤ 10% of review time (otherwise **kill**) |
+| Constraint violations on tempting tasks vs the lightweight stack | ≥ 50% fewer, significant |
+| Architecture violations caught by the validator in CI | reported, with precision ≥ 80% |
+| Silent-absence rate | ≤ 5% |
+| Validator run time | pre-commit < 1 s; full CI run < 10 s on 20k files; no effect on build and test time |
+
+**Then, the benchmark** (only after a GO):
 
 | Metric | Target (initial hypothesis) |
 |---|---|

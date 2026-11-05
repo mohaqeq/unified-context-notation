@@ -1,6 +1,6 @@
-ucn 0.2 system: Shortly level: L0 origin: stated budget: 400
+ucn 0.3 system: Shortly level: L0 origin: stated budget: 400
 # System card: the task-independent core. It comes first in every projection, so it is a stable, cacheable prefix.
-# L0 = kind, id, labels, one-line text. No relations or attributes. Global pins inline; scoped pins named.
+# L0 = kind, id, labels, one-line text. Global pins, accepted conflicts and active deviations inline; scoped pins named.
 goal Share: users share short links that keep working for years
 goal Abuse [pin]: the service must not be usable to spread malware or phishing
 system Shortly: URL shortening service
@@ -9,6 +9,7 @@ system Shortly: URL shortening service
   container Db: primary store
   container Cache: hot map from code to target
 rule Links.CodeImmutable [pin]: a code never changes its target after creation
-conflict RateLimitValue [pin]: ticket#14 says 100 links per hour; the code (api/guard.ts:44) uses 1000
+conflict RateLimitValue [pin]: ticket#14 says 100 links per hour; the code (api/guard.ts:3) uses 1000
+deviation StatsDirectDb: the stats component reads Postgres directly instead of through Links
 more: req Blocklist [security], req RateLimit [security]
-more: 5 req, 2 term, 3 actor, 3 component, 1 api, 1 config, 1 event, 1 env, 5 fn, 1 machine, 1 data, 3 decision, 2 convention, 3 test -> expand Shortly@L1
+more: 5 req, 2 term, 3 actor, 4 component, 1 api, 1 config, 1 event, 1 env, 5 fn, 1 machine, 1 data, 3 decision, 2 convention, 3 test -> expand Shortly@L1

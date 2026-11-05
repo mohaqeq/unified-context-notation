@@ -6,7 +6,7 @@ This survey covers each layer separately (§2.1–2.3), then attempts to unify t
 
 - **Expr** = expressiveness for that layer
 - **Dens** = token density
-- **Fam** = familiarity to LLMs (how much appears in training data). *Untested proxy* for G7; the syntax ablation in §3.10 measures it.
+- **Fam** = familiarity to LLMs (how much appears in training data). *Untested proxy* for G7; the syntax ablation in §3.12 measures it.
 - **Det** = can it be extracted **deterministically** from real sources (parsers, compilers, tools)?
 - **LLM** = can an LLM produce it from free text or code (output is *inferred*, not derived)?
 - **Read** = human readability
@@ -34,7 +34,7 @@ This survey covers each layer separately (§2.1–2.3), then attempts to unify t
 | Candidate | What it is | Expr | Dens | Fam | Det | LLM | Read | Notes |
 |---|---|---|---|---|---|---|---|---|
 | **C4 model** + **Structurizr DSL / LikeC4** | Context → Container → Component (→ Code), as text | ◐ | ● | ● | ◐ | ◐ | ● | Small, popular vocabulary. Both have MCP servers for agents. C4 does not cover behavior or requirements. |
-| **SysML v2 / KerML** (OMG; adopted June 2025, announced July 2025) | Systems modeling language with a *textual notation* and a standard API | ● | ◐ | ? | ○ | ◐ | ◐ | The most complete *semantic* coverage: parts, ports, actions, calcs, states, constraints, **requirements**, verification, and user-defined `metadata`. Verbosity and LLM familiarity are untested here; they are an arm of the syntax ablation (§3.10). |
+| **SysML v2 / KerML** (OMG; adopted June 2025, announced July 2025) | Systems modeling language with a *textual notation* and a standard API | ● | ◐ | ? | ○ | ◐ | ◐ | The most complete *semantic* coverage: parts, ports, actions, calcs, states, constraints, **requirements**, verification, and user-defined `metadata`. Verbosity and LLM familiarity are untested here; they are an arm of the syntax ablation (§3.12). |
 | **AADL** (+ AGREE contracts) | Architecture language for embedded and real-time systems | ● | ◐ | ○ | ○ | ○ | ◐ | Assume/guarantee contracts at component level are a valuable idea. Niche. |
 | **ArchiMate** | Enterprise architecture | ◐ | ○ | ◐ | ○ | ◐ | ◐ | Business/application/technology layers. Verbose XML exchange format. |
 | **UML / PlantUML / Mermaid** | General diagrams | ◐ | ◐ | ● | ◐ | ◐ | ● | Familiar, but weak semantics and diagram-centric. |
@@ -108,14 +108,14 @@ These findings constrain the design (G4, G7):
 - **Effective context is much shorter than advertised.** RULER (Hsieh et al., 2024) shows most models fall well short of their advertised length on retrieval, multi-hop tracing and aggregation tasks, and smaller models fall short sooner. Multi-hop tracing over references is exactly what a normalized graph notation asks for. (v0.1 attributed this to LIFBench, which is about instruction-following stability. It also cited a "1.3B models struggle beyond 1.5k tokens" result about *pretrained base* models, which says little about today's instruction-tuned 4–8B models. Budgets must be measured per model, not taken from either.)
 - **Length alone hurts.** Accuracy drops as input grows, even when the evidence sits right next to the question (EMNLP 2025 Findings). → *Smaller context is better in itself, not only cheaper.*
 - **Position matters.** "Lost in the middle": information at the start and end of the context is used best. → *Core first, task slice last.*
-- **Format matters, unpredictably.** He et al. (2024) find that plain text vs Markdown vs JSON vs YAML changes accuracy substantially, and differently per model. Exotic encodings (TOON in some tests) can cost accuracy even when they save tokens. → *No format choice can be assumed. The syntax ablation (§3.10) is essential, not optional.*
+- **Format matters, unpredictably.** He et al. (2024) find that plain text vs Markdown vs JSON vs YAML changes accuracy substantially, and differently per model. Exotic encodings (TOON in some tests) can cost accuracy even when they save tokens. → *No format choice can be assumed. The syntax ablation (§3.12) is essential, not optional.*
 - **On cheap hardware, prefill time is often what users wait for.** Inference engines (llama.cpp, vLLM) can reuse the KV cache of an identical prompt prefix across turns. → *A stable core placed first is computed once.* This is a second, independent argument for core-first ordering.
 
 ---
 
 ## 2.7 Scored comparison (rubric)
 
-**Rubric.** Each goal is scored 0 (not addressed), 1 (partly, or possible by convention), 2 (addressed by design). `?` = untested; counts as 0 until measured. Scores are author judgments; G4 and G7 will be replaced by measurements (§3.10).
+**Rubric.** Each goal is scored 0 (not addressed), 1 (partly, or possible by convention), 2 (addressed by design). `?` = untested; counts as 0 until measured. Scores are author judgments; G4 and G7 will be replaced by measurements (§3.12).
 
 | Candidate | G1 Unified | G2 Provenance | G3 Accurate / conflicts | G4 Compact / budgeted | G5 Named omissions | G6 Readable | G7 Small-LLM | G8 Drift | G9 Trust |
 |---|---|---|---|---|---|---|---|---|---|
@@ -132,6 +132,11 @@ These findings constrain the design (G4, G7):
 
 **Reading.** No candidate scores at least 1 on every goal. The candidates that unify the layers (SysML v2, KDM, FAMIX) score 0 on budgeting (G4), named omissions (G5) and small-LLM legibility (G7). The candidates that are compact and legible (code graphs, C4, Markdown specs, `AGENTS.md`) score 0 on unification (G1) or accuracy (G3). Nobody addresses untrusted sources (G9).
 
+**The v0.3 goals G10–G12** (consistency, authority, worth it):
+- **Consistency (G10).** Architecture conformance tools (ArchUnit, dependency-cruiser, jQAssistant, reflexion models) cover the architecture ↔ code check well, and deterministically. None of them connects it to requirements (parameters, traces) or to provenance and waivers with expiry in one model.
+- **Authority (G11).** Model-driven engineering and UML round-trip tools tried to keep models and code in sync in both directions. They largely failed in mainstream software because humans had to pay the synchronization cost. That is the main historical risk for UCN, and the reason G12 and the pilot exist.
+- **Worth it (G12).** A *lightweight stack* (structured `AGENTS.md`, ADRs, an architecture-rules file in CI, requirement IDs referenced by tests) already gets much of the value cheaply. It is the baseline UCN has to beat ([05 §5.4](05-usefulness-and-tooling.md#54-is-it-worth-it)).
+
 ---
 
 ## 2.8 Answers
@@ -139,7 +144,7 @@ These findings constrain the design (G4, G7):
 **Q1: Is there a single formal language for all three?**
 **Semantically, almost. Practically, no.** No existing language *jointly* meets G1–G5 and G7 for knowledge extracted from existing systems.
 
-- **SysML v2** is semantically almost sufficient. Every UCN node kind except `decision` maps to a native construct (§3.9), and provenance could be carried in user-defined `metadata`. What it lacks is extraction tooling for software, a provenance convention, budgets, levels of detail and omission, and evidence of small-LLM legibility.
+- **SysML v2** is semantically almost sufficient. Every UCN node kind except `decision` maps to a native construct (§3.11), and provenance could be carried in user-defined `metadata`. What it lacks is extraction tooling for software, a provenance convention, budgets, levels of detail and omission, and evidence of small-LLM legibility.
 - **KDM** is the standard built for extraction from existing code, but it is XMI-serialized, heavy, and weak on requirements and rationale.
 - The rest are code-only (FAMIX, code graphs), structure-only (C4), schema-less (RDF), forward-only (Event-B, RPG, spec-driven Markdown), or informal (`AGENTS.md`).
 
@@ -193,5 +198,5 @@ Links checked by the reviewers on 2026-11-05 unless marked otherwise.
 - TOON: [toon-format/toon](https://github.com/toon-format/toon) · [critical analysis of TOON benchmarks](https://dev.to/ikaganacar/toon-benchmarks-a-critical-analysis-of-different-results-5h66) (secondary)
 - Traceability research: [Architecture Entity Recognition (arXiv 2511.02434)](https://arxiv.org/pdf/2511.02434) · [NL requirements ⇄ formal specs (Springer)](https://link.springer.com/chapter/10.1007/978-3-032-30693-7_1) · [TraceDev (arXiv 2607.18886)](https://arxiv.org/pdf/2607.18886)
 - Long-context and format behavior: [RULER (arXiv 2404.06654)](https://arxiv.org/abs/2404.06654) · [Lost in the Middle (TACL 2024)](https://aclanthology.org/2024.tacl-1.9.pdf) · [Context Length Alone Hurts (EMNLP 2025 Findings)](https://aclanthology.org/2025.findings-emnlp.1264.pdf) · [Prompt formatting impact (arXiv 2411.10541)](https://arxiv.org/abs/2411.10541) · [LIFBench](https://arxiv.org/pdf/2411.07037) · [Effective context length falls short](https://arxiv.org/html/2410.18745v1)
-- Benchmarks for §3.10: [SWE-QA (arXiv 2509.14635)](https://arxiv.org/abs/2509.14635)
+- Benchmarks for §3.12: [SWE-QA (arXiv 2509.14635)](https://arxiv.org/abs/2509.14635)
 - Background (well established, not re-verified here): EARS (Mavin et al., RE'09), NASA FRET, C4 model, MADR, JML/ACSL/Dafny, Quint, Daikon, k-tails/Synoptic, reflexion models (Murphy, Notkin & Sullivan, FSE'95), ArchUnit, jQAssistant, FAMIX/Moose, Bunch/ACDC/ARCADE, SCIP, Joern/CodeQL, KAOS, GSN, ReqIF, Sphinx-needs, Eclipse Capra, Agentless, CodexGraph, LocAgent, Serena, RAPTOR, GraphRAG, MemGPT, DeepWiki, RepoQA, SWE-bench.
