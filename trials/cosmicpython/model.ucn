@@ -1,0 +1,58 @@
+ucn 0.4 system: Allocation level: L2 origin: stated mode: forward baseline: 14c8479 root: src
+# Trial model for github.com/cosmicpython/code (commit 14c8479), the example app of "Architecture Patterns with
+# Python" (Percival & Gregory). Architecture and rules as described in the book; relations checked against the code.
+
+goal Allocate: allocate customer order lines to stock batches, preferring stock on hand over shipments
+  src: book ch.1
+rule DomainIsPure [pin]: the domain model depends on nothing outside the domain (no service layer, adapters, entrypoints, frameworks or ORM)
+  src: book ch.2 (dependency inversion)
+rule ThroughTheServiceLayer: entrypoints talk to the domain only through commands, the message bus and views, never to adapters directly
+  src: book ch.4, ch.9
+req AllocateLine [event]: WHEN an order line is allocated THE system SHALL pick the batch with available quantity, warehouse stock first, then earliest ETA
+  refines Allocate
+  src: book ch.1
+req NoOverAllocation [unwanted]: IF no batch has enough available quantity THEN THE system SHALL emit OutOfStock and allocate nothing
+  refines Allocate
+  src: book ch.1, ch.8
+req Idempotent: THE system SHALL treat allocating the same order line twice as a single allocation
+  refines Allocate
+  src: book ch.1
+req Reallocate [event]: WHEN a batch quantity is reduced below its allocations THE system SHALL deallocate lines and reallocate them
+  refines Allocate
+  src: book ch.9
+req OutOfStockEmail [event]: WHEN a product is out of stock THE system SHALL email stock@made.com
+  refines Allocate
+  src: book ch.8
+convention OrmOnlyInAdapters: SQLAlchemy is used only by the ORM adapter and the unit of work
+  check: only allocation/{adapters/**,service_layer/unit_of_work.py} imports sqlalchemy
+convention FlaskOnlyInEntrypoints: Flask is used only by the HTTP entrypoint
+  check: only allocation/entrypoints/** imports flask
+convention RedisOnlyAtEdges: Redis is used only by the event publisher and consumer
+  check: only allocation/{adapters,entrypoints}/** imports redis
+
+system Allocation [derived]: allocation service
+  container App: the allocation package
+    code: allocation/**
+    component Domain: Product aggregate, Batch, OrderLine, commands and events
+      code: allocation/domain/**
+      satisfies AllocateLine, NoOverAllocation, Idempotent
+    component ServiceLayer: handlers, message bus, unit of work
+      code: allocation/service_layer/**
+      uses Domain, Adapters, Config
+      satisfies Reallocate, OutOfStockEmail
+    component Adapters: ORM mapping, repository, notifications, Redis event publisher
+      code: allocation/adapters/**
+      uses Domain, Config
+    component Entrypoints: Flask API and Redis event consumer
+      code: allocation/entrypoints/**
+      uses Domain, ServiceLayer, Bootstrap, Views, Config
+    component Bootstrap: dependency injection and wiring
+      code: allocation/bootstrap.py
+      uses Adapters, ServiceLayer
+    component Views: read-side queries (CQRS)
+      code: allocation/views.py
+      uses ServiceLayer
+    component Config: settings from environment
+      code: allocation/config.py
+    component Packaging: setup.py
+      code: setup.py

@@ -1,9 +1,11 @@
-ucn 0.3 system: Shortly level: L2 origin: stated mode: forward baseline: 6794ead root: src
+ucn 0.4 system: Shortly level: L2 origin: stated mode: forward baseline: v1.4.0 root: src
 # Full model, all nodes at L2. Hand-written to show the notation; adapters would generate the code-derived parts.
 # Origin: file default 'stated' (docs, tickets); the system block is 'derived' (code, IaC, schemas).
 # Contract clauses written by an LLM from code bodies are marked [inferred], line by line.
-# Mode: forward since baseline 6794ead. Intent and architecture are authoritative (code must conform);
+# Mode: forward since Shortly v1.4.0. Intent and architecture are authoritative (code must conform);
 # logic and tests follow the code. Container Web is still reverse engineered (authority: source).
+# Permissions come only from architecture relations (container/component/api/data/...); fn-level relations
+# are observations that are checked, never trusted.
 
 # ---------- intent ----------
 goal Share: users share short links that keep working for years
@@ -54,6 +56,11 @@ system Shortly [derived]: URL shortening service
     tech: react
     code: web/**
     uses Api
+    component Form: the create-link form
+      code: web/app.tsx
+    component Client: HTTP client for the Api
+      code: web/client.ts
+      uses LinksApi
   container Api: HTTP API for create, resolve, stats
     tech: node/express
     code: api/**
@@ -73,6 +80,9 @@ system Shortly [derived]: URL shortening service
       code: api/links.ts
       satisfies Create, Resolve, Expire
       implements LinksApi
+      uses Codes, Guard, Cache
+      writes Link
+      emits LinkCreated
       fn create(url: string, owner: UserId): Code
         pre: isHttpUrl(url) [inferred]
         post: result.length == 7 [inferred]
@@ -104,6 +114,7 @@ system Shortly [derived]: URL shortening service
     component Codes: generate collision-free codes
       code: api/codes.ts
       satisfies Create
+      reads Link
       bind: Create.codeLength = api/codes.ts#CODE_LENGTH
       fn generate(): Code
         post: matches /^[0-9A-Za-z]{7}$/ [inferred]
@@ -148,18 +159,29 @@ system Shortly [derived]: URL shortening service
 conflict RateLimitValue [pin]: the ticket and the code disagree on the hourly creation limit
   about RateLimit, Guard.limit
   lifecycle: accepted
-  note: accepted at adoption (baseline 6794ead); fix tracked in ticket#41
+  expires: 2027-01-31
+  approved: person:maintainer
+  note: accepted at adoption (v1.4.0); fix tracked in ticket#41
   side Ticket: 100 links per hour
+    asserts: 100
     src: ticket#14
   side Code [derived]: 1000 links per hour; GuardTests asserts 1000 and passes
+    asserts: 1000
     src: api/guard.ts:3
 deviation StatsDirectDb: the stats component reads Postgres directly instead of through Links
-  allows Stats uses Db
+  allows Stats reads Link
   why: hit-count queries were too slow through Links
   expires: 2027-03-31
   approved: person:maintainer
   lifecycle: accepted
   src: docs/adr/004.md
+deviation WebReadsFlag: the legacy UI imports the server's feature flag at build time
+  allows Form reads AliasesEnabled
+  why: no flags endpoint yet; ticket#44 adds GET /config
+  expires: 2027-02-28
+  approved: person:maintainer
+  lifecycle: accepted
+  src: ticket#44
 
 # ---------- decisions ----------
 decision RandomCodes: random base62 codes, not URL hashes

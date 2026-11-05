@@ -1,4 +1,4 @@
-ucn 0.3 system: Shortly level: mixed origin: stated task: "implement custom aliases (ticket#30)" budget: 1200
+ucn 0.4 system: Shortly level: mixed origin: stated task: "implement custom aliases (ticket#30)" budget: 1200
 # A projection π(M, task, 1200). Hand-written to follow §3.5, then checked by machine:
 #   python tools/ucn_parse.py examples/shortly/slice.alias.ucn --against examples/shortly/model.ucn
 # Core first (cacheable prefix), task slice last. Relevant omissions are named; the irrelevant tail is counted.
@@ -14,6 +14,7 @@ system Shortly: URL shortening service
 rule Links.CodeImmutable [pin]: a code never changes its target after creation
 conflict RateLimitValue [pin]: ticket#14 says 100 links per hour; the code (api/guard.ts:3) uses 1000
 deviation StatsDirectDb: the stats component reads Postgres directly instead of through Links
+deviation WebReadsFlag: the legacy UI imports the server's feature flag at build time
 
 # ---------- task slice ----------
 convention Testing: run 'npm test' in api/; every new endpoint needs a jest test and an OpenAPI entry
@@ -59,4 +60,4 @@ req Alias [complex]: WHERE custom aliases are enabled, WHEN a premium user submi
   note: nothing satisfies or verifies Alias yet
   src: ticket#30
 more: event LinkCreated, fn Links.resolve, machine Links.LinkLife, decision ImmutableCodes, convention DbAccess, test CreateTests, test GuardTests
-more: 3 req, 1 term, 3 actor, 1 component, 1 env, 1 decision, 1 test -> expand Shortly@L1
+more: 3 req, 1 term, 3 actor, 3 component, 1 env, 1 decision, 1 test -> expand Shortly@L1

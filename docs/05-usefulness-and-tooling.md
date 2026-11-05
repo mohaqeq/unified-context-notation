@@ -89,6 +89,16 @@ So **all recurring checks are deterministic**. LLMs are only used for *bootstrap
 | Pre-commit, 1 changed file | 0.8 s |
 | Shortly example (13 files) | 6 ms |
 
+**v0.4 measurements** (medians of 3; [07 §7.4](07-trial-results.md#74-performance-on-real-repositories)):
+
+| Repository | Files | Run |
+|---|---|---|
+| sqlfluff / excalidraw (real) | 269 / 723 | 1.1 s / 1.4 s |
+| synthetic, sparse | 20,000 | 5.7 s cold, 1.8 s warm cache, 1.0 s pre-commit |
+| synthetic, dense, 33,000 violations | 20,000 | 6.3 s cold, 2.4 s warm cache, 1.0 s pre-commit |
+
+The run time no longer depends on the number of violations: the permission check is memoized over precomputed ancestors, and the absence check uses a lifted set. The v0.3 numbers below are kept for the record.
+
 **Correction after review ([06](06-review-synthesis-v0.3.md)):** these numbers hold only for that favourable case. Both reviewers measured a *violation-heavy, densely related* 20k-file repo: **25–41 s cold and 23–33 s warm**. The cost is in `allowed()`, which is quadratic (distinct dependency pairs × declared edges × ancestor walks), not in file reading. Precomputing ancestors and an allowed-pair matrix makes it linear (v0.4). The first read of freshly written files (176–232 s here) is dominated by antivirus scanning. It is not an artifact for users: fresh clones, branch switches and CI cache restores hit it too. The one-file pre-commit time (~0.8 s) does reproduce.
 
 Reading the files and running the import regex alone takes ~2.5 s of a warm-OS cold run. Remaining costs and how to remove them:

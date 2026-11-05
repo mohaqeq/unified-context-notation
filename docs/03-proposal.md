@@ -1,4 +1,4 @@
-# 3. Proposal: Unified Context Notation (UCN) v0.3
+# 3. Proposal: Unified Context Notation (UCN) v0.4
 
 > **One-line summary.** UCN is **a checked, traceable intent and architecture layer that keeps coding agents (and humans) consistent with requirements and architecture.** Technically it is a profile, concrete syntax, projection and toolchain over existing semantics (mainly SysML v2 and C4, plus EARS, Design-by-Contract, ADRs and W3C PROV). Deterministic tools check it against the code on every commit. A projection turns it into compact context for agents, and every relevant fact left out is **named** in a stub.
 
@@ -371,14 +371,24 @@ UCN supports both **reverse engineering** (building context for an existing syst
 
 Function signatures and call graphs always come from the code. In forward mode they are what the code is checked *with*. `authority:` on a node overrides the preset for its subtree, so a legacy container can stay in reverse while the rest is forward. That mixed state is a **hybrid** model, and it is how most real systems will look during adoption.
 
-**Switching is an explicit event with a gate.**
-- **Adopt** (reverse → forward, for the whole model or one subtree) runs `ucn_validate.py --gate adopt`. The gate blocks if, in the parts becoming model-authoritative:
-  - any inferred node or clause remains (each must be reviewed into `stated`, corrected, or removed);
-  - any conflict is `open` (it must be resolved, or `accepted` with a tracking note);
-  - any architecture violation remains (it must be fixed, or frozen as a `deviation` with an expiry date).
+**Switching is an explicit event with a gate** (implemented in v0.4).
+- **Adopt** (reverse → forward, for the whole model or one subtree) runs `ucn_validate.py --gate adopt [--scope ID]`. The gate **simulates** model authority for the scope and runs every check under it, so it is meaningful while the model is still in reverse mode. It blocks on:
+  - any VIOLATION under the simulated authority, including integrity errors and coverage gaps;
+  - any remaining MODEL-UPDATE in the scope (the model is known to be behind the code);
+  - any inferred node, clause or relation in the scope's intent and architecture;
+  - any open conflict `about` something in the scope.
 
-  Passing the gate records `mode: forward` and `baseline: <commit>` in the header.
-- **Re-baseline** (forward → reverse) is allowed too, for example after a large refactor. It is the same event in the other direction, and it is recorded.
+  `--apply` writes the change only if the gate passes. For the whole model it sets `mode: forward baseline: <rev>` in the header; for a subtree it sets `authority: model` on the scope node. Either way it appends a line to an append-only adoption log.
+- **Re-baseline** (`--gate rebaseline --scope ID --reason TEXT [--apply]`) goes back to `authority: source`. It requires a reason and reports what loses enforcement: deviations, conflicts, bindings and checks in the scope. It is recorded the same way.
+- **Widening is visible.** `--diff REV` compares the model with the version at git REV and reports every permission the change *widens* as WIDENED, failing CI unless `--allow-widening` is passed after code-owner approval of the model file:
+  - new relations;
+  - new or extended deviations;
+  - lowered authority;
+  - newly accepted conflicts;
+  - removed checks, bindings and parameters.
+
+  This closes the path where an agent turns CI green by editing the model.
+- **`--authority-map`** prints the effective authority of every node and where it comes from.
 
 **Daily work in forward mode.**
 - To change behavior, change the model first. The change starts as `lifecycle: planned`; then the code follows, and CI checks it.
@@ -392,14 +402,25 @@ Function signatures and call graphs always come from the code. In forward mode t
 
 | Check | Between | How | On mismatch |
 |---|---|---|---|
-| **Architecture conformance** | architecture ↔ code | Imports (regex for TS/JS/Python; a build tool's exported dependency graph where available) are lifted to elements through `code:` globs. Each dependency must be allowed by a declared relation from the depending element (or its parts) to the target (or its parts, or a container that **exposes** it). `implements` permits calls in both directions. Test files map to their `test` node and may depend on what they verify. | VIOLATION / MODEL-UPDATE by the authority of the depending element; WAIVED if an active deviation covers it; an expired deviation is a VIOLATION |
+| **Model integrity** | model | Dangling or ambiguous references, relation-table violations, invalid lifecycles, malformed ISO dates, deviations without `expires`/`approved`/`allows`, blanket or container-wide waivers without `breadth: wide`, expiry more than 365 days ahead, overlapping `code:` ownership, a missing `mode:` when bindings/checks/deviations exist | VIOLATION in every mode (fail closed) |
+| **Architecture conformance** | architecture ↔ code | Dependency edges come from a build tool's exported graph (`--deps`: dependency-cruiser, madge, or a plain edge list) or, as a labelled fallback, from a scan: Python by `ast`; TS/JS by regex after removing comments, with tsconfig `paths`, ESM `.js`→`.ts` and asset classification. Edges are lifted to elements through gitignore-style `code:` globs (with `{a,b}`). **Permissions come only from non-inferred architecture relations**, never from `fn`-level relations, which are observations. Entering another element requires `exposes`; `implements` works both ways; tests may depend on what they `verify`. Imports through container-level files (barrels) are followed, so they can't launder a dependency. | VIOLATION if **either end** is model-authoritative, otherwise MODEL-UPDATE. WAIVED if an active deviation covers it; an expired or unaccepted deviation is a VIOLATION |
+| **Logic vs architecture** | logic ↔ architecture | A `fn`-level relation that implies a dependency the architecture doesn't allow | INFO |
 | **Declared but unused** | architecture → code | A declared relation that no code dependency realizes (reflexion "absence") | INFO |
-| **Parameter consistency** | requirements ↔ code | `param:` value vs the constant named by `bind:` | VIOLATION / MODEL-UPDATE by the requirement's authority; KNOWN-CONFLICT if an open or accepted conflict is `about` it |
+| **Parameter consistency** | requirements ↔ code | `param:` vs the constant named by `bind:` (optional `* k` or `/ k` unit scaling). The constant must be a single top-level definition and a numeric literal expression (`0x64`, `1e2`, `60 * 60`); anything else is INFO "not statically evaluable", never a violation | VIOLATION / MODEL-UPDATE by the requirement's authority. KNOWN-CONFLICT only if an *accepted* conflict with `expires`/`approved` is `about` it **and a side `asserts` the current code value** (when the code moves, it stops suppressing) |
 | **Convention checks** | conventions ↔ code | `check: only <glob> imports <module>` | by the convention's authority |
-| **Provenance** | model ↔ code | `src:` file exists and the line is in range | stale |
-| **Coverage** | code → architecture | Code files no element claims | VIOLATION in forward mode, MODEL-UPDATE in reverse |
+| **Provenance** | model ↔ code | `src:` file exists and the line is in range (content-hash staleness: specified, not yet implemented) | stale |
+| **Coverage** | code → architecture | Code files no element claims | by the authority of the nearest element |
 | **Trace completeness** | requirements ↔ architecture ↔ tests | Linter rules | INFO |
-| **Adopt gate** | — | §3.6 | gate blocked |
+| **Adopt / re-baseline gate**, **widening diff** | — | §3.6 | gate blocked / WIDENED |
+
+**Incremental runs.**
+- `--changed` accepts repo-relative, root-relative or absolute paths, and errors on a code path outside the root.
+- A changed model or tsconfig triggers a full run.
+- `--cache` stores raw import specifiers keyed by mtime and size; resolution is redone on every run, so adding a file is always seen.
+
+**Model maintenance.**
+- `--propose` prints the exact `uses` lines that would make the current MODEL-UPDATE findings conforming; violations need a human decision.
+- `tools/ucn_export.py` compiles the same permission semantics into a **dependency-cruiser** config (`allowed` rules plus `forbidden` rules for conventions) or an **import-linter** config (`forbidden` contracts). The model can then be the single source of truth instead of a second rules file. Neither generated config has been run through its tool yet ([07](07-trial-results.md)).
 
 **Behavioral consistency** (does the running code meet a requirement?) is not decidable in general. It is covered by evidence: tests that *assert* a requirement (`verifies` plus `verified:`), runtime monitors for `machine` definitions (module), and, for critical kernels, formal tools via export. Prose-level contradictions ("the doc says X, the code does Y") are found by bound parameters where possible, and otherwise by LLM-proposed conflict candidates that a human reviews.
 
@@ -409,10 +430,11 @@ Function signatures and call graphs always come from the code. In forward mode t
 VIOLATION      architecture Api.Guard depends on Api.Links, which the model does not allow  [api/guard.ts -> api/links.ts]
 KNOWN-CONFLICT parameters   RateLimit.maxLinksPerHour = 100 per hour vs api/guard.ts#LIMIT_PER_HOUR = 1000 (conflict RateLimitValue)
 WAIVED         architecture Api.Stats -> Db waived by deviation StatsDirectDb (expires 2027-03-31)  [api/stats.ts -> api/db.ts]
-MODEL-UPDATE   architecture Web depends on Api.AliasesEnabled (authority: source): add a relation or a deviation  [web/app.tsx -> api/config.ts]
+WAIVED         architecture Web.Form -> Api.AliasesEnabled waived by deviation WebReadsFlag (expires 2027-02-28)  [web/app.tsx -> api/config.ts]
+MODEL-UPDATE   architecture Web.Form depends on Web.Client (both ends authority: source): add a relation or a deviation  [web/app.tsx -> web/client.ts]
 ```
 
-**Performance** (measured, [05 §5.3](05-usefulness-and-tooling.md#performance-budget-and-measurements)): 20,000 files in 4.6 s cold, 1.5 s with the cache, and 0.8 s for one changed file, **for a mostly conforming repository**. Reviewers measured 25–41 s on violation-heavy, densely related repositories because the permission check is quadratic. Making it linear is a v0.4 item ([06](06-review-synthesis-v0.3.md)).
+**Performance** (v0.4, medians, pure Python): ~1 s on real repositories of 269–723 files. On 20,000-file synthetic repositories: ~6 s cold, ~2 s with the cache, ~1 s pre-commit, **independent of how many violations there are** (33,000 in the dense case). The permission check is now memoized over precomputed ancestors ([07 §7.4](07-trial-results.md#74-performance-on-real-repositories)).
 
 ---
 
@@ -570,8 +592,9 @@ Without stubs; counts-only stubs vs named stubs; without origin labels; without 
 |---|---|
 | v0.1 | First specification and hand-written example (reviewed: [04-review-synthesis.md](04-review-synthesis.md)) |
 | v0.2 | Revised spec; parser, linter and **projection checker**; example machine-checked |
-| **v0.3 (this)** | Reframed goal; core vs modules; authority and modes with the adopt gate; `deviation`, `param`/`bind`, `check`; **deterministic validator** (`ucn_validate.py`) checking a real example codebase; **pilot harness** (`pilot_eval.py`) with pre-registered criteria; tests |
-| v0.4 | Pilot readiness: reverse-mode bootstrap (deterministic adapters for TS/Python structure, ADRs, OpenAPI; LLM only for EARS normalization, reviewed); default projector generating card and slice; agent-facing `ucn context` / `ucn validate` commands and a pre-commit hook; build-tool dependency graph input |
-| v0.5 | **Pilot** on one real repository against the lightweight stack (4–6 weeks). Go / kill / extend by `pilot_eval.py` |
-| *only on GO:* v0.6 | MCP server; logic module (contracts for public APIs); small-model projection module; Context Sufficiency Benchmark (§3.12) |
+| v0.3 | Reframed goal; core vs modules; authority and modes; `deviation`, `param`/`bind`, `check`; validator; pilot harness (reviewed: [06](06-review-synthesis-v0.3.md)) |
+| **v0.4 (this)** | Review fixes 1–4: governance layer over existing checkers (`--deps` input; export to dependency-cruiser and import-linter); permissions only from architecture relations; fail-closed integrity; real adopt and re-baseline gates with `--apply`; widening diff; `--propose`; linear performance; trials on sqlfluff, excalidraw and cosmicpython ([07](07-trial-results.md)) |
+| v0.5 | Rule vocabulary (`forbids`, `layer`, `acyclic`) so stated "never" rules are encoded before bootstrapping; depth cap and opt-in permission inheritance; run the generated configs in their tools; requirement → test-result evidence; content-hash staleness; pilot redesign ([06 §6.5](06-review-synthesis-v0.3.md#65-what-v04-should-do-consolidated-plan) items 5–9) |
+| v0.6 | **Pilot** on a larger, older repository with rules that aren't visible in the code, against the lightweight stack. Go / kill / extend by `pilot_eval.py` |
+| *only on GO:* v0.7 | MCP server; logic module (contracts for public APIs); small-model projection module; Context Sufficiency Benchmark (§3.12) |
 | v1.0 | Freeze the core metamodel based on pilot and benchmark evidence; SysML v2 export module |

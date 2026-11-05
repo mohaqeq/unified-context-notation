@@ -145,3 +145,16 @@ Ordered by how much each item affects the core claim. Every reproduction in both
 - **How much can tools do?** Every recurring check can be deterministic, and both reviewers agreed. But "deterministic" isn't enough; the checks must also **fail closed**. In v0.3 several didn't, and that is the main thing to fix.
 - **Is it worth the effort?** Not proven, and the v0.3 pilot could not prove it either. After the v0.4 fixes, a redesigned pilot can at least **kill** it cheaply if upkeep or precision is bad, and confirm a *large* benefit if there is one.
 - **Maturity:** v0.1 scored 5 and 6, and v0.3 scores 5 and 6 against a harder, more honest goal. The concept has converged: both reviewers independently describe the same product. The implementation hasn't caught up yet.
+
+## 6.7 Status after v0.4
+
+Items 1–4 of §6.5 are implemented, and every reproduction from both reviews that they cover is a regression test in [tests/test_tools.py](../tests/test_tools.py) (60 tests). The tools were then run against three real repositories ([07](07-trial-results.md)).
+
+| Plan item | Status |
+|---|---|
+| 1. Governance layer over existing checkers | `--deps` reads dependency-cruiser, madge or plain edge lists. `ucn_export.py` compiles the model to dependency-cruiser and import-linter configs (generated, not yet run in those tools). The fallback scan is now Python `ast`, plus comment-aware TS/JS with tsconfig paths, ESM `.js`→`.ts`, asset classification and reported blind spots. |
+| 2. What "allowed" means | Permissions only from non-inferred architecture relations (Fable C1); `fn` relations are checked as observations. The stricter end's authority decides the class. Exposure is required to enter an element (implementation files are no longer exposed through `implements`). Barrels can't launder a dependency. Coverage class comes from the nearest element. |
+| 3. Fail closed | Integrity errors fail CI in every mode. ISO dates, required fields, lifecycle enums, horizon and breadth caps. `allows` must name a dependency relation. Accepted conflicts need `expires`/`approved` and stop suppressing when the code moves away from the asserted value. `--diff REV` reports widened permissions. |
+| 4. Real adopt gate | Simulates model authority for `--scope`; blocks on violations, MODEL-UPDATEs, inferred facts and open conflicts. `--apply` writes the header or the subtree authority plus an adoption log. `--gate rebaseline` requires `--reason` and reports what loses enforcement. `--authority-map`. |
+| also | `--changed` path normalization; the cache stores raw specifiers; gitignore-style globs with `{a,b}`; overlap errors; linear performance; `--propose`; `bind` by literal evaluation with unit scaling. |
+| 5–9 | Open. The trials add evidence for item 6 (`forbids`: bootstrapping launders prose rules otherwise) and for the pilot redesign (item 8: tasks must target rules that aren't visible in the code). |

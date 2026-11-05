@@ -1,4 +1,4 @@
-"""UCN 0.3 parser, linter and projection checker. The consistency validator is tools/ucn_validate.py.
+"""UCN 0.4 parser, linter and projection checker. The consistency validator is tools/ucn_validate.py.
 
 Usage:
   python tools/ucn_parse.py MODEL.ucn [--json] [--lint] [--tokens]
@@ -45,11 +45,13 @@ INVERSE = {"satisfiedBy": "satisfies", "verifiedBy": "verifies", "refinedBy": "r
            "calledBy": "calls", "affectedBy": "affects", "implementedBy": "implements"}
 CLAUSES = {"pre", "post", "err", "inv", "assume", "guarantee", "effect"}
 ATTRS = {"src", "tech", "owner", "why", "lifecycle", "verified", "code", "aka", "note",
-         "states", "initial", "authority", "param", "bind", "expires", "approved", "check"}
+         "states", "initial", "authority", "param", "bind", "expires", "approved", "check", "asserts",
+         "breadth"}
 MODES = {"reverse", "forward"}
 AUTHORITIES = {"model", "source"}
 PARAM_RE = re.compile(r"^([A-Za-z_]\w*)\s*=\s*(-?\d+(?:\.\d+)?)\s*(.*)$")          # name = 100 per hour
-BIND_RE = re.compile(r"^([A-Za-z_][\w.]*)\.([A-Za-z_]\w*)\s*=\s*([^#\s]+)#([A-Za-z_]\w*)$")  # Req.param = file#CONST
+BIND_RE = re.compile(r"^([A-Za-z_][\w.]*)\.([A-Za-z_]\w*)\s*=\s*([^#\s]+)#([A-Za-z_]\w*)(?:\s*([*/])\s*(\d+(?:\.\d+)?))?$")
+# Req.param = file#CONST [* k | / k]   (optional unit scaling of the code value)
 ALLOWS_RE = re.compile(r"^allows\s+([A-Za-z_][\w.]*)\s+(\w+)\s+([A-Za-z_][\w.]*)$")
 LABELS = {
     "category": {"nfr", "security", "safety", "legal", "privacy"},
@@ -213,11 +215,15 @@ def parse(text):
             if owner is None:
                 raise UcnError(f"line {no}: relation outside a node")
             body, tag = trailing_labels(line[len(word):].strip())
+            origin = next((w.strip() for w in (tag or "").split(",") if w.strip() in LABELS["origin"]), None)
             for t in split_items(body):
                 if word in INVERSE:
-                    edges.append({"from": t, "rel": INVERSE[word], "to": owner, "line": no, "inverse": True})
+                    e = {"from": t, "rel": INVERSE[word], "to": owner, "line": no, "inverse": True, "owner": owner}
                 else:
-                    edges.append({"from": owner, "rel": word, "to": t, "line": no})
+                    e = {"from": owner, "rel": word, "to": t, "line": no, "owner": owner}
+                if origin:
+                    e["origin"] = origin
+                edges.append(e)
         elif word in CLAUSES or word in ATTRS:
             if owner is None:
                 raise UcnError(f"line {no}: '{word}' outside a node")
@@ -281,6 +287,9 @@ def parse(text):
         o = origin_of(nid)
         if o:
             n["origin"] = o
+    for e in edges:  # an edge without its own label has the origin of the node it is written under
+        if "origin" not in e and nodes[e["owner"]].get("origin"):
+            e["origin"] = nodes[e["owner"]]["origin"]
     g = {"header": header, "nodes": list(nodes.values()), "edges": edges, "stubs": stubs}
     resolve_edges(g, g)
     return g
@@ -307,56 +316,62 @@ def resolve_edges(g, model):
 
 
 def lint(g):
-    warns = []
+    """Returns (severity, message) pairs. 'error' = model integrity (fails CI in every mode); 'warn' = gaps."""
+    out = []
+    err = lambda m: out.append(("error", m))
+    warn = lambda m: out.append(("warn", m))
     kind = {n["id"]: n["kind"] for n in g["nodes"]}
     for e in g["edges"]:
         for p in e.get("problems", []):
-            warns.append(f"line {e['line']}: {e['rel']} {p}")
+            err(f"line {e['line']}: {e['rel']} {p}")
         a, b = e.get("from_id"), e.get("to_id")
         if a and b:
             dom, rng = RELS[e["rel"]]
             if kind[a] not in dom or kind[b] not in rng:
-                warns.append(f"line {e['line']}: {kind[a]} {a} {e['rel']} {kind[b]} {b}: not allowed by the relation table")
+                err(f"line {e['line']}: {kind[a]} {a} {e['rel']} {kind[b]} {b}: not allowed by the relation table")
     rel_to = lambda rel, nid: any(e["rel"] == rel and e.get("to_id") == nid for e in g["edges"])
     for n in g["nodes"]:
         attrs = n.get("attrs", {})
         if "origin" not in n:
-            warns.append(f"{n['kind']} {n['id']}: origin unknown (set it on the node, a parent, or the header)")
+            warn(f"{n['kind']} {n['id']}: origin unknown (set it on the node, a parent, or the header)")
         if n["kind"] == "req":
             planned = attrs.get("lifecycle") == ["planned"]
             if not rel_to("satisfies", n["id"]) and not planned:
-                warns.append(f"req {n['id']}: nothing satisfies it")
+                warn(f"req {n['id']}: nothing satisfies it")
             if not rel_to("verifies", n["id"]):
-                warns.append(f"req {n['id']}: nothing verifies it" + (" (planned)" if planned else ""))
+                warn(f"req {n['id']}: nothing verifies it" + (" (planned)" if planned else ""))
         if n["kind"] == "conflict":
             sides = [m for m in g["nodes"] if m.get("parent") == n["id"] and m["kind"] == "side"]
             if len(sides) < 2:
-                warns.append(f"conflict {n['id']}: needs two or more sides")
+                err(f"conflict {n['id']}: needs two or more sides")
             if not any(e["rel"] == "about" and e.get("from_id") == n["id"] for e in g["edges"]):
-                warns.append(f"conflict {n['id']}: 'about' does not name the facts it concerns")
+                err(f"conflict {n['id']}: 'about' does not name the facts it concerns")
         if n["kind"] == "deviation":
             for a in ("why", "expires", "approved"):
                 if a not in attrs:
-                    warns.append(f"deviation {n['id']}: needs '{a}:'")
+                    err(f"deviation {n['id']}: needs '{a}:'")
             if not n.get("allows"):
-                warns.append(f"deviation {n['id']}: needs at least one 'allows <ref> <relation> <ref>'")
+                err(f"deviation {n['id']}: needs at least one 'allows <ref> <relation> <ref>'")
         if n["kind"] == "machine":
             states = set(attrs.get("states", []))
             for t in n.get("transitions", []):
-                for s in (t["from"], t["to"]):
-                    if s not in states:
-                        warns.append(f"machine {n['id']}: state '{s}' not listed in states:")
-            for s in attrs.get("initial", []):
-                if s not in states:
-                    warns.append(f"machine {n['id']}: initial state '{s}' not listed in states:")
+                for s_ in (t["from"], t["to"]):
+                    if s_ not in states:
+                        err(f"machine {n['id']}: state '{s_}' not listed in states:")
+            for s_ in attrs.get("initial", []):
+                if s_ not in states:
+                    err(f"machine {n['id']}: initial state '{s_}' not listed in states:")
         for t in attrs.get("verified", []):
             rid, prob = resolve(t, set(kind), "test", kind)
             if prob:
-                warns.append(f"{n['id']}: verified: {t} is not a test ({prob})")
+                err(f"{n['id']}: verified: {t} is not a test ({prob})")
+        for a in ("param", "lifecycle", "authority", "expires", "approved"):
+            if len(attrs.get(a, [])) > 1:
+                err(f"{n['id']}: '{a}:' given more than once")
     pins = [n["id"] for n in g["nodes"] if n.get("pin")]
     if len(pins) > GLOBAL_PIN_CAP:
-        warns.append(f"{len(pins)} global pins exceed the cap of {GLOBAL_PIN_CAP}; scope them instead")
-    return warns
+        warn(f"{len(pins)} global pins exceed the cap of {GLOBAL_PIN_CAP}; scope them instead")
+    return out
 
 
 def check_projection(p, m, text):
@@ -450,8 +465,8 @@ def main(argv):
             kinds[n["kind"]] = kinds.get(n["kind"], 0) + 1
         print(f"OK {path}: {len(g['nodes'])} nodes {kinds}, {len(g['edges'])} edges, {len(g['stubs'])} stubs")
     if "--lint" in argv:
-        for w in lint(g):
-            print("  warn:", w)
+        for sev, w in lint(g):
+            print(f"  {sev}:", w)
     if "--against" in argv:
         mpath = argv[argv.index("--against") + 1]
         errs = check_projection(g, parse(open(mpath, encoding="utf-8").read()), text)

@@ -1,0 +1,124 @@
+ucn 0.4 system: SQLFluff level: L1 origin: stated mode: reverse root: src
+# Trial model for github.com/sqlfluff/sqlfluff (commit 1682e11), reverse-engineered from its AGENTS.md files and
+# the import-linter contracts in pyproject.toml, then completed with `ucn_validate.py --propose`.
+# (No system node: with it, Package > Core > Helpers > HString exceeds the 4-level depth cap.)
+
+goal Lint: lint and auto-fix SQL across 25+ dialects
+  src: AGENTS.md#project-overview
+rule CoreIsSelfContained: core must not depend on api, cli, dialects, rules or utils
+  src: pyproject.toml#tool.importlinter
+rule ApiWithoutCli: the public API must not depend on the CLI
+  src: pyproject.toml#tool.importlinter
+rule CoreLayers: inside core, linter > rules > parser > errors > types > helpers; lower layers never import higher ones
+  src: pyproject.toml#tool.importlinter
+rule LazyDialects: never import dialect modules directly; load them with dialect_selector() or load_raw_dialect()
+  src: AGENTS.md#lazy-loading
+convention Typing: public functions are fully annotated; mypy strict; avoid import cycles with TYPE_CHECKING blocks
+  src: src/sqlfluff/AGENTS.md#type-annotations
+convention ClickOnlyInCli: click is used only by the CLI and its test helpers
+  check: only sqlfluff/{cli,utils/testing}/** imports click
+  src: observed at 1682e11
+convention JinjaOnlyInTemplaters: jinja2 is used only by the templaters
+  check: only sqlfluff/core/templaters/** imports jinja2
+  src: observed at 1682e11
+
+container Package [derived]: the sqlfluff Python package
+  code: sqlfluff/**
+  component Api: public Python API
+    code: sqlfluff/api/**
+    uses Core, CoreDialects, Linter, Types
+  component Cli: command-line interface
+    code: sqlfluff/cli/**
+    uses Api, Config, Core, CoreRules, Linter, Plugin, Types
+  component Dialects: SQL dialect definitions, each extending the ANSI grammar
+    code: sqlfluff/dialects/**
+    uses CoreDialects, Parser
+    component Ansi: the ANSI base dialect, whose segment classes rules and utils import directly
+      code: sqlfluff/dialects/dialect_ansi.py
+      uses CoreDialects, Parser
+  component Rules: linting rules by category
+    code: sqlfluff/rules/**
+    uses CoreDialects, CoreRules, Ansi, HString, Parser, Plugin, Templaters, Utils
+  component Utils: shared utilities for rules and reflow
+    code: sqlfluff/utils/**
+    uses Config, Core, CoreDialects, CoreRules, Ansi, Errors, HSlice, HString, Parser, Templaters, Types
+  component Core: parser, lexer, config infrastructure; must not depend on anything outside core
+    code: sqlfluff/core/**
+    component Linter: orchestrates parsing, rules and fixes (top layer of core)
+      code: sqlfluff/core/linter/**
+      uses CoreRules, Parser, Errors, Types, Helpers
+      uses Config, CoreDialects, Formatter, HSlice, HString, Plugin, Templaters, Timing
+    component CoreRules: rule base classes; independent of the linter
+      code: sqlfluff/core/rules/**
+      uses Parser, Errors, Types, Helpers
+      uses Config, CoreDialects, HString, Plugin, Templaters
+    component Parser: lexer and parser; independent of rules and linter
+      code: sqlfluff/core/parser/**
+      uses Errors, Types, Helpers
+      uses Config, CoreDialects, HSlice, HString, Templaters
+    component Errors: error types, a utility layer
+      code: sqlfluff/core/errors.py
+      uses Types, Helpers
+    component Types: core types, almost independent
+      code: sqlfluff/core/types.py
+      uses Helpers, HDict
+    component Helpers: independent helper modules
+      code: sqlfluff/core/helpers/**
+      component HString: string helpers
+        code: sqlfluff/core/helpers/string.py
+      component HSlice: slice helpers
+        code: sqlfluff/core/helpers/slice.py
+      component HDict: dict helpers
+        code: sqlfluff/core/helpers/dict.py
+    component Config: configuration loading
+      code: sqlfluff/core/config/**
+      uses CoreDialects, Errors, HDict, HString, Helpers, Plugin, Templaters, Types
+    component CoreDialects: dialect registry
+      code: sqlfluff/core/dialects/**
+      uses Errors, Parser
+    component Plugin: plugin host (pluggy)
+      code: sqlfluff/core/plugin/**
+      uses Config, Templaters
+    component Templaters: Jinja, Python, placeholder templaters
+      code: sqlfluff/core/templaters/**
+      uses Config, Errors, Formatter, HSlice, HString, Helpers
+    component Formatter: output formatting
+      code: sqlfluff/core/formatter.py
+      uses Config, Types
+    component Timing: timing utilities
+      code: sqlfluff/core/timing.py
+
+# Found in the trial: AGENTS.md says never import dialect modules directly; 12 files in rules/ and utils/
+# import segment classes from dialect_ansi. Neither import-linter nor the AGENTS.md text checks this.
+conflict LazyDialectsVsCode: AGENTS.md forbids direct dialect imports; 12 rule and utility modules import dialect_ansi
+  about LazyDialects, Rules, Utils, Ansi
+  lifecycle: open
+  note: needs a maintainer decision: narrow the rule (segment classes from ANSI are fine) or change the code
+  side Doc: never import dialect modules directly
+    src: AGENTS.md#lazy-loading
+  side Code [derived]: rules/aliasing/AL01.py, AL04, CV11, CV12, RF01, RF03, ST05, ST07, ST11, TQ04, utils/analysis/query.py, select.py
+    src: sqlfluff/rules/aliasing/AL01.py:8
+
+# The four ignore_imports of sqlfluff's import-linter contracts, as governed deviations
+deviation ErrorsTypeImports: errors references rules and parser, only for type checking
+  allows Errors uses CoreRules
+  allows Errors uses Parser
+  why: splitting errors up seems overkill for now (pyproject.toml comment)
+  expires: 2027-11-01
+  approved: sqlfluff maintainers (pyproject.toml ignore_imports)
+  lifecycle: accepted
+  src: pyproject.toml#tool.importlinter
+deviation PluginHookspecRules: the plugin host needs BaseRule for type checking
+  allows Plugin uses CoreRules
+  why: one of the hooks returns rules
+  expires: 2027-11-01
+  approved: sqlfluff maintainers (pyproject.toml ignore_imports)
+  lifecycle: accepted
+  src: pyproject.toml#tool.importlinter
+deviation FormatterLinter: the formatter needs LintedFile for type checking
+  allows Formatter uses Linter
+  why: the formatter is imported by lots of other things
+  expires: 2027-11-01
+  approved: sqlfluff maintainers (pyproject.toml ignore_imports)
+  lifecycle: accepted
+  src: pyproject.toml#tool.importlinter

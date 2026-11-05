@@ -1,0 +1,32 @@
+ucn 0.4 system: Excalidraw level: L1 origin: stated mode: reverse root: .
+# Trial model for github.com/excalidraw/excalidraw (commit 701b901). Architecture as declared by the workspace
+# package.json dependencies, plus CLAUDE.md ("excalidraw-app uses the library"). Imports resolve through tsconfig paths.
+
+goal Whiteboard: a hand-drawn style whiteboard, as a React library and as excalidraw.com
+  src: CLAUDE.md#project-structure
+
+system Excalidraw [derived]: monorepo
+  container Common: @excalidraw/common, shared constants and utilities
+    code: packages/common/**
+  container Math: @excalidraw/math
+    code: packages/math/**
+    uses Common
+  container FractionalIndexing: @excalidraw/fractional-indexing
+    code: packages/fractional-indexing/**
+  container LaserPointer: @excalidraw/laser-pointer
+    code: packages/laser-pointer/**
+  container Element: @excalidraw/element, element model and geometry
+    code: packages/element/**
+    uses Common, FractionalIndexing, Math
+  container Library: @excalidraw/excalidraw, the React component library
+    code: packages/excalidraw/**
+    uses Common, Element, LaserPointer, Math
+  container Utils: @excalidraw/utils, export and helper utilities
+    code: packages/utils/**
+    uses LaserPointer
+  container App: excalidraw-app, the excalidraw.com web application
+    code: excalidraw-app/**
+    uses Library
+  container Tooling: examples, scripts and root config
+    code: {examples,scripts,dev-docs,firebase-project,public}/**
+    code: *.{ts,mts,js}

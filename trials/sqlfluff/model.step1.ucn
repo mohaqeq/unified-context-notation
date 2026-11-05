@@ -1,0 +1,57 @@
+ucn 0.4 system: SQLFluff level: L1 origin: stated mode: reverse root: src
+# Trial model for github.com/sqlfluff/sqlfluff (commit 1682e11), reverse-engineered from its AGENTS.md files and
+# the import-linter contracts in pyproject.toml. Step 1: only the documented layering is declared.
+# (No system node: with it, Package > Core > Helpers > HString exceeds the 4-level depth cap.)
+
+goal Lint: lint and auto-fix SQL across 25+ dialects
+  src: AGENTS.md#project-overview
+
+container Package [derived]: the sqlfluff Python package
+  code: sqlfluff/**
+  component Api: public Python API
+    code: sqlfluff/api/**
+  component Cli: command-line interface
+    code: sqlfluff/cli/**
+  component Dialects: SQL dialect definitions, each extending the ANSI grammar
+    code: sqlfluff/dialects/**
+  component Rules: linting rules by category
+    code: sqlfluff/rules/**
+  component Utils: shared utilities for rules and reflow
+    code: sqlfluff/utils/**
+  component Core: parser, lexer, config infrastructure; must not depend on anything outside core
+    code: sqlfluff/core/**
+    component Linter: orchestrates parsing, rules and fixes (top layer of core)
+      code: sqlfluff/core/linter/**
+      uses CoreRules, Parser, Errors, Types, Helpers
+    component CoreRules: rule base classes; independent of the linter
+      code: sqlfluff/core/rules/**
+      uses Parser, Errors, Types, Helpers
+    component Parser: lexer and parser; independent of rules and linter
+      code: sqlfluff/core/parser/**
+      uses Errors, Types, Helpers
+    component Errors: error types, a utility layer
+      code: sqlfluff/core/errors.py
+      uses Types, Helpers
+    component Types: core types, almost independent
+      code: sqlfluff/core/types.py
+      uses Helpers
+    component Helpers: independent helper modules
+      code: sqlfluff/core/helpers/**
+      component HString: string helpers
+        code: sqlfluff/core/helpers/string.py
+      component HSlice: slice helpers
+        code: sqlfluff/core/helpers/slice.py
+      component HDict: dict helpers
+        code: sqlfluff/core/helpers/dict.py
+    component Config: configuration loading
+      code: sqlfluff/core/config/**
+    component CoreDialects: dialect registry
+      code: sqlfluff/core/dialects/**
+    component Plugin: plugin host (pluggy)
+      code: sqlfluff/core/plugin/**
+    component Templaters: Jinja, Python, placeholder templaters
+      code: sqlfluff/core/templaters/**
+    component Formatter: output formatting
+      code: sqlfluff/core/formatter.py
+    component Timing: timing utilities
+      code: sqlfluff/core/timing.py

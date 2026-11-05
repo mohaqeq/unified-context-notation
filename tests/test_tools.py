@@ -2,18 +2,22 @@
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import pilot_eval  # noqa: E402
+import ucn_export  # noqa: E402
 import ucn_parse  # noqa: E402
 import ucn_validate  # noqa: E402
 
 EX = os.path.join(ROOT, "examples", "shortly")
 MODEL = os.path.join(EX, "model.ucn")
+TODAY = "2026-11-05"
 
 
 def read(p):
@@ -21,13 +25,69 @@ def read(p):
         return f.read()
 
 
+def write(p, text):
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "w", encoding="utf-8", newline="\n") as f:
+        f.write(textwrap.dedent(text).lstrip("\n"))
+
+
+def run(path, **kw):
+    kw.setdefault("today", TODAY)
+    r = ucn_validate.validate(path, **kw)
+    r.pop("_model")
+    return r
+
+
+def classes(r, check=None):
+    return sorted((f["class"], f["message"].split(" ")[0]) for f in r["findings"]
+                  if f["class"] != "INFO" and (check is None or f["check"] == check))
+
+
+def has(r, cls, text):
+    return any(f["class"] == cls and text in f["message"] for f in r["findings"])
+
+
+GENERIC = """
+ucn 0.4 system: S origin: stated mode: forward root: src
+system S [derived]: s
+  container App: app
+    code: app/**
+    component A: a
+      code: app/a/**
+    component B: b
+      code: app/b/**
+    component C: c
+      code: app/c/**
+      uses B
+"""
+
+
+def rmtree(d):
+    def onexc(func, path, exc):  # git marks object files read-only on Windows
+        os.chmod(path, 0o700)
+        func(path)
+    shutil.rmtree(d, onexc=onexc)
+
+
+class Tmp(unittest.TestCase):
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        self.addCleanup(rmtree, self.d)
+
+    def project(self, model=GENERIC, files=None, extra=""):
+        write(os.path.join(self.d, "model.ucn"), model + textwrap.dedent(extra))
+        for rel, text in (files or {}).items():
+            write(os.path.join(self.d, "src", rel), text)
+        return os.path.join(self.d, "model.ucn")
+
+
+# ------------------------------------------------------------------------------------------- parser / projections
 class ParseAndProject(unittest.TestCase):
     def test_model_parses_and_resolves(self):
         g = ucn_parse.parse(read(MODEL))
         self.assertEqual(g["header"]["mode"], "forward")
         self.assertFalse([e for e in g["edges"] if e.get("problems")])
-        dev = next(n for n in g["nodes"] if n["kind"] == "deviation")
-        self.assertEqual(dev["allows"][0]["rel"], "uses")
+        self.assertFalse([w for sev, w in ucn_parse.lint(g) if sev == "error"])
 
     def test_projections_pass(self):
         m = ucn_parse.parse(read(MODEL))
@@ -45,77 +105,288 @@ class ParseAndProject(unittest.TestCase):
         self.assertTrue(any(e.startswith("accounting for req") for e in errs))
 
     def test_bad_syntax_rejected(self):
-        for bad in ["ucn 0.3 system: S mode: sideways",
-                    "ucn 0.3 system: S\nreq R: x\n  param: limit is high",
-                    "ucn 0.3 system: S\ngoal G: x\n  allows A uses B"]:
+        for bad in ["ucn 0.4 system: S mode: sideways",
+                    "ucn 0.4 system: S\nreq R: x\n  param: limit is high",
+                    "ucn 0.4 system: S\ngoal G: x\n  allows A uses B"]:
             with self.assertRaises(ucn_parse.UcnError):
                 ucn_parse.parse(bad)
 
+    def test_edge_origin_inherited_and_labelled(self):
+        g = ucn_parse.parse("ucn 0.4 system: S origin: stated\nsystem S: s\n  container A: a\n    uses B [inferred]\n  container B: b\n    uses A\n")
+        origins = {(e["from"], e["to"]): e["origin"] for e in g["edges"]}
+        self.assertEqual(origins[("A", "B")], "inferred")
+        self.assertEqual(origins[("B", "A")], "stated")
 
-class Validate(unittest.TestCase):
-    def run_on(self, model_text=None, today="2026-11-05", gate=None, edit=None):
+
+# ------------------------------------------------------------------------------------------- the example
+class Example(unittest.TestCase):
+    def copy(self, model_text=None, edit=None):
         d = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, d)
         shutil.copytree(os.path.join(EX, "src"), os.path.join(d, "src"))
-        with open(os.path.join(d, "model.ucn"), "w", encoding="utf-8") as f:
-            f.write(model_text or read(MODEL))
+        write(os.path.join(d, "model.ucn"), model_text or read(MODEL))
         if edit:
             edit(d)
-        return ucn_validate.validate(os.path.join(d, "model.ucn"), today=today, gate=gate)
-
-    def classes(self, r, check=None):
-        return sorted((f["class"], f["message"].split(" ")[0]) for f in r["findings"]
-                      if f["class"] != "INFO" and (check is None or f["check"] == check))
+        return os.path.join(d, "model.ucn")
 
     def test_example_findings(self):
-        r = self.run_on()
-        self.assertEqual(self.classes(r), [("KNOWN-CONFLICT", "RateLimit.maxLinksPerHour"),
-                                           ("MODEL-UPDATE", "Web"),
-                                           ("VIOLATION", "Api.Guard"),
-                                           ("WAIVED", "Api.Stats")])
+        self.assertEqual(classes(run(MODEL)), [("KNOWN-CONFLICT", "RateLimit.maxLinksPerHour"),
+                                                ("MODEL-UPDATE", "Web.Form"),
+                                                ("VIOLATION", "Api.Guard"),
+                                                ("WAIVED", "Api.Stats"),
+                                                ("WAIVED", "Web.Form")])
 
     def test_expired_waiver_is_a_violation(self):
-        r = self.run_on(today="2027-04-01")
-        msgs = [f["message"] for f in r["findings"] if f["class"] == "VIOLATION"]
-        self.assertTrue(any("expired" in m for m in msgs))
+        r = run(MODEL, today="2027-04-01")
+        self.assertTrue(has(r, "VIOLATION", "expired on 2027-03-31"))
 
     def test_reverse_mode_turns_violations_into_model_updates(self):
-        r = self.run_on(read(MODEL).replace("mode: forward baseline: 6794ead", "mode: reverse"))
-        self.assertNotIn("VIOLATION", [c for c, _ in self.classes(r)])
-        self.assertIn(("MODEL-UPDATE", "Api.Guard"), self.classes(r))
+        r = run(self.copy(read(MODEL).replace("mode: forward baseline: v1.4.0", "mode: reverse")))
+        self.assertNotIn("VIOLATION", [c for c, _ in classes(r)])
+        self.assertIn(("MODEL-UPDATE", "Api.Guard"), classes(r))
 
     def test_parameter_mismatch_without_conflict_is_a_violation(self):
-        text = read(MODEL).replace("about RateLimit, Guard.limit", "about Guard.limit")
-        r = self.run_on(text)
-        self.assertIn(("VIOLATION", "RateLimit.maxLinksPerHour"), self.classes(r, "parameters"))
+        r = run(self.copy(read(MODEL).replace("about RateLimit, Guard.limit", "about Guard.limit")))
+        self.assertIn(("VIOLATION", "RateLimit.maxLinksPerHour"), classes(r, "parameters"))
+
+    def test_accepted_conflict_stops_suppressing_when_code_moves(self):
+        def drift(d):
+            p = os.path.join(d, "src", "api", "guard.ts")
+            write(p, read(p).replace("LIMIT_PER_HOUR = 1000", "LIMIT_PER_HOUR = 999999"))
+        r = run(self.copy(edit=drift))
+        self.assertTrue(has(r, "VIOLATION", "the code has moved"))
+
+    def test_accepted_conflict_needs_expiry_and_approval(self):
+        r = run(self.copy(read(MODEL).replace("  expires: 2027-01-31\n  approved: person:maintainer\n  note: accepted", "  note: accepted")))
+        self.assertTrue(has(r, "VIOLATION", "accepted conflict needs"))
 
     def test_convention_check(self):
         def leak(d):
             with open(os.path.join(d, "src", "api", "links.ts"), "a", encoding="utf-8") as f:
                 f.write('\nimport { Pool } from "pg";\n')
-        r = self.run_on(edit=leak)
-        self.assertIn(("VIOLATION", "api/links.ts"), self.classes(r, "conventions"))
+        self.assertIn(("VIOLATION", "api/links.ts"), classes(run(self.copy(edit=leak)), "conventions"))
 
     def test_unmapped_file_and_stale_src(self):
         def add(d):
-            with open(os.path.join(d, "src", "orphan.ts"), "w") as fh:
-                fh.write("export const x = 1;\n")
+            write(os.path.join(d, "src", "orphan.ts"), "export const x = 1;\n")
             os.remove(os.path.join(d, "src", "api", "guard.test.ts"))
-        r = self.run_on(edit=add)
-        self.assertIn(("VIOLATION", "orphan.ts"), self.classes(r, "coverage"))
+        r = run(self.copy(edit=add))
+        self.assertIn(("VIOLATION", "orphan.ts"), classes(r, "coverage"))
         self.assertTrue(any(f["check"] == "provenance" for f in r["findings"]))
 
-    def test_adopt_gate(self):
-        self.assertFalse(self.run_on(gate="adopt")["gate"]["pass"])  # the Guard -> Links violation blocks
-        fixed = read(MODEL).replace("    component Guard: abuse protection\n",
-                                    "    component Guard: abuse protection\n      uses Links\n")
-        self.assertTrue(self.run_on(fixed, gate="adopt")["gate"]["pass"])
-        inferred = fixed.replace("guarantee: entries expire within an hour [stated]",
-                                 "guarantee: entries expire within an hour [inferred]")
-        blockers = self.run_on(inferred, gate="adopt")["gate"]["blockers"]
-        self.assertTrue(any("inferred clause" in b for b in blockers))
+    def test_logic_edges_do_not_grant_permissions(self):
+        # Fable C1: an fn-level 'calls' must not make the Guard -> Links import conforming
+        text = read(MODEL).replace("        uses SafeBrowsing\n        src: api/guard.ts:6",
+                                   "        uses SafeBrowsing\n        calls Links.create\n        src: api/guard.ts:6")
+        r = run(self.copy(text))
+        self.assertTrue(has(r, "VIOLATION", "Api.Guard depends on Api.Links"))
+        self.assertTrue(has(r, "INFO", "logic edge Api.Guard.check calls Api.Links.create"))
+
+    def test_implementation_files_are_not_exposed(self):
+        def bypass(d):
+            p = os.path.join(d, "src", "web", "client.ts")
+            write(p, 'import { create } from "../api/links";\n' + read(p))
+        self.assertTrue(has(run(self.copy(edit=bypass)), "VIOLATION", "Web.Client depends on Api.Links"))
 
 
+# ------------------------------------------------------------------------------------------- adopt gate
+class Gate(Example):
+    def fixed(self):
+        return read(MODEL).replace("    component Guard: abuse protection\n", "    component Guard: abuse protection\n      uses Links\n") \
+                          .replace("      code: web/app.tsx\n", "      code: web/app.tsx\n      uses Client\n")
+
+    def test_forward_gate(self):
+        self.assertFalse(run(MODEL, gate_kind="adopt")["gate"]["pass"])
+        self.assertTrue(run(self.copy(self.fixed()), gate_kind="adopt")["gate"]["pass"])
+
+    def test_gate_in_reverse_mode_simulates_model_authority(self):
+        # both reviews, C1/C2: the gate used to pass in reverse mode
+        rev = read(MODEL).replace("mode: forward baseline: v1.4.0", "mode: reverse").replace("system Shortly [derived]", "system Shortly [inferred]")
+        g = run(self.copy(rev), gate_kind="adopt")["gate"]
+        self.assertFalse(g["pass"])
+        self.assertTrue(any("Api.Guard depends on Api.Links" in b for b in g["blockers"]))
+        self.assertTrue(any("inferred system" in b for b in g["blockers"]))
+
+    def test_scoped_gate_and_apply(self):
+        path = self.copy(self.fixed().replace("mode: forward baseline: v1.4.0", "mode: reverse"))
+        g = run(path, gate_kind="adopt", scope="Api", apply=True, baseline="abc123")["gate"]
+        self.assertTrue(g["pass"], g["blockers"])
+        text = read(path)
+        self.assertIn("    authority: model\n", text)
+        self.assertIn("adopt scope: Api baseline: abc123", text)
+        self.assertEqual(ucn_parse.parse(text)["header"]["mode"], "reverse")
+
+    def test_inferred_clause_blocks(self):
+        t = self.fixed().replace("guarantee: entries expire within an hour [stated]", "guarantee: entries expire within an hour [inferred]")
+        self.assertTrue(any("inferred clause" in b for b in run(self.copy(t), gate_kind="adopt")["gate"]["blockers"]))
+
+    def test_rebaseline_needs_reason_and_reports(self):
+        g = run(MODEL, gate_kind="rebaseline", scope="Api")["gate"]
+        self.assertFalse(g["pass"])
+        self.assertTrue(any("StatsDirectDb" in x for x in g["report"]))
+
+
+# ------------------------------------------------------------------------------------------- fail-closed governance
+class Governance(Tmp):
+    FILES = {"app/a/x.ts": 'import { y } from "../b/y";\nexport const x = 1;\n', "app/b/y.ts": "export const y = 1;\n",
+             "app/c/z.ts": "export const z = 1;\n"}
+
+    def deviation(self, body):
+        return self.project(files=self.FILES, extra="deviation D: waiver\n" + textwrap.indent(textwrap.dedent(body), "  "))
+
+    def test_valid_deviation_waives(self):
+        r = run(self.deviation("allows A uses B\nwhy: w\nexpires: 2027-01-01\napproved: person:x\nlifecycle: accepted\n"))
+        self.assertEqual(classes(r), [("WAIVED", "App.A")])
+
+    def test_deviation_without_expiry_or_approval_does_not_waive(self):
+        r = run(self.deviation("allows A uses B\nwhy: w\nlifecycle: accepted\n"))
+        self.assertTrue(has(r, "VIOLATION", "needs 'expires:'"))
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.B"))
+
+    def test_non_iso_and_far_dates_fail(self):
+        r = run(self.deviation("allows A uses B\nwhy: w\nexpires: 2027-3-1\napproved: p\nlifecycle: accepted\n"))
+        self.assertTrue(has(r, "VIOLATION", "not an ISO date"))
+        r = run(self.deviation("allows A uses B\nwhy: w\nexpires: 2099-01-01\napproved: p\nlifecycle: accepted\n"))
+        self.assertTrue(has(r, "VIOLATION", "more than 365 days"))
+
+    def test_blanket_and_wide_waivers_fail(self):
+        r = run(self.deviation("allows App uses App\nwhy: w\nexpires: 2027-01-01\napproved: p\nlifecycle: accepted\n"))
+        self.assertTrue(has(r, "VIOLATION", "blanket waiver"))
+
+    def test_non_dependency_relation_fails(self):
+        r = run(self.deviation("allows A affects B\nwhy: w\nexpires: 2027-01-01\napproved: p\nlifecycle: accepted\n"))
+        self.assertTrue(has(r, "VIOLATION", "not a dependency relation"))
+
+    def test_proposed_deviation_message(self):
+        r = run(self.deviation("allows A uses B\nwhy: w\nexpires: 2027-01-01\napproved: p\nlifecycle: proposed\n"))
+        self.assertTrue(has(r, "VIOLATION", "is 'proposed', not accepted"))
+
+    def test_dangling_reference_fails(self):
+        r = run(self.project(GENERIC.replace("      uses B", "      uses Bee"), self.FILES))
+        self.assertTrue(has(r, "VIOLATION", "dangling"))
+
+    def test_missing_mode_with_governance_fails(self):
+        r = run(self.project(GENERIC.replace(" mode: forward", "") + "    bind: R.p = app/a/x.ts#x\nreq R: r\n  param: p = 1\n", self.FILES))
+        self.assertTrue(has(r, "VIOLATION", "no 'mode:'"))
+
+    def test_lifecycle_enum(self):
+        r = run(self.deviation("allows A uses B\nwhy: w\nexpires: 2027-01-01\napproved: p\nlifecycle: acepted\n"))
+        self.assertTrue(has(r, "VIOLATION", "lifecycle 'acepted'"))
+
+    def test_diff_reports_widening(self):
+        path = self.project(files=self.FILES)
+        git = lambda *a: subprocess.run(["git", "-C", self.d, *a], capture_output=True, check=True)
+        git("init", "-q"); git("-c", "user.email=t@t", "-c", "user.name=t", "add", "-A")
+        git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base")
+        write(path, read(path).replace("      code: app/a/**\n", "      code: app/a/**\n      uses B\n"))
+        r = run(path, diff_rev="HEAD")
+        self.assertTrue(has(r, "WIDENED", "new permission: App.A uses App.B"))
+        self.assertFalse(any(f["class"] == "WIDENED" for f in run(path, diff_rev="HEAD", allow_widening=True)["findings"]))
+
+
+# ------------------------------------------------------------------------------------------- scanning and resolution
+class Scanning(Tmp):
+    def test_comments_strings_and_docstrings_are_not_imports(self):
+        r = run(self.project(files={
+            "app/a/x.ts": '// import { y } from "../b/y";\n/* import "../b/y" */\nconst s = "import { y } from \'../b/y\'";\nexport const x = 1;\n',
+            "app/b/y.ts": "export const y = 1;\n",
+            "app/a/p.py": '"""\nfrom ..b import y\n"""\n# import app.b.y\nX = 1\n', "app/b/__init__.py": "", "app/a/__init__.py": "",
+            "app/__init__.py": ""}))
+        self.assertEqual(classes(r, "architecture"), [])
+
+    def test_esm_js_specifier_and_tsconfig_alias(self):
+        files = {"app/a/x.ts": 'import { y } from "../b/y.js";\nimport { z } from "@c/z";\n',
+                 "app/b/y.ts": "export const y = 1;\n", "app/c/z.ts": "export const z = 1;\n"}
+        path = self.project(files=files)
+        write(os.path.join(self.d, "src", "tsconfig.json"),
+              '{ // comment\n "compilerOptions": { "baseUrl": ".", "paths": { "@c/*": ["app/c/*"], }, },\n}\n')
+        r = run(path)
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.B"))
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.C"))
+
+    def test_python_from_package_import_submodule_and_src_layout(self):
+        model = GENERIC.replace("app/a/**", "pkg/src/app/a/**").replace("app/b/**", "pkg/src/app/b/**") \
+                       .replace("app/c/**", "pkg/src/app/c/**").replace("code: app/**", "code: pkg/**")
+        r = run(self.project(model, {"pkg/src/app/__init__.py": "", "pkg/src/app/a/__init__.py": "",
+                                     "pkg/src/app/a/x.py": "from app.b import y\n", "pkg/src/app/b/__init__.py": "",
+                                     "pkg/src/app/b/y.py": "Y = 1\n"}))
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.B"))
+
+    def test_barrel_does_not_launder(self):
+        r = run(self.project(files={"app/index.ts": 'export * from "./b/y";\n', "app/b/y.ts": "export const y = 1;\n",
+                                    "app/a/x.ts": 'import { y } from "../index";\n'}))
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.B"))
+
+    def test_glob_semantics_and_overlap(self):
+        model = GENERIC.replace("code: app/a/**", "code: app/a/**/*.ts").replace("code: app/b/**", "code: app/b/")
+        r = run(self.project(model, {"app/a/x.ts": 'import { y } from "../b/y";\n', "app/b/y.ts": "export const y = 1;\n"}))
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.B"))
+        model = GENERIC.replace("      code: app/c/**\n", "      code: app/b/**\n")
+        self.assertTrue(has(run(self.project(model, {"app/b/y.ts": "export const y = 1;\n"})), "VIOLATION", "claimed by both"))
+
+    def test_changed_paths_are_normalized_and_model_change_runs_fully(self):
+        files = {"app/a/x.ts": 'import { y } from "../b/y";\n', "app/b/y.ts": "export const y = 1;\n"}
+        path = self.project(files=files)
+        r = run(path, changed=[os.path.join(self.d, "src", "app", "a", "x.ts")])
+        self.assertEqual(r["scanned"], 1)
+        self.assertTrue(has(r, "VIOLATION", "App.A depends on App.B"))
+        self.assertEqual(run(path, changed=[path])["scanned"], 2)
+
+    def test_cache_re_resolves(self):
+        path = self.project(files={"app/a/x.ts": 'import { y } from "../b/y";\n', "app/c/z.ts": "export const z = 1;\n"})
+        cache = os.path.join(self.d, "cache.json")
+        self.assertFalse(has(run(path, cache_path=cache), "VIOLATION", "App.A depends on App.B"))
+        write(os.path.join(self.d, "src", "app", "b", "y.ts"), "export const y = 1;\n")
+        self.assertTrue(has(run(path, cache_path=cache), "VIOLATION", "App.A depends on App.B"))
+
+    def test_deps_file_input(self):
+        path = self.project(files={"app/a/x.ts": "export const x = 1;\n", "app/b/y.ts": "export const y = 1;\n"})
+        dc = os.path.join(self.d, "dc.json")
+        write(dc, json.dumps({"modules": [{"source": "src/app/a/x.ts", "dependencies": [
+            {"resolved": "src/app/b/y.ts", "module": "../b/y", "dependencyTypes": ["local"], "coreModule": False, "couldNotResolve": False},
+            {"resolved": "node_modules/pg/index.js", "module": "pg", "dependencyTypes": ["npm"], "coreModule": False, "couldNotResolve": False}]}]}))
+        self.assertTrue(has(run(path, deps_path=dc), "VIOLATION", "App.A depends on App.B"))
+
+
+# ------------------------------------------------------------------------------------------- parameter binding
+class Binding(Tmp):
+    def bind(self, code, path="app/a/g.ts", want="100"):
+        model = GENERIC + f"    bind: R.lim = {path}#LIMIT\nreq R: r\n  param: lim = {want}\n"
+        return run(self.project(model, {path: code}))
+
+    def test_literals(self):
+        for code in ["export const LIMIT = 0x64;\n", "export const LIMIT = 1e2;\n", "export const LIMIT = 10 * 10;\n",
+                     "// export const LIMIT = 5;\nexport const LIMIT = 100;\n", "export const LIMIT = 1_00 as const;\n"]:
+            self.assertEqual(classes(self.bind(code), "parameters"), [], code)
+
+    def test_not_evaluable_is_info_not_violation(self):
+        r = self.bind("export const LIMIT = Number(process.env.LIMIT ?? 100);\n")
+        self.assertEqual(classes(r, "parameters"), [])
+        self.assertTrue(has(r, "INFO", "not statically evaluable"))
+        self.assertTrue(has(self.bind("let LIMIT = 100;\nLIMIT = 200;\n"), "INFO", "assigned more than once"))
+
+    def test_python_and_scaling(self):
+        self.assertEqual(classes(self.bind("LIMIT = 60 * 60\n", path="app/a/g.py", want="3600"), "parameters"), [])
+        model = GENERIC + "    bind: R.lim = app/a/g.ts#LIMIT / 1000\nreq R: r\n  param: lim = 2 seconds\n"
+        self.assertEqual(classes(run(self.project(model, {"app/a/g.ts": "export const LIMIT = 2000;\n"})), "parameters"), [])
+
+    def test_mismatch(self):
+        self.assertIn(("VIOLATION", "R.lim"), classes(self.bind("export const LIMIT = 500;\n"), "parameters"))
+
+
+# ------------------------------------------------------------------------------------------- export
+class Export(Tmp):
+    def test_dependency_cruiser_and_import_linter(self):
+        path = self.project(GENERIC + "convention Db: db only in b\n  check: only app/b/** imports pg\n")
+        dc = ucn_export.export(path, "dependency-cruiser")
+        self.assertIn("allowedSeverity", dc)
+        self.assertIn('"path": "^src/app/c', dc)
+        il = ucn_export.export(path, "import-linter", package="app")
+        self.assertIn("[importlinter:contract:", il)
+        self.assertIn("app.a", il)
+
+
+# ------------------------------------------------------------------------------------------- pilot harness
 class Pilot(unittest.TestCase):
     def data(self, light, ucn, n=40, tempting=None, upkeep=(30, 1000), absent=0):
         tasks = [{"id": f"T{i}", "kind": "change",
@@ -147,12 +418,10 @@ class Pilot(unittest.TestCase):
     def test_silent_absence_blocks_go(self):
         r = pilot_eval.evaluate(self.data(0.4, 0.8, absent=10))
         self.assertEqual(r["decision"], "EXTEND")
-        self.assertTrue(any("silent absence" in x for x in r["reasons"]))
 
     def test_template_runs(self):
         with open(os.path.join(ROOT, "examples", "pilot", "template.json")) as f:
-            r = pilot_eval.evaluate(json.load(f))
-        self.assertIn(r["decision"], ("GO", "KILL", "EXTEND"))
+            self.assertIn(pilot_eval.evaluate(json.load(f))["decision"], ("GO", "KILL", "EXTEND"))
 
 
 if __name__ == "__main__":

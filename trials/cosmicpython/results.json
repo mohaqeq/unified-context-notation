@@ -1,0 +1,333 @@
+[
+ {
+  "run": "T1-A1",
+  "task": "T1",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/domain/events.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 57106,
+  "seconds": 53.7,
+  "tool_uses": 11
+ },
+ {
+  "run": "T1-A2",
+  "task": "T1",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/domain/events.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 63319,
+  "seconds": 60.9,
+  "tool_uses": 17
+ },
+ {
+  "run": "T1-B1",
+  "task": "T1",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 61542,
+  "seconds": 66.5,
+  "tool_uses": 18
+ },
+ {
+  "run": "T1-B2",
+  "task": "T1",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/service_layer/handlers.py",
+   "tests/unit/test_handlers.py"
+  ],
+  "tokens": 53605,
+  "seconds": 40.2,
+  "tool_uses": 8
+ },
+ {
+  "run": "T1-C1",
+  "task": "T1",
+  "cond": "C",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 56863,
+  "seconds": 65.0,
+  "tool_uses": 14
+ },
+ {
+  "run": "T2-A1",
+  "task": "T2",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/entrypoints/flask_app.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 60061,
+  "seconds": 67.6,
+  "tool_uses": 18
+ },
+ {
+  "run": "T2-A2",
+  "task": "T2",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/entrypoints/flask_app.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 55032,
+  "seconds": 55.0,
+  "tool_uses": 12
+ },
+ {
+  "run": "T2-B1",
+  "task": "T2",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/entrypoints/flask_app.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 58332,
+  "seconds": 64.6,
+  "tool_uses": 22
+ },
+ {
+  "run": "T2-B2",
+  "task": "T2",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 59269,
+  "seconds": 63.4,
+  "tool_uses": 15
+ },
+ {
+  "run": "T2-C1",
+  "task": "T2",
+  "cond": "C",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/entrypoints/flask_app.py",
+   "tests/unit/test_handlers.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 58368,
+  "seconds": 54.7,
+  "tool_uses": 12
+ },
+ {
+  "run": "T3-A1",
+  "task": "T3",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/service_layer/handlers.py",
+   "src/allocation/views.py",
+   "tests/integration/test_views.py"
+  ],
+  "tokens": 69964,
+  "seconds": 95.1,
+  "tool_uses": 17
+ },
+ {
+  "run": "T3-A2",
+  "task": "T3",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/views.py",
+   "tests/integration/test_views.py"
+  ],
+  "tokens": 61493,
+  "seconds": 64.9,
+  "tool_uses": 10
+ },
+ {
+  "run": "T3-B1",
+  "task": "T3",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/views.py",
+   "tests/e2e/test_api.py",
+   "tests/integration/test_views.py"
+  ],
+  "tokens": 62341,
+  "seconds": 62.7,
+  "tool_uses": 13
+ },
+ {
+  "run": "T3-B2",
+  "task": "T3",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/events.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "src/allocation/views.py",
+   "tests/e2e/test_api.py",
+   "tests/integration/test_views.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 79482,
+  "seconds": 115.6,
+  "tool_uses": 26
+ },
+ {
+  "run": "T3-C1",
+  "task": "T3",
+  "cond": "C",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/adapters/orm.py",
+   "src/allocation/domain/events.py",
+   "src/allocation/domain/model.py",
+   "src/allocation/service_layer/handlers.py",
+   "src/allocation/views.py",
+   "tests/integration/test_views.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 58260,
+  "seconds": 69.1,
+  "tool_uses": 7
+ },
+ {
+  "run": "T4-A1",
+  "task": "T4",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/entrypoints/flask_app.py",
+   "src/allocation/views.py",
+   "tests/integration/test_views.py",
+   "tests/unit/test_handlers.py"
+  ],
+  "tokens": 56752,
+  "seconds": 50.0,
+  "tool_uses": 10
+ },
+ {
+  "run": "T4-A2",
+  "task": "T4",
+  "cond": "A",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/domain/model.py",
+   "src/allocation/entrypoints/flask_app.py",
+   "src/allocation/views.py",
+   "tests/integration/test_views.py",
+   "tests/unit/test_product.py"
+  ],
+  "tokens": 55128,
+  "seconds": 50.0,
+  "tool_uses": 10
+ },
+ {
+  "run": "T4-B1",
+  "task": "T4",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/entrypoints/flask_app.py",
+   "src/allocation/views.py",
+   "tests/unit/test_views.py"
+  ],
+  "tokens": 52461,
+  "seconds": 43.8,
+  "tool_uses": 7
+ },
+ {
+  "run": "T4-B2",
+  "task": "T4",
+  "cond": "B",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/entrypoints/flask_app.py",
+   "src/allocation/views.py",
+   "tests/e2e/api_client.py",
+   "tests/e2e/test_api.py",
+   "tests/integration/test_views.py"
+  ],
+  "tokens": 63850,
+  "seconds": 55.3,
+  "tool_uses": 12
+ },
+ {
+  "run": "T4-C1",
+  "task": "T4",
+  "cond": "C",
+  "violations": [],
+  "tampered": [],
+  "changed": [
+   "src/allocation/entrypoints/flask_app.py",
+   "src/allocation/views.py",
+   "tests/unit/test_views.py"
+  ],
+  "tokens": 51883,
+  "seconds": 43.0,
+  "tool_uses": 8
+ }
+]
