@@ -1,0 +1,1231 @@
+{
+  "modules": [
+    {
+      "source": "src/api/cache.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "redis",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "unknown"
+          ],
+          "resolved": "redis",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": true,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "src/api/links.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "redis",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "unknown"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "src/api/cache.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/codes.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./db",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/db.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "src/api/links.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/db.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "pg",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "unknown"
+          ],
+          "resolved": "pg",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": true,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "src/api/codes.ts",
+        "src/api/links.ts",
+        "src/api/stats.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "pg",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "unknown"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "src/api/db.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/config.ts",
+      "dependencies": [],
+      "dependents": [
+        "src/web/app.tsx"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/events.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "events",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "core",
+            "import"
+          ],
+          "protocol": "node:",
+          "resolved": "events",
+          "coreModule": true,
+          "followable": false,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "src/api/links.ts",
+        "src/api/stats.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "events",
+      "followable": false,
+      "coreModule": true,
+      "couldNotResolve": false,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "core",
+        "import"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "src/api/events.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/guard.test.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./guard",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/guard.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/guard.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./links",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/links.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/api/links.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            },
+            {
+              "name": "src/api/guard.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            }
+          ],
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "not-in-allowed"
+            }
+          ]
+        }
+      ],
+      "dependents": [
+        "src/api/guard.test.ts",
+        "src/api/links.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/links.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./cache",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/cache.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./codes",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/codes.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./db",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/db.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./events",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/events.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./guard",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/guard.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": true,
+          "cycle": [
+            {
+              "name": "src/api/guard.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            },
+            {
+              "name": "src/api/links.ts",
+              "dependencyTypes": [
+                "local",
+                "import"
+              ]
+            }
+          ],
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "src/api/guard.ts",
+        "src/api/links.test.ts",
+        "src/api/server.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/links.test.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./links",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/links.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/server.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./links",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/links.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./stats",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/stats.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "express",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "unknown"
+          ],
+          "resolved": "express",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": true,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "express",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "unknown"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "src/api/server.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/api/stats.ts",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "./db",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/db.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./events",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/events.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [
+        "src/api/server.ts"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/perf/resolve.k6.js",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "k6/http",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "unknown"
+          ],
+          "resolved": "k6/http",
+          "coreModule": false,
+          "followable": false,
+          "couldNotResolve": true,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "k6/http",
+      "followable": false,
+      "coreModule": false,
+      "couldNotResolve": true,
+      "matchesDoNotFollow": false,
+      "dependencyTypes": [
+        "unknown"
+      ],
+      "dependencies": [],
+      "dependents": [
+        "src/perf/resolve.k6.js"
+      ],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/web/app.tsx",
+      "dependencies": [
+        {
+          "dynamic": false,
+          "module": "../api/config",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/api/config.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": true
+        },
+        {
+          "dynamic": false,
+          "module": "./client",
+          "moduleSystem": "es6",
+          "exoticallyRequired": false,
+          "dependencyTypes": [
+            "local",
+            "import"
+          ],
+          "resolved": "src/web/client.ts",
+          "coreModule": false,
+          "followable": true,
+          "couldNotResolve": false,
+          "matchesDoNotFollow": false,
+          "circular": false,
+          "valid": false,
+          "rules": [
+            {
+              "severity": "error",
+              "name": "not-in-allowed"
+            }
+          ]
+        }
+      ],
+      "dependents": [],
+      "orphan": false,
+      "valid": true
+    },
+    {
+      "source": "src/web/client.ts",
+      "dependencies": [],
+      "dependents": [
+        "src/web/app.tsx"
+      ],
+      "orphan": false,
+      "valid": true
+    }
+  ],
+  "summary": {
+    "violations": [
+      {
+        "type": "dependency",
+        "from": "src/api/guard.ts",
+        "to": "src/api/links.ts",
+        "rule": {
+          "severity": "error",
+          "name": "not-in-allowed"
+        }
+      },
+      {
+        "type": "dependency",
+        "from": "src/web/app.tsx",
+        "to": "src/web/client.ts",
+        "rule": {
+          "severity": "error",
+          "name": "not-in-allowed"
+        }
+      }
+    ],
+    "error": 2,
+    "warn": 0,
+    "info": 0,
+    "ignore": 0,
+    "totalCruised": 19,
+    "totalDependenciesCruised": 20,
+    "optionsUsed": {
+      "baseDir": "/repo",
+      "combinedDependencies": false,
+      "detectJSDocImports": false,
+      "doNotFollow": {
+        "path": "node_modules"
+      },
+      "exoticRequireStrings": [],
+      "externalModuleResolutionStrategy": "node_modules",
+      "metrics": false,
+      "moduleSystems": [
+        "es6",
+        "cjs",
+        "tsd",
+        "amd"
+      ],
+      "outputTo": "-",
+      "outputType": "json",
+      "preserveSymlinks": false,
+      "rulesFile": "/cfg/dc.js",
+      "skipAnalysisNotInRules": false,
+      "tsPreCompilationDeps": true,
+      "args": "src"
+    },
+    "ruleSetUsed": {
+      "forbidden": [
+        {
+          "name": "ucn-DbAccess",
+          "comment": "DbAccess: only api/db.ts imports pg",
+          "severity": "error",
+          "from": {
+            "pathNot": "^src/api/db\\.ts$"
+          },
+          "to": {
+            "path": "(^|/)node_modules/pg(/|$)"
+          },
+          "scope": "module"
+        }
+      ],
+      "allowed": [
+        {
+          "comment": "external packages and node core modules (conventions below restrict some)",
+          "from": {},
+          "to": {
+            "dependencyTypes": [
+              "npm",
+              "npm-dev",
+              "npm-optional",
+              "npm-peer",
+              "npm-bundled",
+              "npm-no-pkg",
+              "core",
+              "unknown",
+              "undetermined"
+            ]
+          }
+        },
+        {
+          "comment": "Api: within itself",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.AliasesEnabled: within itself",
+          "from": {
+            "path": "^src/api/config\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/config\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Codes: within itself",
+          "from": {
+            "path": "^src/api/codes\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/codes\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Guard: within itself",
+          "from": {
+            "path": "^src/api/guard\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/guard\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.LinkCreated: within itself",
+          "from": {
+            "path": "^src/api/events\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/events\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Links: within itself",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/links\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.LinksApi: within itself",
+          "from": {
+            "path": "^src/api/server\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/server\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Stats: within itself",
+          "from": {
+            "path": "^src/api/stats\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/stats\\.ts$"
+          }
+        },
+        {
+          "comment": "Cache: within itself",
+          "from": {
+            "path": "^src/api/cache\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/cache\\.ts$"
+          }
+        },
+        {
+          "comment": "CreateTests: within itself",
+          "from": {
+            "path": "^src/api/links\\.test\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/links\\.test\\.ts$"
+          }
+        },
+        {
+          "comment": "Db: within itself",
+          "from": {
+            "path": "^src/api/db\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/db\\.ts$"
+          }
+        },
+        {
+          "comment": "GuardTests: within itself",
+          "from": {
+            "path": "^src/api/guard\\.test\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/guard\\.test\\.ts$"
+          }
+        },
+        {
+          "comment": "ResolveLatency: within itself",
+          "from": {
+            "path": "^src/perf/resolve\\.k6\\.js$"
+          },
+          "to": {
+            "path": "^src/perf/resolve\\.k6\\.js$"
+          }
+        },
+        {
+          "comment": "Web: within itself",
+          "from": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          },
+          "to": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          }
+        },
+        {
+          "comment": "Web.Client: within itself",
+          "from": {
+            "path": "^src/web/client\\.ts$"
+          },
+          "to": {
+            "path": "^src/web/client\\.ts$"
+          }
+        },
+        {
+          "comment": "Web.Form: within itself",
+          "from": {
+            "path": "^src/web/app\\.tsx$"
+          },
+          "to": {
+            "path": "^src/web/app\\.tsx$"
+          }
+        },
+        {
+          "comment": "Api -> Api.AliasesEnabled",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/config\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Api.Codes",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/codes\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Api.Guard",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/guard\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Api.LinkCreated",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/events\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Api.Links",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/links\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Api.LinksApi",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/server\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Api.Stats",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/stats\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Cache",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/cache\\.ts$"
+          }
+        },
+        {
+          "comment": "Api -> Db",
+          "from": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/db\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.AliasesEnabled -> Api",
+          "from": {
+            "path": "^src/api/config\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.Codes -> Api",
+          "from": {
+            "path": "^src/api/codes\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.Codes -> Db",
+          "from": {
+            "path": "^src/api/codes\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/db\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Guard -> Api",
+          "from": {
+            "path": "^src/api/guard\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.LinkCreated -> Api",
+          "from": {
+            "path": "^src/api/events\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.Links -> Api",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.Links -> Api.Codes",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/codes\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Links -> Api.Guard",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/guard\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Links -> Api.LinkCreated",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/events\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Links -> Api.LinksApi",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/server\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Links -> Cache",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/cache\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Links -> Db",
+          "from": {
+            "path": "^src/api/links\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/db\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.LinksApi -> Api",
+          "from": {
+            "path": "^src/api/server\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.LinksApi -> Api.Links",
+          "from": {
+            "path": "^src/api/server\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/links\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.LinksApi -> Api.Stats",
+          "from": {
+            "path": "^src/api/server\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/stats\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Stats -> Api",
+          "from": {
+            "path": "^src/api/stats\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.Stats -> Api.LinkCreated",
+          "from": {
+            "path": "^src/api/stats\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/events\\.ts$"
+          }
+        },
+        {
+          "comment": "Api.Stats -> Api.LinksApi",
+          "from": {
+            "path": "^src/api/stats\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/server\\.ts$"
+          }
+        },
+        {
+          "comment": "CreateTests -> Api",
+          "from": {
+            "path": "^src/api/links\\.test\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "CreateTests -> Api.Links",
+          "from": {
+            "path": "^src/api/links\\.test\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/links\\.ts$"
+          }
+        },
+        {
+          "comment": "GuardTests -> Api",
+          "from": {
+            "path": "^src/api/guard\\.test\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "GuardTests -> Api.Guard",
+          "from": {
+            "path": "^src/api/guard\\.test\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/guard\\.ts$"
+          }
+        },
+        {
+          "comment": "Web -> Api",
+          "from": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Web -> Api.LinksApi",
+          "from": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          },
+          "to": {
+            "path": "^src/api/server\\.ts$"
+          }
+        },
+        {
+          "comment": "Web -> Web.Client",
+          "from": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          },
+          "to": {
+            "path": "^src/web/client\\.ts$"
+          }
+        },
+        {
+          "comment": "Web -> Web.Form",
+          "from": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          },
+          "to": {
+            "path": "^src/web/app\\.tsx$"
+          }
+        },
+        {
+          "comment": "Web.Client -> Api",
+          "from": {
+            "path": "^src/web/client\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/",
+            "pathNot": "^src/(?:api/server\\.ts$|api/config\\.ts$|api/events\\.ts$|api/links\\.ts$|api/codes\\.ts$|api/guard\\.ts$|api/stats\\.ts$)"
+          }
+        },
+        {
+          "comment": "Web.Client -> Api.LinksApi",
+          "from": {
+            "path": "^src/web/client\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/server\\.ts$"
+          }
+        },
+        {
+          "comment": "Web.Client -> Web",
+          "from": {
+            "path": "^src/web/client\\.ts$"
+          },
+          "to": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          }
+        },
+        {
+          "comment": "Web.Form -> Web",
+          "from": {
+            "path": "^src/web/app\\.tsx$"
+          },
+          "to": {
+            "path": "^src/web/",
+            "pathNot": "^src/(?:web/app\\.tsx$|web/client\\.ts$)"
+          }
+        },
+        {
+          "comment": "Api.Stats -> Db: deviation StatsDirectDb, expires 2027-03-31 (re-generate before then)",
+          "from": {
+            "path": "^src/api/stats\\.ts$"
+          },
+          "to": {
+            "path": "^src/api/db\\.ts$"
+          }
+        },
+        {
+          "comment": "Web.Form -> Api.AliasesEnabled: deviation WebReadsFlag, expires 2027-02-28 (re-generate before then)",
+          "from": {
+            "path": "^src/web/app\\.tsx$"
+          },
+          "to": {
+            "path": "^src/api/config\\.ts$"
+          }
+        }
+      ],
+      "allowedSeverity": "error"
+    }
+  }
+}

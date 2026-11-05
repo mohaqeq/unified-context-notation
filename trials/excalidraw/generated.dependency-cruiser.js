@@ -16,180 +16,179 @@ module.exports = {
           "npm-no-pkg",
           "core",
           "unknown",
-          "undetermined",
-          "type-only"
+          "undetermined"
         ]
       }
     },
     {
       "comment": "App: within itself",
       "from": {
-        "path": "^excalidraw\\-app(?:/.*)?$"
+        "path": "^excalidraw-app/"
       },
       "to": {
-        "path": "^excalidraw\\-app(?:/.*)?$"
+        "path": "^excalidraw-app/"
       }
     },
     {
       "comment": "Common: within itself",
       "from": {
-        "path": "^packages/common(?:/.*)?$"
+        "path": "^packages/common/"
       },
       "to": {
-        "path": "^packages/common(?:/.*)?$"
+        "path": "^packages/common/"
       }
     },
     {
       "comment": "Element: within itself",
       "from": {
-        "path": "^packages/element(?:/.*)?$"
+        "path": "^packages/element/"
       },
       "to": {
-        "path": "^packages/element(?:/.*)?$"
+        "path": "^packages/element/"
       }
     },
     {
       "comment": "FractionalIndexing: within itself",
       "from": {
-        "path": "^packages/fractional\\-indexing(?:/.*)?$"
+        "path": "^packages/fractional-indexing/"
       },
       "to": {
-        "path": "^packages/fractional\\-indexing(?:/.*)?$"
+        "path": "^packages/fractional-indexing/"
       }
     },
     {
       "comment": "LaserPointer: within itself",
       "from": {
-        "path": "^packages/laser\\-pointer(?:/.*)?$"
+        "path": "^packages/laser-pointer/"
       },
       "to": {
-        "path": "^packages/laser\\-pointer(?:/.*)?$"
+        "path": "^packages/laser-pointer/"
       }
     },
     {
       "comment": "Library: within itself",
       "from": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       },
       "to": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       }
     },
     {
       "comment": "Math: within itself",
       "from": {
-        "path": "^packages/math(?:/.*)?$"
+        "path": "^packages/math/"
       },
       "to": {
-        "path": "^packages/math(?:/.*)?$"
+        "path": "^packages/math/"
       }
     },
     {
       "comment": "Tooling: within itself",
       "from": {
-        "path": "^(?:(?:examples|scripts|dev\\-docs|firebase\\-project|public)(?:/.*)?|[^/]*\\.(?:ts|mts|js))$"
+        "path": "^(?:(?:examples|scripts|dev-docs|firebase-project|public)/.*$|[^/]*\\.(?:ts|mts|js)$)"
       },
       "to": {
-        "path": "^(?:(?:examples|scripts|dev\\-docs|firebase\\-project|public)(?:/.*)?|[^/]*\\.(?:ts|mts|js))$"
+        "path": "^(?:(?:examples|scripts|dev-docs|firebase-project|public)/.*$|[^/]*\\.(?:ts|mts|js)$)"
       }
     },
     {
       "comment": "Utils: within itself",
       "from": {
-        "path": "^packages/utils(?:/.*)?$"
+        "path": "^packages/utils/"
       },
       "to": {
-        "path": "^packages/utils(?:/.*)?$"
+        "path": "^packages/utils/"
       }
     },
     {
       "comment": "App -> Library",
       "from": {
-        "path": "^excalidraw\\-app(?:/.*)?$"
+        "path": "^excalidraw-app/"
       },
       "to": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       }
     },
     {
       "comment": "Element -> Common",
       "from": {
-        "path": "^packages/element(?:/.*)?$"
+        "path": "^packages/element/"
       },
       "to": {
-        "path": "^packages/common(?:/.*)?$"
+        "path": "^packages/common/"
       }
     },
     {
       "comment": "Element -> FractionalIndexing",
       "from": {
-        "path": "^packages/element(?:/.*)?$"
+        "path": "^packages/element/"
       },
       "to": {
-        "path": "^packages/fractional\\-indexing(?:/.*)?$"
+        "path": "^packages/fractional-indexing/"
       }
     },
     {
       "comment": "Element -> Math",
       "from": {
-        "path": "^packages/element(?:/.*)?$"
+        "path": "^packages/element/"
       },
       "to": {
-        "path": "^packages/math(?:/.*)?$"
+        "path": "^packages/math/"
       }
     },
     {
       "comment": "Library -> Common",
       "from": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       },
       "to": {
-        "path": "^packages/common(?:/.*)?$"
+        "path": "^packages/common/"
       }
     },
     {
       "comment": "Library -> Element",
       "from": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       },
       "to": {
-        "path": "^packages/element(?:/.*)?$"
+        "path": "^packages/element/"
       }
     },
     {
       "comment": "Library -> LaserPointer",
       "from": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       },
       "to": {
-        "path": "^packages/laser\\-pointer(?:/.*)?$"
+        "path": "^packages/laser-pointer/"
       }
     },
     {
       "comment": "Library -> Math",
       "from": {
-        "path": "^packages/excalidraw(?:/.*)?$"
+        "path": "^packages/excalidraw/"
       },
       "to": {
-        "path": "^packages/math(?:/.*)?$"
+        "path": "^packages/math/"
       }
     },
     {
       "comment": "Math -> Common",
       "from": {
-        "path": "^packages/math(?:/.*)?$"
+        "path": "^packages/math/"
       },
       "to": {
-        "path": "^packages/common(?:/.*)?$"
+        "path": "^packages/common/"
       }
     },
     {
       "comment": "Utils -> LaserPointer",
       "from": {
-        "path": "^packages/utils(?:/.*)?$"
+        "path": "^packages/utils/"
       },
       "to": {
-        "path": "^packages/laser\\-pointer(?:/.*)?$"
+        "path": "^packages/laser-pointer/"
       }
     }
   ],

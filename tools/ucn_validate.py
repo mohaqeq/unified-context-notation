@@ -431,6 +431,11 @@ class Ctx:
         self.deps_path = deps_path
 
 
+def waiver_covers(m, b, y):
+    """A waiver to y covers a dependency on b if b is y or inside it, or if y is data held by b (a store's client)."""
+    return m.under(b, y) or (m.kind[y] == "data" and m.under(y, b))
+
+
 def build_allowed(m):
     """The single definition of 'allowed', shared by the validator and the config exporters."""
     g = m.g
@@ -708,7 +713,7 @@ def check(m, ctx):
         if not reason and (policy == "deny" or allowed(a, b)):
             stats["conforming"] += 1
             continue
-        hit = [w for w in waivers if m.under(a, w[0]) and (m.under(b, w[1]) or m.under(w[1], b))]
+        hit = [w for w in waivers if m.under(a, w[0]) and waiver_covers(m, b, w[1])]
         live = [w for w in hit if w[3]]
         if live:
             used_waivers.add(live[0][2])
@@ -737,7 +742,7 @@ def check(m, ctx):
             add(UPDATE, "architecture", f"{a} depends on {b} (both ends authority: source): add a relation or a deviation{tag}", where[0], a, b)
 
     def waived_pair(a, b):
-        return next((w for w in waivers if w[3] and m.under(a, w[0]) and (m.under(b, w[1]) or m.under(w[1], b))), None)
+        return next((w for w in waivers if w[3] and m.under(a, w[0]) and waiver_covers(m, b, w[1])), None)
 
     # layers are transitive (import-linter semantics): a lower layer must not reach a higher one through any
     # chain of module imports. The search runs on the file graph, so container-level files are not false hubs.
@@ -757,10 +762,14 @@ def check(m, ctx):
             def local(name):
                 return f"{nid}.{name}" if f"{nid}.{name}" in m.nodes else m.ref(name)
             layers = [local(x) for x in m.attrs(nid, "layers")]
-            if not layers or not all(layers):
-                continue
-            for i, hi in enumerate(layers):
-                for lo in layers[i + 1:]:
+            indep = [local(x) for x in m.attrs(nid, "independent")]
+            pairs = []   # (source, target, rule name): transitive, as import-linter's layers and independence
+            if layers and all(layers):
+                pairs += [(lo, hi, f"layers of {nid}") for i, hi in enumerate(layers) for lo in layers[i + 1:]]
+            if indep and all(indep):
+                pairs += [(x, y, f"independent parts of {nid}") for x in indep for y in indep if x != y]
+            for lo, hi, rule in pairs:
+                if True:
                     start = sorted(f for f in fgraph if m.under(owner[f], lo))
                     prev, seen, hit = {}, set(start), None
                     queue = list(start)
@@ -783,8 +792,8 @@ def check(m, ctx):
                         chain.reverse()
                         auth = "model" in (m.authority(lo), m.authority(hi))
                         add(VIOLATION if auth else CONFLICT, "architecture",
-                            f"layers of {nid}: {lo} reaches {hi} indirectly", " -> ".join(chain), lo, hi)
-                        findings[-1]["forbidden"] = f"layers of {nid}"
+                            f"{rule}: {lo} reaches {hi} indirectly", " -> ".join(chain), lo, hi)
+                        findings[-1]["forbidden"] = rule
         for nid in sorted({w[2] for w in waivers if w[3]} - used_waivers):
             add(INFO, "governance", f"deviation {nid} matches no dependency in this run: remove it, or it will hide a future violation")
 
@@ -799,7 +808,7 @@ def check(m, ctx):
             cb = next((x for x in m.anc[b] if x in kids), None)
             if not ca or not cb or ca == cb:
                 continue
-            if any(w[3] and m.under(a, w[0]) and (m.under(b, w[1]) or m.under(w[1], b)) for w in waivers):
+            if any(w[3] and m.under(a, w[0]) and waiver_covers(m, b, w[1]) for w in waivers):
                 continue
             graph.setdefault(ca, set()).add(cb)
             ev.setdefault((ca, cb), where[0])
@@ -946,6 +955,7 @@ def check(m, ctx):
             auth = m.authority(near) if near else PRESETS[m.mode]["arch"]
             add(VIOLATION if auth == "model" else UPDATE, "coverage", f"{f} is not claimed by any element (add a code: glob)", el=near)
 
+    stats["_deps"], stats["_owner"] = deps, owner   # for exporters; removed from JSON output
     return findings, stats
 
 
@@ -1212,6 +1222,8 @@ def main(argv):
                  allow_widening="--allow-widening" in argv, apply="--apply" in argv, baseline=opt("--baseline"),
                  reason=opt("--reason"))
     m = r.pop("_model")
+    r.pop("_deps", None)
+    r.pop("_owner", None)
     if "--authority-map" in argv:
         print("\n".join(authority_map(m)))
         return 0

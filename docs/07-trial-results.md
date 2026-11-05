@@ -1,4 +1,4 @@
-# 7. Trials on Real Repositories (v0.4–v0.5)
+# 7. Trials on Real Repositories (v0.4–v0.5.1)
 
 After implementing the first four items of the v0.4 plan ([06 §6.5](06-review-synthesis-v0.3.md#65-what-v04-should-do-consolidated-plan)), UCN was driven against three open-source repositories, to see whether it brings value. Everything here was done with UCN's own tools, which only **read** files. Running third-party code (the repositories' test suites, import-linter from PyPI) was blocked in this environment, and that limits some comparisons below.
 
@@ -253,6 +253,68 @@ The config has still not been *run* through import-linter (blocked in this envir
 | Is it fast enough? | ~1 s per check on real repositories; ~6 s cold for 20k files; ~1 s pre-commit. |
 
 **Remaining gaps, in priority order:**
-1. Run the generated import-linter and dependency-cruiser configs in their tools, and an **agent arm with import-linter feedback**. Both need permission to execute third-party code here.
+1. ~~Run the generated configs in their tools, and an agent arm with import-linter feedback.~~ Done in containers (§7.8).
 2. A pilot of the size the harness says is needed (≥ 30 tempting tasks with external authors, k ≥ 3 runs).
 3. Requirement → test-result evidence and content-hash staleness (review items 7).
+
+---
+
+## 7.8 Third-party checkers in containers (v0.5.1)
+
+The comparisons that needed third-party code were run with **import-linter 2.15** and **dependency-cruiser 16.10.4**, each in a Docker container with the repository mounted read-only ([trials/containers/](../trials/containers/)).
+
+### import-linter on sqlfluff
+
+| Run | Result |
+|---|---|
+| sqlfluff's own contracts at `1682e11` | 4 kept, 0 broken, 4 ignored imports (ground truth confirmed) |
+| Generated from the **allow-list** model | 24 kept, 0 broken (the validator: 0 violations) |
+| Generated from the **deny-list** model | 10 kept, **2 broken**: `rules` → `dialects` (10 modules) and `utils` → `dialects` (2 modules), exactly the 12 modules the validator reports |
+| sqlfluff's own contracts on the 20 agent workspaces of experiment v2 | broken in exactly **T2-A2, T2-C1, T3-C1**, the same 3 runs the validator flagged; kept in the other 17 |
+
+**Running the real tool found five exporter and semantics bugs that reading the output never would have:**
+
+| Bug | Fix |
+|---|---|
+| `ignore_imports` named packages (`sqlfluff.core.plugin -> sqlfluff.core.rules`); import-linter requires exact module pairs and rejects entries that match nothing | ignores are derived from the observed file-level imports each deviation covers |
+| Convention contracts checked **indirect** imports (import-linter's default), so `api → linter → templaters → jinja2` counted as `api` importing jinja2 | `allow_indirect_imports = True`, matching the validator's direct check |
+| A waiver to `Linter` also covered imports of files owned directly by its container `Core` | the reverse match is limited to `data` held by a store |
+| `independent` was direct-only; import-linter's independence contract is transitive (it broke in T2 through `helpers.string → parser → … → helpers.slice`) | `independent` is now transitive on the file graph, like `layers` |
+| (dependency-cruiser) see below | |
+
+After the fixes, the generated deny-list layers contract has 5 ignores against sqlfluff's 4. The extra one, `plugin.lib → rules`, is a real import covered by the same component-level deviation: UCN waivers are scoped to element pairs, sqlfluff's ignores to single modules. That's a granularity difference (review C2), not a disagreement.
+
+### dependency-cruiser on excalidraw and Shortly
+
+| Run | Result |
+|---|---|
+| excalidraw, generated config, tsconfig aliases | 1,150 modules, 4,969 dependencies, 246 file-level violations → **22 element pairs, identical to the validator's 22** |
+| excalidraw, validator reading dependency-cruiser's JSON (`--deps`) | the same 22 pairs as its own scan |
+| Shortly, generated config | `guard → links` and `web/app → web/client` (not-in-allowed); the validator reports the same 2, classified as VIOLATION and MODEL-UPDATE, plus the 2 dependencies covered by waivers (allowed in the generated config) |
+
+**Bugs found by running it:**
+- dependency-cruiser rejected `(?:/.*)?` as an **unsafe regex** (a quantifier inside a quantified group). The dependency-cruiser export now uses its own glob conversion without nested quantifiers.
+- `type-only` was in the list of external dependency types, which allowed *every* type-only import, internal ones included. That hid `common → element/types` and `examples → element/types`.
+- Bare directory names inside braces (`{examples,scripts}/**`) produced `examples//…`.
+
+### Agent arm A′: sqlfluff's full lightweight stack
+
+Arm A′ is the real `AGENTS.md` **plus import-linter feedback in the loop**: the agent ran the containerized `lint-imports` before finishing and had to fix every BROKEN contract. It covers the same 4 tasks, 2 runs each, with Claude Haiku. That's 8 runs, graded with both import-linter and the validator.
+
+| Condition | Runs with a new violation | Avg tokens | Avg time | Avg tool calls |
+|---|---|---|---|---|
+| C: no agent docs | 2/4 | 66.5k | 84 s | 16.0 |
+| A: AGENTS.md | 1/8 | 82.0k | 122 s | 21.8 |
+| **A′: AGENTS.md + import-linter in the loop** | **0/8** | 79.6k | 120 s | 21.4 |
+| **B: UCN model + validator** | **0/8** | 70.2k | 122 s | 18.4 |
+
+**Reading:**
+- **The check in the loop is what prevents violations, not UCN as such.** The full lightweight stack (A′) reached the same 0/8 as UCN (B). In T2 and T3, A′ agents produced the same conforming designs as B: a structural `Protocol` in the helpers, formatting moved into `core.formatter`.
+- **UCN's measurable differences in this experiment:** about **12% fewer tokens** than A′ (an 80-line model vs 7.7k words of prose), and rules import-linter doesn't have here (the dialect rule, two library conventions, governance with expiry). No difference in violations or time.
+- n is small (8 runs per arm). The result agrees with the reviewers' prediction that the lightweight stack with a checker in the loop is a strong baseline.
+
+### What the container runs settle
+
+1. **The validator agrees with both mature tools on real code**, once the five bugs above were fixed: same contracts kept and broken on sqlfluff, the same 3 out of 20 agent runs flagged, and identical element pairs on excalidraw.
+2. **Exporting to existing checkers works.** The generated configs run, pass or fail as the model predicts, and import-linter accepts the exact ignores.
+3. **On preventing violations, UCN is as good as the lightweight stack, not better.** Its edge is cost and coverage: fewer tokens, prose-only rules made checkable, expiring waivers, authority modes and adoption gates. Whether that edge is worth a second model file is what the pilot must decide. Being able to *generate* the import-linter and dependency-cruiser configs from the model, instead of maintaining both, reduces that cost.

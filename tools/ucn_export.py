@@ -18,11 +18,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ucn_parse import parse  # noqa: E402
-from ucn_validate import (CHECK_ONLY, SRC_CODE, Model, build_allowed, glob_re, list_code_files, literal_prefix,  # noqa: E402
-                          norm_glob, parse_date, slurp)
+from ucn_validate import (CHECK_ONLY, SRC_CODE, Ctx, Model, build_allowed, check, glob_re, list_code_files,  # noqa: E402
+                          waiver_covers,
+                          literal_prefix, norm_glob, parse_date, slurp)
 
 EXTERNAL_TYPES = ["npm", "npm-dev", "npm-optional", "npm-peer", "npm-bundled", "npm-no-pkg", "core", "unknown",
-                  "undetermined", "type-only"]
+                  "undetermined"]   # not "type-only": that type also marks internal type imports
 
 
 def _elements(m):
@@ -65,15 +66,48 @@ def element_pairs(m, today):
             if allowed(a, b) and not allowed.forbidden(a, b):
                 allow.append((a, b))
             else:
-                w = next((d for d in devs if m.under(a, d[0]) and (m.under(b, d[1]) or m.under(d[1], b))), None)
+                w = next((d for d in devs if m.under(a, d[0]) and waiver_covers(m, b, d[1])), None)
                 if w:
                     waived.append((a, b, w[2], w[3]))
     return els, allow, waived
 
 
+_META = set(".^$*+?()[]{}|\\")
+
+
+def _esc(s):
+    return "".join("\\" + c if c in _META else c for c in s)
+
+
+def _dc_glob(p):
+    """Glob -> regex body without nested quantifiers (dependency-cruiser rejects 'unsafe' regexes).
+    'dir/**' becomes a plain prefix; '**/' becomes '.*' (slightly broader than zero-or-more directories)."""
+    p = norm_glob(p)
+    if p.endswith("/**") and not any(c in p[:-3] for c in "*?{"):
+        return _esc(p[:-3]) + "/"
+    return _dc_body(p) + "$"
+
+
+def _dc_body(p):
+    out, i = "", 0
+    while i < len(p):
+        if p.startswith("**", i):
+            out, i = out + ".*", i + (3 if p.startswith("**/", i) else 2)
+        elif p[i] == "*":
+            out, i = out + "[^/]*", i + 1
+        elif p[i] == "?":
+            out, i = out + "[^/]", i + 1
+        elif p[i] == "{" and "}" in p[i:]:
+            j = p.index("}", i)
+            out, i = out + "(?:" + "|".join(_dc_body(a) for a in p[i + 1:j].split(",")) + ")", j + 1
+        else:
+            out, i = out + _esc(p[i]), i + 1
+    return out
+
+
 def _rx(globs, prefix):
-    parts = [glob_re(g).pattern[1:-1] for g in globs]
-    return "^" + re.escape(prefix) + ("(?:" + "|".join(parts) + ")" if len(parts) > 1 else parts[0]) + "$"
+    parts = [_dc_glob(g) for g in globs]
+    return "^" + _esc(prefix) + ("(?:" + "|".join(parts) + ")" if len(parts) > 1 else parts[0])
 
 
 def to_dependency_cruiser(m, model_path, today):
@@ -186,9 +220,23 @@ def to_import_linter(m, model_path, today, package):
             return mods[e]
         return sorted({x for d in mods if m.under(d, e) for x in mods[d]})
 
+    # import-linter matches ignore_imports against exact module pairs and rejects entries that match nothing,
+    # so derive them from the observed file-level imports that each deviation covers
+    _, stats = check(m, Ctx(model_path, today.isoformat(), None, None, None))
+    deps, owner = stats["_deps"], stats["_owner"]
+
+    def dotted(f):
+        parts = f[:-3].split("/")
+        parts = parts[parts.index(package):] if package in parts else parts
+        return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
+
+    def waiver_pairs(a, b):
+        return sorted({f"    {dotted(f)} -> {dotted(t)}" for f, items in deps.items() if f.endswith(".py")
+                       and owner.get(f) and m.under(owner[f], a) for k, t in items
+                       if k == "file" and t.endswith(".py") and owner.get(t) and waiver_covers(m, owner[t], b)})
+
     def ignores(x, y):
-        return [f"    {ma} -> {mb}" for a, b, dev, exp in waived if m.under(a, x) and m.under(b, y)
-                for ma in mods.get(a, []) for mb in mods.get(b, [])]
+        return sorted({i for a, b, dev, exp in waived if m.under(a, x) and m.under(b, y) for i in waiver_pairs(a, b)})
     layered = set()
     for nid in m.nodes:
         def local(name):
@@ -196,8 +244,7 @@ def to_import_linter(m, model_path, today, package):
         layers = [local(x) for x in m.attrs(nid, "layers")]
         if layers and all(layers) and all(mods_of(l) for l in layers):
             layered |= {(lo, hi) for i, hi in enumerate(layers) for lo in layers[i + 1:]}
-            ign = sorted({i for a, b, dev, exp in waived if m.under(a, nid) and m.under(b, nid)
-                          for ma in mods.get(a, []) for mb in mods.get(b, []) for i in [f"    {ma} -> {mb}"]})
+            ign = sorted({i for a, b, dev, exp in waived if m.under(a, nid) and m.under(b, nid) for i in waiver_pairs(a, b)})
             out += [f"[importlinter:contract:ucn-layers-{nid}]", f"name = layers of {nid}", "type = layers",
                     "layers =", *[f"    {mods_of(l)[0]}" for l in layers]]
             out += (["ignore_imports =", *ign] if ign else []) + [""]
@@ -232,7 +279,8 @@ def to_import_linter(m, model_path, today, package):
             srcs = _module_cover(pyfiles, lambda f: not ok.match(f), package)
             if srcs:
                 out += [f"[importlinter:contract:ucn-{nid}]", f"name = {nid}: {chk}", "type = forbidden",
-                        "source_modules =", *[f"    {x}" for x in srcs], "forbidden_modules =", f"    {cm.group(2)}", ""]
+                        "source_modules =", *[f"    {x}" for x in srcs], "forbidden_modules =", f"    {cm.group(2)}",
+                        "allow_indirect_imports = True", ""]
     return "\n".join(out) + "\n"
 
 

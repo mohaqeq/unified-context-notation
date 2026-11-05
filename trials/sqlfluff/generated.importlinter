@@ -509,47 +509,32 @@ allow_indirect_imports = True
 name = ClickOnlyInCli: only sqlfluff/{cli,utils/testing}/** imports click
 type = forbidden
 source_modules =
-    sqlfluff
+    sqlfluff.__main__
     sqlfluff.api
     sqlfluff.core
-    sqlfluff.core.config
-    sqlfluff.core.dialects
-    sqlfluff.core.errors
-    sqlfluff.core.formatter
-    sqlfluff.core.helpers
-    sqlfluff.core.helpers.dict
-    sqlfluff.core.helpers.slice
-    sqlfluff.core.helpers.string
-    sqlfluff.core.linter
-    sqlfluff.core.parser
-    sqlfluff.core.plugin
-    sqlfluff.core.rules
-    sqlfluff.core.templaters
-    sqlfluff.core.timing
-    sqlfluff.core.types
     sqlfluff.dialects
-    sqlfluff.dialects.dialect_ansi
+    sqlfluff.diff_quality_plugin
     sqlfluff.rules
-    sqlfluff.utils
+    sqlfluff.utils.analysis
+    sqlfluff.utils.functional
+    sqlfluff.utils.identifers
+    sqlfluff.utils.reflow
 forbidden_modules =
     click
+allow_indirect_imports = True
 
 [importlinter:contract:ucn-JinjaOnlyInTemplaters]
 name = JinjaOnlyInTemplaters: only sqlfluff/core/templaters/** imports jinja2
 type = forbidden
 source_modules =
-    sqlfluff
+    sqlfluff.__main__
     sqlfluff.api
     sqlfluff.cli
-    sqlfluff.core
     sqlfluff.core.config
     sqlfluff.core.dialects
     sqlfluff.core.errors
     sqlfluff.core.formatter
     sqlfluff.core.helpers
-    sqlfluff.core.helpers.dict
-    sqlfluff.core.helpers.slice
-    sqlfluff.core.helpers.string
     sqlfluff.core.linter
     sqlfluff.core.parser
     sqlfluff.core.plugin
@@ -557,9 +542,10 @@ source_modules =
     sqlfluff.core.timing
     sqlfluff.core.types
     sqlfluff.dialects
-    sqlfluff.dialects.dialect_ansi
+    sqlfluff.diff_quality_plugin
     sqlfluff.rules
     sqlfluff.utils
 forbidden_modules =
     jinja2
+allow_indirect_imports = True
 

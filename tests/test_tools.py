@@ -476,6 +476,24 @@ class Rules(Tmp):
         write(path, read(path).replace("    forbids Side\n", ""))
         self.assertTrue(has(run(path, diff_rev="HEAD"), "WIDENED", "removed rule"))
 
+    def test_export_bugs_found_by_running_the_real_tools(self):
+        # dependency-cruiser rejects nested quantifiers; 'type-only' is not external; bare dirs inside braces
+        model = GENERIC.replace("code: app/**", "code: {app,lib}/**")
+        dc = ucn_export.export(self.project(model), "dependency-cruiser")
+        self.assertNotIn("(?:/.*)?", dc)
+        self.assertNotIn('"type-only"', dc)
+        self.assertIn("(?:app|lib)/", dc)
+        self.assertNotIn("app//", dc)
+        # import-linter: exact module pairs for ignores, and direct-only conventions
+        files = {"app/__init__.py": "", "app/a/__init__.py": "", "app/a/x.py": "from app.b import y\n",
+                 "app/b/__init__.py": "", "app/b/y.py": "import pg\n"}
+        model = GENERIC.replace("    component C: c", "    layers: B > A\n    component C: c") + \
+            "convention Db: db only in b\n  check: only app/b/** imports pg\n" + \
+            "deviation D: w\n  allows A uses B\n  why: w\n  expires: 2027-01-01\n  approved: p\n  lifecycle: accepted\n"
+        il = ucn_export.export(self.project(model, files), "import-linter", package="app", today=TODAY)
+        self.assertIn("    app.a.x -> app.b.y", il)
+        self.assertIn("allow_indirect_imports = True", il.split("[importlinter:contract:ucn-Db]")[1])
+
     def test_export_rules(self):
         path = self.project(RULES)
         il = ucn_export.export(path, "import-linter", package="app")

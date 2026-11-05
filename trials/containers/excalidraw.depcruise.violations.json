@@ -1,0 +1,1240 @@
+{
+"summary": {
+"totalCruised": 1150,
+"totalDependenciesCruised": 4969,
+"error": 246,
+"warn": 0
+},
+"violations": [
+{
+"from": "dev-docs/src/theme/ReactLiveScope/index.js",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-nextjs/src/excalidrawWrapper.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/CustomFooter.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/CustomFooter.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/ExampleApp.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/ExampleApp.tsx",
+"to": "packages/excalidraw/data/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/ExampleApp.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/ExampleApp.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/MobileFooter.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/components/MobileFooter.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/index.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/initialData.tsx",
+"to": "packages/element/src/transform.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/initialData.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "examples/with-script-in-browser/utils.ts",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/App.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/App.tsx",
+"to": "packages/common/src/utility-types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/App.tsx",
+"to": "packages/common/src/utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/App.tsx",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/App.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Collab.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Collab.tsx",
+"to": "packages/common/src/utility-types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Collab.tsx",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Collab.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Portal.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Portal.tsx",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/collab/Portal.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/AI.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/AppMainMenu.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/AppMainMenu.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/AppWelcomeScreen.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/DebugCanvas.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/DebugCanvas.tsx",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/DebugCanvas.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/DebugCanvas.tsx",
+"to": "packages/element/src/visualdebug.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/DebugCanvas.tsx",
+"to": "packages/math/src/curve.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/DebugCanvas.tsx",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/ExportToExcalidrawPlus.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/ExportToExcalidrawPlus.tsx",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/components/ExportToExcalidrawPlus.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/CustomStats.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/CustomStats.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/FileManager.ts",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/FileManager.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/fileStatusStore.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/fileStatusStore.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/firebase.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/firebase.ts",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/firebase.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/index.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/index.ts",
+"to": "packages/common/src/utility-types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/index.ts",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/index.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/LocalData.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/LocalData.ts",
+"to": "packages/common/src/utility-types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/LocalData.ts",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/LocalData.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/data/localStorage.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/debugCollaborators.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/ExcalidrawPlusIframeExport.tsx",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/sentry.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/share/ShareDialog.tsx",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/tests/collab.test.tsx",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/tests/firebase.test.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/useHandleAppTheme.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "excalidraw-app/vite.config.mts",
+"to": "scripts/woff2/woff2-vite-plugins.js",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/global.d.ts",
+"to": "packages/excalidraw/css.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/global.d.ts",
+"to": "packages/excalidraw/global.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/appEventBus.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/colors.ts",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/constants.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/constants.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/emitter.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/font-metadata.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/points.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/points.ts",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/utils.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/utils.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/common/src/utils.ts",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/global.d.ts",
+"to": "packages/excalidraw/css.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/global.d.ts",
+"to": "packages/excalidraw/global.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/__tests__/flowchart.test.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/align.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/arrowEndpointText.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/arrows/focus.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/arrows/helpers.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/binding.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/bounds.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/bounds.ts",
+"to": "packages/utils/src/shape.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/collision.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/comparisons.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/convertToShape.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/delta.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/distribute.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/dragElements.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/duplicate.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/elbowArrow.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/elementLink.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/embeddable.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/flowchart.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/frame.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/groups.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/image.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/linearElementEditor.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/linearElementEditor.ts",
+"to": "packages/utils/src/shape.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/renderElement.ts",
+"to": "packages/excalidraw/scene/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/renderElement.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/resizeElements.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/resizeTest.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/Scene.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/selection.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/shape.ts",
+"to": "packages/excalidraw/scene/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/shape.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/shape.ts",
+"to": "packages/laser-pointer/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/shape.ts",
+"to": "packages/utils/src/shape.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/showSelectedShapeActions.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/sizeHelpers.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/store.ts",
+"to": "packages/excalidraw/components/App.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/store.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/transform.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/transformHandles.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/typeChecks.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/utils.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/src/zindex.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/align.test.tsx",
+"to": "packages/excalidraw/actions/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/align.test.tsx",
+"to": "packages/excalidraw/i18n.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/align.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/align.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/align.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/align.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/actions/actionBoundText.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/i18n.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/tests/queries/dom.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/binding.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/bounds.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/bucketFill.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/collision.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/collision.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/collision.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/collision.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/collision.test.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/collision.test.tsx",
+"to": "packages/utils/src/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/cropElement.test.tsx",
+"to": "packages/excalidraw/actions/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/cropElement.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/cropElement.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/cropElement.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/cropElement.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/cropElement.test.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/delta.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/delta.test.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/distribute.test.tsx",
+"to": "packages/excalidraw/actions/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/distribute.test.tsx",
+"to": "packages/excalidraw/i18n.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/distribute.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/distribute.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/distribute.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/distribute.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/dragElements.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/dragElements.test.ts",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/duplicate.test.tsx",
+"to": "packages/excalidraw/actions/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/duplicate.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/duplicate.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/duplicate.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/duplicate.test.tsx",
+"to": "packages/excalidraw/tests/queries/dom.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/duplicate.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/actions/actionDuplicateSelection.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/actions/actionProperties.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/actions/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/elbowArrow.test.tsx",
+"to": "packages/utils/src/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/flowchart.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/flowchart.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/flowchart.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/flowchart.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/fractionalIndex.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/scene/export.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/scene/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/tests/queries/dom.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/frame.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/renderer/interactiveScene.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/renderer/staticScene.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/tests/queries/dom.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/linearElementEditor.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/newElement.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/resize.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/resize.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/resize.test.tsx",
+"to": "packages/excalidraw/tests/helpers/ui.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/resize.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/shape.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/sortElements.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/textElement.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/typeChecks.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/zindex.test.tsx",
+"to": "packages/excalidraw/actions/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/zindex.test.tsx",
+"to": "packages/excalidraw/components/App.selection.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/zindex.test.tsx",
+"to": "packages/excalidraw/index.tsx",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/zindex.test.tsx",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/zindex.test.tsx",
+"to": "packages/excalidraw/tests/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/element/tests/zindex.test.tsx",
+"to": "packages/excalidraw/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/excalidraw/components/Stats/MultiDimension.tsx",
+"to": "packages/utils/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/excalidraw/components/TTDDialog/common.ts",
+"to": "packages/utils/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/excalidraw/tests/history.test.tsx",
+"to": "packages/utils/src/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/excalidraw/tests/move.test.tsx",
+"to": "packages/utils/src/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/excalidraw/tests/test-utils.ts",
+"to": "excalidraw-app/app_constants.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/math/global.d.ts",
+"to": "packages/excalidraw/css.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/math/global.d.ts",
+"to": "packages/excalidraw/global.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/math/tests/curve.test.ts",
+"to": "packages/utils/src/test-utils.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/global.d.ts",
+"to": "packages/excalidraw/css.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/global.d.ts",
+"to": "packages/excalidraw/global.d.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/src/index.ts",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/src/index.ts",
+"to": "packages/excalidraw/scene/export.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/src/shape.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/src/shape.ts",
+"to": "packages/element/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/src/shape.ts",
+"to": "packages/element/src/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/src/shape.ts",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/clipboard.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/data/image.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/data/json.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/renderer/staticScene.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/renderer/staticSvgScene.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/tests/fixtures/diagramFixture.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/export.test.ts",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/geometry.test.ts",
+"to": "packages/math/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/utils.unmocked.test.ts",
+"to": "packages/excalidraw/data/image.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/utils.unmocked.test.ts",
+"to": "packages/excalidraw/data/types.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/utils.unmocked.test.ts",
+"to": "packages/excalidraw/scene/export.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "packages/utils/tests/utils.unmocked.test.ts",
+"to": "packages/excalidraw/tests/helpers/api.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "scripts/buildPackage.js",
+"to": "packages/excalidraw/env.cjs",
+"rule": "not-in-allowed"
+},
+{
+"from": "scripts/stats/vite.config.mts",
+"to": "excalidraw-app/vite.config.mts",
+"rule": "not-in-allowed"
+},
+{
+"from": "setupTests.ts",
+"to": "packages/common/src/index.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "setupTests.ts",
+"to": "packages/excalidraw/fonts/ExcalidrawFontFace.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "setupTests.ts",
+"to": "packages/excalidraw/polyfill.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "setupTests.ts",
+"to": "packages/excalidraw/tests/helpers/colorize.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "setupTests.ts",
+"to": "packages/excalidraw/tests/helpers/mocks.ts",
+"rule": "not-in-allowed"
+},
+{
+"from": "setupTests.ts",
+"to": "packages/excalidraw/tests/helpers/polyfills.ts",
+"rule": "not-in-allowed"
+}
+]
+}

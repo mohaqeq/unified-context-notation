@@ -18,7 +18,10 @@ ignore_imports =
     sqlfluff.core.errors -> sqlfluff.core.parser
     sqlfluff.core.errors -> sqlfluff.core.rules
     sqlfluff.core.formatter -> sqlfluff.core.linter
-    sqlfluff.core.plugin -> sqlfluff.core.rules
+    sqlfluff.core.plugin.hookspecs -> sqlfluff.core.rules.base
+    sqlfluff.core.plugin.lib -> sqlfluff.core.rules
+    sqlfluff.core.plugin.lib -> sqlfluff.core.rules.config_info
+    sqlfluff.core.plugin.lib -> sqlfluff.core.rules.loader
 
 [importlinter:contract:ucn-independent-Package.Core.Helpers]
 name = independent parts of Package.Core.Helpers
@@ -116,6 +119,7 @@ source_modules =
     sqlfluff.utils.reflow
 forbidden_modules =
     click
+allow_indirect_imports = True
 
 [importlinter:contract:ucn-JinjaOnlyInTemplaters]
 name = JinjaOnlyInTemplaters: only sqlfluff/core/templaters/** imports jinja2
@@ -141,4 +145,5 @@ source_modules =
     sqlfluff.utils
 forbidden_modules =
     jinja2
+allow_indirect_imports = True
 

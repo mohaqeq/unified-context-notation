@@ -9,7 +9,8 @@
 
 **Status and evidence ([docs/07](docs/07-trial-results.md)):** trialled on three real repositories, in two rounds.
 - **sqlfluff:** UCN found a rule in the project's own `AGENTS.md` that 12 modules contradict, which neither its AGENTS.md nor its import-linter contracts catch. It reproduces their import-linter contracts and shows why each of their 4 exceptions is needed. With the deny-list policy, upkeep was **0 model edits in 600 commits**.
-- **sqlfluff agent experiment** (rules that aren't visible locally): new architecture violations in **0/8** runs with UCN and the validator, 1/8 with the project's real `AGENTS.md`, 2/4 with no agent docs, at 14% fewer tokens than AGENTS.md. Small n; not significant.
+- **sqlfluff agent experiment** (rules that aren't visible locally): new architecture violations in **0/8** runs with UCN and the validator, **0/8** with the project's full lightweight stack (AGENTS.md plus import-linter in the loop), 1/8 with AGENTS.md alone, and 2/4 with no agent docs. The check in the loop is what matters. UCN matched the lightweight stack at about 12% fewer tokens.
+- **Against the mature tools** (run in containers): identical results to import-linter on sqlfluff and to dependency-cruiser on excalidraw, after fixing five bugs that only running the real tools exposed.
 - **excalidraw:** it found circular, undeclared runtime dependencies between published packages.
 - **cosmicpython, agent experiment:** on a small, clean codebase it did **not** change agent behavior, and neither did an equivalent `AGENTS.md`, because even agents with no instructions followed the existing patterns.
 
@@ -29,7 +30,7 @@ Whether UCN is worth its upkeep on a large, eroded codebase is the open question
 | [examples/shortly/](examples/shortly/) | Worked example: model, a small real TypeScript codebase, L0 card, task slice |
 | [trials/](trials/) | Models, results and scripts from the real-repository trials |
 | [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, gates, diff, propose), `ucn_export.py` (dependency-cruiser and import-linter configs), `pilot_eval.py` (pilot decision) |
-| [tests/](tests/) | 70 tests, including a regression test for each reproduction from the v0.3 reviews |
+| [tests/](tests/) | 71 tests, including a regression test for each reproduction from the v0.3 reviews |
 | [reviews/](reviews/) | The raw reviews |
 
 ## Try it
