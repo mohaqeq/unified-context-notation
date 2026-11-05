@@ -1,16 +1,14 @@
-ucn 0.1 system: Shortly level: L0
-# System card: always included in every projection.
-
+ucn 0.2 system: Shortly level: L0 origin: stated budget: 400
+# System card: the task-independent core. It comes first in every projection, so it is a stable, cacheable prefix.
+# L0 = kind, id, labels, one-line text. No relations or attributes. Global pins inline; scoped pins named.
 goal Share: users share short links that keep working for years
 goal Abuse [pin]: the service must not be usable to spread malware or phishing
 system Shortly: URL shortening service
-  container Web: single-page UI (react)
-  container Api: HTTP API for create, resolve, stats (node/express)
-  container Db: primary store (postgres)
-  container Cache: hot code -> target map (redis)
-req Blocklist [security]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
-req RateLimit [security, unwanted]: IF a user creates more than 100 links per hour THEN THE system SHALL answer 429
+  container Web: single-page UI for creating links
+  container Api: HTTP API for create, resolve, stats
+  container Db: primary store
+  container Cache: hot map from code to target
 rule Links.CodeImmutable [pin]: a code never changes its target after creation
-decision ImmutableCodes [pin]: never retarget an existing code
-conflict: Guard.limit is 100/hour (ticket#14) | code uses 1000/hour (api/guard.ts:44)
-more: 7 req, 3 actor, 3 component, 2 decision, 3 test -> expand Shortly@L1
+conflict RateLimitValue [pin]: ticket#14 says 100 links per hour; the code (api/guard.ts:44) uses 1000
+more: req Blocklist [security], req RateLimit [security]
+more: 5 req, 2 term, 3 actor, 3 component, 1 api, 1 config, 1 event, 1 env, 5 fn, 1 machine, 1 data, 3 decision, 2 convention, 3 test -> expand Shortly@L1

@@ -1,49 +1,61 @@
-ucn 0.1 system: Shortly level: mixed task: "implement custom aliases (ticket#30)" budget: 1200
-# Output of π(M, task, 1200): core first, task slice last, stubs for what was left out.
+ucn 0.2 system: Shortly level: mixed origin: stated task: "implement custom aliases (ticket#30)" budget: 1200
+# A projection π(M, task, 1200). Hand-written to follow §3.5, then checked by machine:
+#   python tools/ucn_parse.py examples/shortly/slice.alias.ucn --against examples/shortly/model.ucn
+# Core first (cacheable prefix), task slice last. Relevant omissions are named; the irrelevant tail is counted.
 
-# ---------- core (L0 + pinned) ----------
+# ---------- core ----------
 goal Share: users share short links that keep working for years
 goal Abuse [pin]: the service must not be usable to spread malware or phishing
 system Shortly: URL shortening service
-  container Api: HTTP API (node/express)
-  container Db: primary store (postgres)
-  container Cache: hot code -> target map (redis)
-  more: 1 container (Web) -> expand Shortly@L1
-req Blocklist [security]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
-req RateLimit [security, unwanted]: IF a user creates more than 100 links per hour THEN THE system SHALL answer 429
+  container Web: single-page UI for creating links
+  container Api: HTTP API for create, resolve, stats
+  container Db: primary store
+  container Cache: hot map from code to target
 rule Links.CodeImmutable [pin]: a code never changes its target after creation
-decision ImmutableCodes [pin]: never retarget an existing code
-conflict: Guard.limit is 100/hour (ticket#14) | code uses 1000/hour (api/guard.ts:44)
+conflict RateLimitValue [pin]: ticket#14 says 100 links per hour; the code (api/guard.ts:44) uses 1000
 
 # ---------- task slice ----------
+convention Testing: run 'npm test' in api/; every new endpoint needs a jest test and an OpenAPI entry
+term PremiumUser: a user on a paid plan; only premium users may set aliases
+req Blocklist [security, unwanted]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
+  satisfiedBy Guard
+req RateLimit [security, unwanted]: IF a user creates more than 100 links per hour THEN THE system SHALL answer 429
+  satisfiedBy Guard
 decision RandomCodes: random base62 codes, not URL hashes
-  why: the same URL from different owners must get different codes
+  why: the same URL from different owners must get different codes, and stats must stay per owner
   affects Codes
 container Db
   data Link: code PK, target, owner, createdAt, expiresAt?, hits, disabled
     inv: code unique
 container Api
-  component Codes
-    fn generate(): Code
-      post: matches /^[0-9A-Za-z]{7}$/
-      post: not exists(Link where code == result)
-  component Links
-    fn create(url: string, owner: UserId, alias?: string): Code
-      pre: isHttpUrl(url)
-      post: result.length == 7 or result == alias
-      post: unique(result)
-      err: rateLimited(owner) -> 429
-      err: blocked(domain(url)) -> 422
-      err: alias taken -> 409
-      calls Codes.generate, Guard.check, Guard.limit
-      src: api/links.ts:40
-    more: fn resolve, machine LinkLife -> expand Links@L2
-  api LinksApi: REST: POST /links, GET /{code} ...
+  api LinksApi: REST: POST /links, GET /{code}, GET /links/{code}/stats
     src: api/openapi.yaml
-req Alias [event, option]: WHERE custom aliases are enabled, WHEN a premium user submits an alias THE system SHALL use it as the code
-  status: proposed
-  # satisfied by: Links (inverse of 'satisfies', rendered as a comment)
-  # lint: no test verifies Alias yet
-test CreateTests: create returns 7 chars; duplicate URL gets new code
-  src: api/links.test.ts
-more: 6 req, 2 component, 1 decision, 2 test not relevant to task -> expand Shortly@L1
+  config AliasesEnabled: feature flag for custom aliases, default off
+    src: api/config.ts:12
+  component Codes: generate collision-free codes
+    fn generate(): Code
+      post: matches /^[0-9A-Za-z]{7}$/ [inferred]
+      post: not exists(Link where code == result) [inferred]
+  component Guard: abuse protection
+    fn check(url: string): void
+    fn limit(owner: UserId): void
+  component Links: create and resolve short links
+    implements LinksApi
+    fn create(url: string, owner: UserId): Code
+      pre: isHttpUrl(url) [inferred]
+      post: result.length == 7 [inferred]
+      post: unique(result) [inferred]
+      err: rateLimited(owner) -> 429 [inferred]
+      err: blocked(domain(url)) -> 422 [inferred]
+      calls Codes.generate, Guard.check, Guard.limit
+      writes Link
+      emits LinkCreated
+      src: api/links.ts:40
+req Create [event]: WHEN a user submits a valid http(s) URL THE system SHALL return a unique 7-char code
+  satisfiedBy Links, Codes
+req Alias [complex]: WHERE custom aliases are enabled, WHEN a premium user submits an alias THE system SHALL use it as the code
+  lifecycle: planned
+  note: nothing satisfies or verifies Alias yet
+  src: ticket#30
+more: event LinkCreated, fn Links.resolve, machine Links.LinkLife, decision ImmutableCodes, convention DbAccess, test CreateTests, test GuardTests
+more: 3 req, 1 term, 3 actor, 1 env, 1 decision, 1 test -> expand Shortly@L1

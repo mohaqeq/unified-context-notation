@@ -1,11 +1,19 @@
-ucn 0.1 system: Shortly level: L2
-# Full model (all nodes at L2). Hand-written to show the notation; v0.3 adapters would generate most of it.
+ucn 0.2 system: Shortly level: L2 origin: stated
+# Full model, all nodes at L2. Hand-written to show the notation; v0.3 adapters would generate most of it.
+# Origin: the file default is 'stated' (docs, tickets). The system block is 'derived' (code, IaC, schemas).
+# Contract clauses written by an LLM from code bodies are marked [inferred], line by line.
 
 # ---------- intent ----------
 goal Share: users share short links that keep working for years
   src: README.md#vision
 goal Abuse [pin]: the service must not be usable to spread malware or phishing
   src: ticket#12
+
+term PremiumUser: a user on a paid plan; only premium users may set aliases
+  src: docs/plans.md
+term Code: the 7-character public identifier of a link
+  aka: short code, slug
+  src: README.md#terms
 
 req Create [event]: WHEN a user submits a valid http(s) URL THE system SHALL return a unique 7-char code
   refines Share
@@ -19,110 +27,145 @@ req Fast [nfr]: THE system SHALL resolve a code in under 50 ms at p99
 req Expire [state]: WHILE a link is past its expiry date THE system SHALL answer 410 Gone
   refines Share
   src: ticket#21
-req Blocklist [security]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
+req Blocklist [security, unwanted]: IF the target domain is on the blocklist THEN THE system SHALL reject creation with 422
   refines Abuse
   src: ticket#12
 req RateLimit [security, unwanted]: IF a user creates more than 100 links per hour THEN THE system SHALL answer 429
   refines Abuse
   src: ticket#14
-req Alias [event, option]: WHERE custom aliases are enabled, WHEN a premium user submits an alias THE system SHALL use it as the code
+req Alias [complex]: WHERE custom aliases are enabled, WHEN a premium user submits an alias THE system SHALL use it as the code
   refines Share
-  status: proposed
+  lifecycle: planned
   src: ticket#30
 
-# ---------- structure ----------
+# ---------- structure (as-is) ----------
 actor User: person creating links via web UI or API
 actor Visitor: anyone opening a short link
 actor SafeBrowsing: external URL-reputation service
   tech: https api
 
-system Shortly: URL shortening service
+system Shortly [derived]: URL shortening service
   container Web: single-page UI for creating links
     tech: react
+    code: web/**
     uses Api
   container Api: HTTP API for create, resolve, stats
     tech: node/express
-    exposes LinksApi
+    code: api/**
     uses Db, Cache, SafeBrowsing
+    exposes LinksApi
+    deploysTo Prod
     api LinksApi: REST: POST /links, GET /{code}, GET /links/{code}/stats
       src: api/openapi.yaml
+    config AliasesEnabled: feature flag for custom aliases, default off
+      src: api/config.ts:12
+    event LinkCreated: published after a link is stored; the stats job consumes it
+      src: api/events.ts:3
     component Links: create and resolve short links
-      satisfies Create, Resolve, Expire, Alias
-      fn create(url: string, owner: UserId, alias?: string): Code
-        pre: isHttpUrl(url)
-        post: result.length == 7 or result == alias
-        post: unique(result)
-        err: rateLimited(owner) -> 429
-        err: blocked(domain(url)) -> 422
-        err: alias taken -> 409
-        effect: writes Link, emits LinkCreated
+      code: api/links.ts
+      satisfies Create, Resolve, Expire
+      implements LinksApi
+      fn create(url: string, owner: UserId): Code
+        pre: isHttpUrl(url) [inferred]
+        post: result.length == 7 [inferred]
+        post: unique(result) [inferred]
+        err: rateLimited(owner) -> 429 [inferred]
+        err: blocked(domain(url)) -> 422 [inferred]
+        effect: stores the link, then publishes LinkCreated [inferred]
         calls Codes.generate, Guard.check, Guard.limit
+        writes Link
+        emits LinkCreated
+        verified: CreateTests
         src: api/links.ts:40
       fn resolve(code: Code): Redirect
-        err: link.expiresAt < now -> 410
-        err: unknown code -> 404
-        effect: increments Link.hits (async)
-        reads Cache, Link
+        err: link.expiresAt < now -> 410 [inferred]
+        err: unknown code -> 404 [inferred]
+        effect: increments Link.hits asynchronously [inferred]
+        uses Cache
+        reads Link
         src: api/links.ts:88
-      rule CodeImmutable [pin]: a code never changes its target after creation
+      rule CodeImmutable [pin, stated]: a code never changes its target after creation
         src: docs/adr/003.md
-      machine LinkLife [inferred]: states active, expired, disabled
-        active -> expired: on expiresAt passed
-        active -> disabled: on abuse report confirmed
-        disabled -> active: on admin restore
+      machine LinkLife [inferred]: lifecycle of a link
+        states: active, expired, disabled
+        initial: active
+        on expiresAt passed: active -> expired
+        on abuse report confirmed: active -> disabled
+        on admin restore: disabled -> active
         src: api/links.ts:120
     component Codes: generate collision-free codes
+      code: api/codes.ts
       satisfies Create
       fn generate(): Code
-        post: matches /^[0-9A-Za-z]{7}$/
-        post: not exists(Link where code == result)
-        effect: retries up to 5 times on collision, then error 503
+        post: matches /^[0-9A-Za-z]{7}$/ [inferred]
+        post: not exists(Link where code == result) [inferred]
+        effect: retries up to 5 times on collision, then fails with 503 [inferred]
+        reads Link
         src: api/codes.ts:5
     component Guard: abuse protection
+      code: api/guard.ts
       satisfies Blocklist, RateLimit
       fn check(url: string): void
-        err: blocked(domain(url)) -> 422
-        calls SafeBrowsing
+        err: blocked(domain(url)) -> 422 [inferred]
+        uses SafeBrowsing
         src: api/guard.ts:10
       fn limit(owner: UserId): void
-        err: count(owner, last 1h) > 100 -> 429
+        err: count(owner, last 1h) > 1000 -> 429 [inferred]
         src: api/guard.ts:42
-      conflict: limit is 100/hour (ticket#14) | code uses 1000/hour (api/guard.ts:44)
   container Db: primary store
     tech: postgres
+    deploysTo Prod
     data Link: code PK, target, owner, createdAt, expiresAt?, hits, disabled
       inv: code unique
       src: db/schema.sql:1
-  container Cache: hot code -> target map
+  container Cache: hot map from code to target
     tech: redis
     satisfies Fast
-    guarantee: entries expire with the link
+    deploysTo Prod
+    guarantee: entries expire with the link [inferred]
     src: api/cache.ts:3
+  env Prod: one region, two Api instances behind a load balancer
+    src: infra/main.tf
+
+# ---------- conflicts ----------
+conflict RateLimitValue [pin]: the ticket and the code disagree on the hourly creation limit
+  about RateLimit, Guard.limit
+  lifecycle: open
+  side Ticket: 100 links per hour
+    src: ticket#14
+  side Code [derived]: 1000 links per hour; GuardTests asserts 1000 and passes
+    src: api/guard.ts:44
 
 # ---------- decisions ----------
 decision RandomCodes: random base62 codes, not URL hashes
   why: the same URL from different owners must get different codes, and stats must stay per owner
   affects Codes
-  status: accepted
+  lifecycle: accepted
   src: docs/adr/001.md
-decision CacheAside: Redis cache-aside for resolve, Postgres as truth
+decision CacheAside: Redis cache-aside for resolve, Postgres as the source of truth
   why: p99 under 50 ms without a read replica
   affects Api, Cache
-  status: accepted
+  lifecycle: accepted
   src: docs/adr/002.md
-decision ImmutableCodes [pin]: never retarget an existing code
+decision ImmutableCodes: never retarget an existing code
   why: printed QR codes and old emails must not start pointing somewhere else
-  affects Links
-  status: accepted
+  affects Links, Links.CodeImmutable
+  lifecycle: accepted
   src: docs/adr/003.md
 
+# ---------- how to work ----------
+convention Testing: run 'npm test' in api/; every new endpoint needs a jest test and an OpenAPI entry
+  src: CONTRIBUTING.md#tests
+convention DbAccess: database access only through api/db.ts; no raw SQL in handlers
+  src: CONTRIBUTING.md#db
+
 # ---------- evidence ----------
-test CreateTests: create returns 7 chars; duplicate URL gets new code
+test CreateTests [derived]: create returns 7 chars; the same URL twice gets two different codes
   verifies Create, Links.create
   src: api/links.test.ts
-test GuardTests: blocked domain -> 422; 101st link in an hour -> 429
-  verifies Blocklist, RateLimit
+test GuardTests [derived]: a blocked domain gets 422; the 1001st link in an hour gets 429
+  verifies Blocklist, Guard.check, Guard.limit
   src: api/guard.test.ts
-test ResolveLatency: k6 load test, p99 < 50 ms
+test ResolveLatency [derived]: k6 load test, p99 under 50 ms
   verifies Fast
   src: perf/resolve.k6.js
