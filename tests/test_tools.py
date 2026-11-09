@@ -699,6 +699,21 @@ class Rules(Tmp):
 
 
 # ------------------------------------------------------------------------------------------- pilot harness
+class PythonSubmoduleConvention(Tmp):
+    """'only X imports django.db.models.signals' must see submodule imports (found on saleor, v0.6 follow-up)."""
+
+    def test_submodule_convention(self):
+        extra = ("convention NoSignals: logic is called explicitly, not through signals\n"
+                 "  check: only app/a/{migrations/**,apps.py} imports django.db.models.signals\n")
+        path = self.project(files={"app/a/x.ts": "export const x = 1;\n",
+                                   "app/a/apps.py": "from django.db.models.signals import post_migrate\n",
+                                   "app/c/y.py": "from django.db.models.signals import post_save\nimport django.db.models\n"},
+                            extra=extra)
+        bad = [f["message"] for f in run(path)["findings"] if f["check"] == "conventions"]
+        self.assertEqual(len(bad), 1)
+        self.assertIn("app/c/y.py imports django.db.models.signals", bad[0])
+
+
 class ReconGrading(Tmp):
     """recon.grade_one with the containers faked: it must fail closed and catch tampering (review v0.6)."""
 

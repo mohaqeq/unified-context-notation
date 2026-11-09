@@ -1,0 +1,55 @@
+ucn 0.5 system: Saleor level: L1 origin: stated mode: forward baseline: 1d707dc policy: deny root: .
+# Draft model for github.com/saleor/saleor (commit 1d707dc), built from docs/adr and AGENTS.md. Paths are relative to
+# the repository root (copy this file there to validate). Requirements and decisions come from the ADRs; their tests
+# are linked as evidence. Only the signals convention is machine-checked by imports; the SITE_ID rule is a text rule
+# (see trials/saleor/NOTES.md for what the validator cannot check yet).
+
+goal Commerce: headless commerce API for storefronts, staff and apps
+  src: README.md
+
+req GiftCardBearer: an unassigned gift card can be spent by whoever holds the code, including in guest checkout
+  src: docs/adr/0001-gift-cards-remain-bearer-instruments.md
+  rationale: docs/adr/0001-gift-cards-remain-bearer-instruments.md
+req GiftCardNoLeak: rejecting a restricted gift card at checkout must be generic and never reveal that, or to whom, it is assigned
+  src: docs/adr/0001-gift-cards-remain-bearer-instruments.md
+  rationale: docs/adr/0001-gift-cards-remain-bearer-instruments.md#enforcement-must-not-leak-who-a-card-belongs-to
+req PaymentHistoryProjection: customers see payment history only through Order.transactionSummaries, an allowlisted projection without card digits, expiry or zero-amount attempts
+  src: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
+  rationale: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
+
+decision AssignmentNotUsedBy: gift card assignment is its own field and is never derived from the deprecated used_by
+  rationale: docs/adr/0001-gift-cards-remain-bearer-instruments.md#assignment-is-a-new-concept-separate-from-used_by
+decision NoOpenedTransactions: Order.transactions stays staff-only; customer access never widens its permissions
+  rationale: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
+
+rule NoSiteIdReads: never read settings.SITE_ID to identify the current site; there may be several sites
+  src: AGENTS.md#multi-tenancy-never-rely-on-settingssite_id
+rule NoInProcessState: no module globals or in-memory caches as a source of truth; workers and pods do not share memory
+  src: AGENTS.md
+convention NoDjangoSignals: business logic is called explicitly, never through Django signals (post_migrate is the one exception)
+  src: AGENTS.md
+  check: only saleor/*/{migrations/**,apps.py} imports django.db.models.signals
+
+container Saleor [derived]: the saleor Django project
+  code: saleor/**
+  component GiftCard: gift cards and their assignment
+    code: saleor/giftcard/**
+  component Checkout: checkout and its completion
+    code: saleor/checkout/**
+  component Order: orders
+    code: saleor/order/**
+  component Payment: payments and transactions
+    code: saleor/payment/**
+  component Site: site settings and the site picker
+    code: saleor/site/**
+  component GraphQL: the public GraphQL API
+    code: saleor/graphql/**
+component Entrypoints [derived]: Django entry point and the pytest root configuration
+  code: {manage.py,conftest.py}
+
+test GiftCardRejectionTests [derived]: promo/gift card rejection details at checkout
+  src: saleor/graphql/checkout/tests/mutations/test_checkout_add_promo_code_rejection_details.py
+  verifies GiftCardNoLeak
+test TransactionSummaryTests [derived]: Order.transactionSummaries query
+  src: saleor/graphql/order/tests/queries/test_order_transaction_summaries.py
+  verifies PaymentHistoryProjection

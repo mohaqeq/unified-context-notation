@@ -406,7 +406,7 @@ class Resolver:
                 return out
         if level:
             return [("missing", "." * level + mod)]
-        return [("ext", mod.split(".")[0])]
+        return [("ext", mod)]  # the full dotted module: 'only X imports django.db.models.signals' must be checkable
 
 
 def load_deps_file(path, root, files):
