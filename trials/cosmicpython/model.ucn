@@ -56,3 +56,25 @@ system Allocation [derived]: allocation service
       code: allocation/config.py
     component Packaging: setup.py
       code: setup.py
+
+# ---------- evidence (tests live outside the code root, so src paths start with ../) ----------
+test PreferenceTests [derived]: warehouse stock before shipments, earlier ETA first
+  verifies AllocateLine
+  case: test_prefers_*
+  src: ../tests/unit/test_product.py
+test OutOfStockTests [derived]: out of stock records an event and allocates nothing
+  verifies NoOverAllocation
+  case: test_records_out_of_stock_event_if_cannot_allocate
+  src: ../tests/unit/test_product.py
+test IdempotenceTests [derived]: allocating the same line twice counts once
+  verifies Idempotent
+  case: test_allocation_is_idempotent
+  src: ../tests/unit/test_batches.py
+test ReallocationTests [derived]: reducing a batch below its allocations reallocates
+  verifies Reallocate
+  case: test_reallocates_if_necessary
+  src: ../tests/unit/test_handlers.py
+test EmailTests [derived]: out-of-stock sends an email
+  verifies OutOfStockEmail
+  case: test_sends_email_on_out_of_stock_error
+  src: ../tests/unit/test_handlers.py

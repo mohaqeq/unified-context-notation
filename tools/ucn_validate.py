@@ -18,6 +18,10 @@ Options:
   --apply                   write the authority change and an adoption-log line (gate must pass)
   --baseline REV            baseline to record on --apply (default: git HEAD of the model's directory)
   --reason TEXT             required for rebaseline
+  --results FILE[,FILE]     JUnit XML test results: report each verified element as met (a verifying test passed),
+                            not met (a test failed: VIOLATION for model-authoritative, non-planned elements) or
+                            without evidence. Test nodes map to cases by their src: file (and optional case: glob)
+  --require-evidence        treat missing evidence for model-authoritative requirements as a VIOLATION
   --authority-map           print the effective authority of every node and where it comes from
   --propose                 print the relation lines that would make MODEL-UPDATE dependencies conforming
                             (--include-violations: also for violations; that is a decision, not a fix)
@@ -512,6 +516,42 @@ def build_allowed(m):
     return allowed, perms
 
 
+def load_test_results(paths):
+    """JUnit XML (pytest --junitxml, jest-junit, surefire, ...) -> list of {classname, name, file, status}."""
+    import xml.etree.ElementTree as ET
+    cases = []
+    for path in paths:
+        for tc in ET.parse(path).getroot().iter("testcase"):
+            kids = {c.tag for c in tc}
+            status = "failed" if kids & {"failure", "error"} else "skipped" if "skipped" in kids else "passed"
+            cases.append({"classname": tc.get("classname", ""), "name": tc.get("name", ""),
+                          "file": (tc.get("file") or "").replace("\\", "/"), "status": status})
+    return cases
+
+
+def cases_for(test_file, case_glob, cases):
+    """Test cases that belong to a test node: by the 'file' attribute, or by a dotted-module suffix of the
+    classname (pytest writes it relative to its rootdir, e.g. 'unit.test_batches' for tests/unit/test_batches.py)."""
+    base = test_file.rsplit("/", 1)[-1]
+    stem = base.rsplit(".", 1)[0]
+    mod = [x for x in test_file.rsplit(".", 1)[0].split("/") if x not in ("", ".", "..")]
+    pat = glob_re(case_glob) if case_glob else None
+    out = []
+    for c in cases:
+        if c["file"]:
+            hit = c["file"].endswith(test_file.lstrip("./")) or c["file"].rsplit("/", 1)[-1] == base and test_file.endswith(c["file"])
+        else:
+            parts = c["classname"].split(".")
+            hit = False
+            if stem in parts:
+                i = parts.index(stem)
+                before = parts[:i]
+                hit = before == mod[len(mod) - 1 - len(before):len(mod) - 1] if before else True
+        if hit and (pat is None or pat.match(c["name"])):
+            out.append(c)
+    return out
+
+
 def check(m, ctx):
     """Run every check under the model's current authority function. Returns (findings, stats)."""
     findings = []
@@ -933,6 +973,55 @@ def check(m, ctx):
                     add(VIOLATION if m.authority(nid) == "model" else UPDATE, "conventions",
                         f"{f} imports {module}, but {nid} allows only {cm.group(1)}", el=nid)
 
+    # ---- 5b. executable evidence: requirements -> verifying tests -> their latest results
+    if getattr(ctx, "results", None):
+        cases = load_test_results(ctx.results)
+        stats["evidence"] = {"cases": len(cases), "passed": 0, "failed": 0, "missing": 0}
+        test_status = {}
+        for tid, n in m.nodes.items():
+            if n["kind"] != "test":
+                continue
+            tfiles = [SRC_CODE.match(x).group(1) for x in m.attrs(tid, "src") if SRC_CODE.match(x)]
+            mine = [c for f in tfiles for c in cases_for(f, m.attr(tid, "case"), cases)]
+            if not mine:
+                test_status[tid] = ("missing", [])
+            elif any(c["status"] == "failed" for c in mine):
+                test_status[tid] = ("failed", [c["name"] for c in mine if c["status"] == "failed"])
+            elif all(c["status"] == "skipped" for c in mine):
+                test_status[tid] = ("skipped", [])
+            else:
+                test_status[tid] = ("passed", [c["name"] for c in mine])
+        verifying = {}
+        for e in g["edges"]:
+            if e["rel"] == "verifies" and e.get("from_id") in test_status and e.get("to_id"):
+                verifying.setdefault(e["to_id"], set()).add(e["from_id"])
+        for nid in m.nodes:
+            for t in m.attrs(nid, "verified"):
+                tid = m.ref(t, "test")
+                if tid in test_status:
+                    verifying.setdefault(nid, set()).add(tid)
+        for target, tests in sorted(verifying.items()):
+            sts = {t: test_status[t] for t in sorted(tests)}
+            failed = {t: v for t, v in sts.items() if v[0] == "failed"}
+            planned = m.attr(target, "lifecycle") == "planned"
+            if failed:
+                stats["evidence"]["failed"] += 1
+                t, (_, names) = next(iter(failed.items()))
+                cls = VIOLATION if m.authority(target) == "model" and not planned else INFO
+                add(cls, "evidence", f"{m.kind[target]} {target} is not met: test {t} failed ({', '.join(names[:3])})", el=target)
+            elif any(v[0] == "passed" for v in sts.values()):
+                stats["evidence"]["passed"] += 1
+                stats["conforming"] += 1
+            else:
+                stats["evidence"]["missing"] += 1
+                why = ", ".join(f"{t}: {v[0]}" for t, v in sts.items())
+                cls = VIOLATION if getattr(ctx, "require_evidence", False) and m.authority(target) == "model" and not planned else INFO
+                add(cls, "evidence", f"{m.kind[target]} {target} has no passing evidence ({why})", el=target)
+        if getattr(ctx, "require_evidence", False):
+            for nid, n in m.nodes.items():
+                if n["kind"] == "req" and nid not in verifying and m.authority(nid) == "model" and m.attr(nid, "lifecycle") != "planned":
+                    add(VIOLATION, "evidence", f"req {nid} has no verifying test with results", el=nid)
+
     # ---- 6. provenance of code references
     for nid in m.nodes:
         for s in m.attrs(nid, "src"):
@@ -1130,11 +1219,14 @@ def apply_gate(ctx, m, kind, scope, baseline):
 
 # ----------------------------------------------------------------------------------------------- entry points
 def validate(model_path, today=None, gate_kind=None, scope=None, changed=None, cache_path=None, deps_path=None,
-             diff_rev=None, allow_widening=False, apply=False, baseline=None, reason=None):
+             diff_rev=None, allow_widening=False, apply=False, baseline=None, reason=None, results=None,
+             require_evidence=False):
     t0 = time.perf_counter()
     m = Model(parse(slurp(model_path)))
     ctx = Ctx(model_path, today or datetime.date.today().isoformat(), changed, cache_path, deps_path)
     ctx.reason = reason
+    ctx.results = results or []
+    ctx.require_evidence = require_evidence
     findings, stats = check(m, ctx)
     widened = []
     if diff_rev:
@@ -1220,7 +1312,8 @@ def main(argv):
     r = validate(argv[1], today=opt("--today"), gate_kind=opt("--gate"), scope=opt("--scope"), changed=changed,
                  cache_path=opt("--cache"), deps_path=opt("--deps"), diff_rev=opt("--diff"),
                  allow_widening="--allow-widening" in argv, apply="--apply" in argv, baseline=opt("--baseline"),
-                 reason=opt("--reason"))
+                 reason=opt("--reason"), results=[x for x in (opt("--results") or "").split(",") if x],
+                 require_evidence="--require-evidence" in argv)
     m = r.pop("_model")
     r.pop("_deps", None)
     r.pop("_owner", None)
@@ -1245,6 +1338,9 @@ def main(argv):
                 print(f"  {cls:<14} ... and {len(items) - limit} more")
         counts = {c: sum(1 for f in r["findings"] if f["class"] == c) for c in ORDER}
         print("  summary: " + ", ".join(f"{v} {k.lower()}" for k, v in counts.items()))
+        if r.get("evidence"):
+            ev = r["evidence"]
+            print(f"  evidence: {ev['cases']} test cases; {ev['passed']} verified, {ev['failed']} failing, {ev['missing']} without results")
         if r["blind"]:
             print("  blind spots: " + ", ".join(f"{v} {k}" for k, v in sorted(r["blind"].items())))
         if r["gate"]:

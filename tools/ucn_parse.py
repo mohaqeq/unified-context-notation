@@ -47,7 +47,7 @@ INVERSE = {"satisfiedBy": "satisfies", "verifiedBy": "verifies", "refinedBy": "r
 CLAUSES = {"pre", "post", "err", "inv", "assume", "guarantee", "effect"}
 ATTRS = {"src", "tech", "owner", "why", "lifecycle", "verified", "code", "aka", "note",
          "states", "initial", "authority", "param", "bind", "expires", "approved", "check", "asserts",
-         "breadth", "layers", "independent", "acyclic", "inherit"}
+         "breadth", "layers", "independent", "acyclic", "inherit", "case", "rationale"}
 MAX_DEPTH = 6
 POLICIES = {"allow", "deny"}
 MODES = {"reverse", "forward"}

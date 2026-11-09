@@ -374,6 +374,75 @@ class Binding(Tmp):
         self.assertIn(("VIOLATION", "R.lim"), classes(self.bind("export const LIMIT = 500;\n"), "parameters"))
 
 
+# ------------------------------------------------------------------------------------------- executable evidence (v0.6)
+EVIDENCE_MODEL = GENERIC + """
+req Fast: THE system SHALL be fast
+  src: doc
+req Safe: THE system SHALL be safe
+  src: doc
+req Later: THE system SHALL do later things
+  lifecycle: planned
+  src: doc
+test FastTests [derived]: speed
+  verifies Fast
+  case: test_speed_*
+  src: ../tests/test_perf.py
+test SafeTests [derived]: safety
+  verifies Safe
+  src: ../tests/unit/test_safe.py
+test LaterTests [derived]: later
+  verifies Later
+  src: ../tests/test_later.ts
+"""
+
+
+def junit(cases):
+    rows = []
+    for cls, name, status, f in cases:
+        attrs = f'classname="{cls}" name="{name}"' + (f' file="{f}"' if f else "")
+        body = {"failed": "<failure message='x'/>", "skipped": "<skipped/>"}.get(status, "")
+        rows.append(f"<testcase {attrs}>{body}</testcase>")
+    return '<testsuites><testsuite name="s">' + "".join(rows) + "</testsuite></testsuites>"
+
+
+class Evidence(Tmp):
+    def evidence(self, cases, **kw):
+        path = self.project(EVIDENCE_MODEL, {"app/a/x.ts": "export const x = 1;\n"})
+        for f in ("tests/test_perf.py", "tests/unit/test_safe.py", "tests/test_later.ts"):
+            write(os.path.join(self.d, f), "x = 1\n")
+        res = os.path.join(self.d, "junit.xml")
+        write(res, junit(cases))
+        return run(path, results=[res], **kw)
+
+    def test_pass_fail_and_case_glob(self):
+        r = self.evidence([("test_perf", "test_speed_fast", "passed", ""), ("test_perf", "test_other", "failed", ""),
+                           ("unit.test_safe.TestX", "test_ok", "failed", "")])
+        self.assertTrue(has(r, "VIOLATION", "req Safe is not met: test SafeTests failed"))
+        self.assertFalse(has(r, "VIOLATION", "Fast"))   # the failing case does not match case: test_speed_*
+        self.assertEqual(r["evidence"]["passed"], 1)
+
+    def test_missing_and_require_evidence(self):
+        r = self.evidence([("test_perf", "test_speed_fast", "passed", "")])
+        self.assertTrue(has(r, "INFO", "req Safe has no passing evidence (SafeTests: missing)"))
+        r = self.evidence([("test_perf", "test_speed_fast", "passed", "")], require_evidence=True)
+        self.assertTrue(has(r, "VIOLATION", "req Safe has no passing evidence"))
+        self.assertFalse(has(r, "VIOLATION", "Later"))   # planned requirements are not required to have evidence
+
+    def test_planned_failure_is_info_and_file_attribute_matching(self):
+        r = self.evidence([("Later suite", "does later things", "failed", "tests/test_later.ts")])
+        self.assertTrue(has(r, "INFO", "req Later is not met"))
+        self.assertFalse(has(r, "VIOLATION", "Later"))
+
+    def test_skipped_is_not_evidence(self):
+        r = self.evidence([("test_perf", "test_speed_fast", "skipped", "")])
+        self.assertTrue(has(r, "INFO", "req Fast has no passing evidence (FastTests: skipped)"))
+
+    def test_classname_suffix_must_match_the_path(self):
+        # 'other.test_safe' is a different module than tests/unit/test_safe.py
+        r = self.evidence([("other.test_safe", "test_ok", "passed", "")])
+        self.assertTrue(has(r, "INFO", "req Safe has no passing evidence"))
+
+
 # ------------------------------------------------------------------------------------------- export
 class Export(Tmp):
     def test_dependency_cruiser_and_import_linter(self):
