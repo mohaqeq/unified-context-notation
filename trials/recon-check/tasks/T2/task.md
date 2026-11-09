@@ -1,0 +1,1 @@
+Add a helper function `describe_segment(segment)` to src/sqlfluff/core/helpers/string.py that returns "<segment type>: <raw text truncated to 40 characters>" for a parser segment, with full type hints, and use it in the message of the parser's unparsable-segment errors.
