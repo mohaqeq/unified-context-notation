@@ -443,6 +443,44 @@ class Evidence(Tmp):
         self.assertTrue(has(r, "INFO", "req Safe has no passing evidence"))
 
 
+# ------------------------------------------------------------------------------------------- stale sources (v0.6)
+class Stale(Tmp):
+    MODEL = GENERIC + "    fn run(x: int): int\n      src: app/a/x.ts:2\n"
+
+    def setUp(self):
+        super().setUp()
+        self.path = self.project(self.MODEL, {"app/a/x.ts": "// a\nexport function run(x: number) { return x; }\n"})
+        ucn_validate.stamp(self.path)
+        self.code = os.path.join(self.d, "src", "app", "a", "x.ts")
+
+    def test_stamp_adds_hash_and_clean_run(self):
+        self.assertRegex(read(self.path), r"src: app/a/x.ts:2@[0-9a-f]{8}")
+        self.assertFalse(any(f["check"] == "provenance" for f in run(self.path)["findings"]))
+
+    def test_moved_line_is_followed(self):
+        write(self.code, "// new header\n" + read(self.code))
+        self.assertTrue(has(run(self.path), "MODEL-UPDATE", "moved to line 3"))
+        ucn_validate.stamp(self.path)
+        self.assertIn("app/a/x.ts:3@", read(self.path))
+        self.assertFalse(any(f["check"] == "provenance" for f in run(self.path)["findings"]))
+
+    def test_changed_content_needs_review(self):
+        write(self.code, read(self.code).replace("run(x: number)", "run(x: number, y: number)"))
+        r = run(self.path)
+        self.assertTrue(has(r, "MODEL-UPDATE", "the referenced code changed"))
+        self.assertEqual(r["stale"], 1)
+        before = read(self.path)
+        changes = ucn_validate.stamp(self.path)
+        self.assertTrue(any("needs review" in c for c in changes))
+        self.assertEqual(read(self.path), before)                 # not accepted silently
+        ucn_validate.stamp(self.path, accept_changed=True)
+        self.assertFalse(any(f["check"] == "provenance" for f in run(self.path)["findings"]))
+
+    def test_indentation_does_not_matter(self):
+        write(self.code, read(self.code).replace("export function", "    export   function"))
+        self.assertFalse(any(f["check"] == "provenance" for f in run(self.path)["findings"]))
+
+
 # ------------------------------------------------------------------------------------------- export
 class Export(Tmp):
     def test_dependency_cruiser_and_import_linter(self):

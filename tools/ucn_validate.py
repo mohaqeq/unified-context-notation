@@ -22,6 +22,8 @@ Options:
                             not met (a test failed: VIOLATION for model-authoritative, non-planned elements) or
                             without evidence. Test nodes map to cases by their src: file (and optional case: glob)
   --require-evidence        treat missing evidence for model-authoritative requirements as a VIOLATION
+  --stamp                   add '@hash' to 'src: file:line' references and follow moved lines; changed content is
+                            listed for review (--accept-changed re-hashes it after review). Without a hash, src checks only that the file and line exist
   --authority-map           print the effective authority of every node and where it comes from
   --propose                 print the relation lines that would make MODEL-UPDATE dependencies conforming
                             (--include-violations: also for violations; that is a decision, not a fix)
@@ -68,7 +70,7 @@ ASSET_EXT = {".css", ".scss", ".sass", ".less", ".json", ".svg", ".png", ".jpg",
              ".woff", ".woff2", ".ttf", ".otf", ".eot", ".wasm", ".md", ".txt", ".html", ".mp3", ".mp4", ".yaml", ".yml"}
 JS_TO_TS = {".js": [".ts", ".tsx"], ".jsx": [".tsx"], ".mjs": [".mts"], ".cjs": [".cts"]}
 
-SRC_CODE = re.compile(r"^([\w./@-]+(?:" + "|".join(re.escape(e) for e in CODE_EXT) + r"))(?::(\d+))?$")
+SRC_CODE = re.compile(r"^([\w./@-]+(?:" + "|".join(re.escape(e) for e in CODE_EXT) + r"))(?::(\d+))?(?:@([0-9a-f]{8}))?$")
 CHECK_ONLY = re.compile(r"^only\s+(\S+)\s+imports\s+(\S+)$")
 JS_STATIC = re.compile(r"(?m)^[ \t]*(?:import|export)\b[^;'\"`]*?\bfrom\s*['\"]([^'\"\n]+)['\"]")
 JS_SIDE = re.compile(r"(?m)^[ \t]*import\s*['\"]([^'\"\n]+)['\"]")
@@ -85,6 +87,12 @@ TRUE = {"yes", "true", "uses"}
 def slurp(path):
     with open(path, encoding="utf-8", errors="replace") as f:
         return f.read()
+
+
+def line_hash(text):
+    """8-hex content hash of one source line, insensitive to indentation and whitespace runs."""
+    import hashlib
+    return hashlib.sha1(" ".join(text.split()).encode("utf-8")).hexdigest()[:8]
 
 
 def parse_date(s):
@@ -1031,8 +1039,19 @@ def check(m, ctx):
             p = os.path.join(root, sm.group(1))
             if not os.path.exists(p):
                 add(VIOLATION if m.authority(nid) == "model" else UPDATE, "provenance", f"{nid}: src {s} does not exist (stale)", el=nid)
-            elif sm.group(2) and int(sm.group(2)) > slurp(p).count("\n") + 1:
+                continue
+            lines = slurp(p).split("\n")
+            if sm.group(2) and int(sm.group(2)) > len(lines):
                 add(UPDATE, "provenance", f"{nid}: src {s} points past the end of the file (stale)", el=nid)
+            elif sm.group(2) and sm.group(3):
+                want, ln = sm.group(3), int(sm.group(2))
+                if line_hash(lines[ln - 1]) != want:
+                    moved = [i + 1 for i, t in enumerate(lines) if t.strip() and line_hash(t) == want]
+                    if moved:
+                        add(UPDATE, "provenance", f"{nid}: src {s} moved to line {moved[0]} (run --stamp)", el=nid)
+                    else:
+                        add(UPDATE, "provenance", f"{nid}: src {s}: the referenced code changed; review the fact, then --stamp --accept-changed", el=nid)
+                        stats["stale"] = stats.get("stale", 0) + 1
 
     # ---- 7. coverage (class from the nearest element's authority)
     if changed_set is None:
@@ -1289,6 +1308,38 @@ def propose(m, findings, include_violations=False):
     return out or ["# nothing to propose"]
 
 
+def stamp(model_path, accept_changed=False):
+    """Write '@hash' on 'src: file:line' code references that have none, and follow moved lines. A reference whose
+    content changed is only re-hashed with accept_changed (after review: the fact may need rewording, and the line
+    number may need fixing by hand)."""
+    m = Model(parse(slurp(model_path)))
+    root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(model_path)), m.header.get("root", ".")))
+    out, changes = [], []
+    for line in slurp(model_path).split("\n"):
+        mm = re.match(r"^(\s*src:\s*)(\S+)\s*$", line)
+        sm = SRC_CODE.match(mm.group(2)) if mm else None
+        if sm and sm.group(2) and os.path.exists(os.path.join(root, sm.group(1))):
+            lines = slurp(os.path.join(root, sm.group(1))).split("\n")
+            ln, old = int(sm.group(2)), sm.group(3)
+            if old and (ln > len(lines) or line_hash(lines[ln - 1]) != old):
+                moved = [i + 1 for i, t in enumerate(lines) if t.strip() and line_hash(t) == old]
+                if moved:
+                    ln = moved[0]
+                elif not accept_changed:
+                    changes.append(f"needs review (content changed): {mm.group(2)}")
+                    out.append(line)
+                    continue
+            if ln <= len(lines):
+                new = f"{sm.group(1)}:{ln}@{line_hash(lines[ln - 1])}"
+                if new != mm.group(2):
+                    changes.append(f"{mm.group(2)} -> {new}")
+                line = mm.group(1) + new
+        out.append(line)
+    with open(model_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(out))
+    return changes
+
+
 def authority_map(m):
     rows = []
     for nid in sorted(m.nodes, key=lambda n: m.nodes[n]["line"]):
@@ -1320,6 +1371,10 @@ def main(argv):
     if "--authority-map" in argv:
         print("\n".join(authority_map(m)))
         return 0
+    if "--stamp" in argv:
+        changes = stamp(argv[1], accept_changed="--accept-changed" in argv)
+        print("\n".join(changes) if changes else "nothing to stamp")
+        return 0
     if "--propose" in argv:
         print("\n".join(propose(m, r["findings"], "--include-violations" in argv)))
         return 0
@@ -1338,6 +1393,8 @@ def main(argv):
                 print(f"  {cls:<14} ... and {len(items) - limit} more")
         counts = {c: sum(1 for f in r["findings"] if f["class"] == c) for c in ORDER}
         print("  summary: " + ", ".join(f"{v} {k.lower()}" for k, v in counts.items()))
+        if r.get("stale"):
+            print(f"  stale: {r['stale']} source reference(s) whose code changed")
         if r.get("evidence"):
             ev = r["evidence"]
             print(f"  evidence: {ev['cases']} test cases; {ev['passed']} verified, {ev['failed']} failing, {ev['missing']} without results")

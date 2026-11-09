@@ -69,13 +69,13 @@ system Shortly [derived]: URL shortening service
     deploysTo Prod
     api LinksApi: REST: POST /links, GET /{code}, GET /links/{code}/stats
       code: api/server.ts
-      src: api/server.ts:7
+      src: api/server.ts:7@2d1db35e
     config AliasesEnabled: feature flag for custom aliases, default off
       code: api/config.ts
-      src: api/config.ts:2
+      src: api/config.ts:2@4959116c
     event LinkCreated: published after a link is stored; the stats component consumes it
       code: api/events.ts
-      src: api/events.ts:3
+      src: api/events.ts:3@e55ba4b0
     component Links: create and resolve short links
       code: api/links.ts
       satisfies Create, Resolve, Expire
@@ -94,14 +94,14 @@ system Shortly [derived]: URL shortening service
         writes Link
         emits LinkCreated
         verified: CreateTests
-        src: api/links.ts:11
+        src: api/links.ts:11@0ffc8356
       fn resolve(code: Code): Redirect
         err: link.expiresAt < now -> 410 [inferred]
         err: unknown code -> 404 [inferred]
         effect: caches the target for an hour [inferred]
         uses Cache
         reads Link
-        src: api/links.ts:21
+        src: api/links.ts:21@63d916d2
       rule CodeImmutable [pin, stated]: a code never changes its target after creation
         src: docs/adr/003.md
       machine LinkLife [inferred]: lifecycle of a link
@@ -110,7 +110,7 @@ system Shortly [derived]: URL shortening service
         on expiresAt passed: active -> expired
         on abuse report confirmed: active -> disabled
         on admin restore: disabled -> active
-        src: api/links.ts:21
+        src: api/links.ts:21@63d916d2
     component Codes: generate collision-free codes
       code: api/codes.ts
       satisfies Create
@@ -121,7 +121,7 @@ system Shortly [derived]: URL shortening service
         post: not exists(Link where code == result) [inferred]
         effect: retries up to 5 times on collision, then fails with 503 [inferred]
         reads Link
-        src: api/codes.ts:6
+        src: api/codes.ts:6@567b2f80
     component Guard: abuse protection
       code: api/guard.ts
       satisfies Blocklist, RateLimit
@@ -129,15 +129,15 @@ system Shortly [derived]: URL shortening service
       fn check(url: string): void
         err: blocked(domain(url)) -> 422 [inferred]
         uses SafeBrowsing
-        src: api/guard.ts:6
+        src: api/guard.ts:6@7e187171
       fn limit(owner: UserId): void
         err: count(owner, last 1h) >= 1000 -> 429 [inferred]
-        src: api/guard.ts:12
+        src: api/guard.ts:12@6f64f02c
     component Stats: counts links per owner and serves hit statistics
       code: api/stats.ts
       implements LinksApi
       consumes LinkCreated
-      src: api/stats.ts:7
+      src: api/stats.ts:7@c6f41d92
   container Db: primary store; its client module is api/db.ts
     tech: postgres
     code: api/db.ts
@@ -167,7 +167,7 @@ conflict RateLimitValue [pin]: the ticket and the code disagree on the hourly cr
     src: ticket#14
   side Code [derived]: 1000 links per hour; GuardTests asserts 1000 and passes
     asserts: 1000
-    src: api/guard.ts:3
+    src: api/guard.ts:3@94d2bed0
 deviation StatsDirectDb: the stats component reads Postgres directly instead of through Links
   allows Stats reads Link
   why: hit-count queries were too slow through Links
@@ -210,10 +210,10 @@ convention DbAccess: database access only through api/db.ts; no raw SQL in handl
 # ---------- evidence ----------
 test CreateTests [derived]: create returns 7 chars; the same URL twice gets two different codes
   verifies Create, Links.create
-  src: api/links.test.ts:3
+  src: api/links.test.ts:3@04b08ab1
 test GuardTests [derived]: the 1001st link in an hour gets 429
   verifies Guard.limit
-  src: api/guard.test.ts:3
+  src: api/guard.test.ts:3@1405f27f
 test ResolveLatency [derived]: k6 load test, p99 under 50 ms
   verifies Fast
-  src: perf/resolve.k6.js:2
+  src: perf/resolve.k6.js:2@66a13b24
