@@ -86,8 +86,7 @@ def prepare(spec, out):
                                 os.remove(os.path.join(d, n))
                 if cond == "B":
                     shutil.copy(spec["model"], os.path.join(ws, "model.ucn"))
-                    text, errs = ucn_project.project(os.path.join(ws, "model.ucn"), t["text"].splitlines()[0] + " " + t["text"],
-                                                     spec.get("budget", 2500))
+                    text, errs = ucn_project.project(os.path.join(ws, "model.ucn"), t["text"], spec.get("budget", 2500))
                     if errs:
                         raise SystemExit(f"{rid}: projection failed: {errs}")
                     with open(os.path.join(ws, "context.ucn"), "w", encoding="utf-8", newline="\n") as fh:
