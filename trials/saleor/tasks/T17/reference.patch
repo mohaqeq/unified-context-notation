@@ -1,0 +1,68 @@
+diff --git a/saleor/graphql/menu/mutations/menu_item_delete.py b/saleor/graphql/menu/mutations/menu_item_delete.py
+index dc239bc..d081acf 100644
+--- a/saleor/graphql/menu/mutations/menu_item_delete.py
++++ b/saleor/graphql/menu/mutations/menu_item_delete.py
+@@ -7,6 +7,7 @@ from ....permission.enums import MenuPermissions
+ from ....webhook.event_types import WebhookEventAsyncType
+ from ...core import ResolveInfo
+ from ...core.context import ChannelContext
++from ...core.descriptions import ADDED_IN_324
+ from ...core.mutations import ModelDeleteMutation
+ from ...core.types import MenuError
+ from ...core.utils import WebhookEventInfo
+@@ -17,6 +18,15 @@ from ..types import MenuItem
+ class MenuItemDelete(ModelDeleteMutation):
+     class Arguments:
+         id = graphene.ID(required=True, description="ID of a menu item to delete.")
++        keep_children = graphene.Boolean(
++            required=False,
++            description=(
++                "When true, the direct children of the deleted menu item (with their "
++                "own subtrees) are moved to the deleted item's parent, or become top "
++                "level items if it had none, instead of being deleted with it. "
++                "Defaults to false." + ADDED_IN_324
++            ),
++        )
+ 
+     class Meta:
+         description = "Deletes a menu item."
+@@ -32,12 +42,37 @@ class MenuItemDelete(ModelDeleteMutation):
+             ),
+         ]
+ 
++    @staticmethod
++    def move_children_to_parent(instance: models.MenuItem):
++        """Move the direct children of the item to the item's parent.
++
++        Every move renumbers the tree, and mptt computes a move from the in-memory
++        values of the moved node and of the target, so both are read again from the
++        database right before each move.
++        """
++        instance._mptt_refresh()
++        new_parent_id = instance.parent_id
++        child_ids = list(
++            models.MenuItem.objects.filter(parent_id=instance.pk)
++            .order_by("lft")
++            .values_list("pk", flat=True)
++        )
++        for child_id in child_ids:
++            child = models.MenuItem.objects.get(pk=child_id)
++            child.parent = (
++                models.MenuItem.objects.get(pk=new_parent_id) if new_parent_id else None
++            )
++            child.sort_order = None
++            child.save()
++
+     @classmethod
+-    def perform_mutation(cls, _root, info: ResolveInfo, /, **kwargs):
++    def perform_mutation(cls, _root, info: ResolveInfo, /, *, id, keep_children=False):
+         """Delete under the tree lock - MPTTModel.delete() renumbers the tree."""
+         with traced_atomic_transaction():
+             acquire_menu_item_tree_lock()
+-            return super().perform_mutation(_root, info, **kwargs)
++            if keep_children:
++                cls.move_children_to_parent(cls.get_instance(info, id=id))
++            return super().perform_mutation(_root, info, id=id)
+ 
+     @classmethod
+     def post_save_action(cls, info: ResolveInfo, instance, cleaned_input):

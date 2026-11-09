@@ -1,0 +1,106 @@
+diff --git a/saleor/graphql/product/mutations/category/category_update.py b/saleor/graphql/product/mutations/category/category_update.py
+index 25644de..329c800 100644
+--- a/saleor/graphql/product/mutations/category/category_update.py
++++ b/saleor/graphql/product/mutations/category/category_update.py
+@@ -1,12 +1,17 @@
+ import graphene
++from django.core.exceptions import ValidationError
+ from django.db.models import Exists, OuterRef
++from mptt.exceptions import InvalidMove
+ 
++from .....core.tracing import traced_atomic_transaction
+ from .....discount.utils.promotion import mark_active_catalogue_promotion_rules_as_dirty
+ from .....permission.enums import ProductPermissions
+ from .....product import models
++from .....product.error_codes import ProductErrorCode
++from .....product.lock_objects import acquire_category_tree_lock
+ from .....thumbnail import models as thumbnail_models
+ from ....core import ResolveInfo
+-from ....core.descriptions import ADDED_IN_323
++from ....core.descriptions import ADDED_IN_323, ADDED_IN_324
+ from ....core.mutations import ModelWithExtRefMutation
+ from ....core.types import ProductError
+ from ....plugins.dataloaders import get_plugin_manager_promise
+@@ -24,6 +29,13 @@ class CategoryUpdate(CategoryCreate, ModelWithExtRefMutation):
+         input = CategoryInput(
+             required=True, description="Fields required to update a category."
+         )
++        parent_id = graphene.ID(
++            description=(
++                "ID of the new parent category. Omit to keep the current parent."
++                + ADDED_IN_324
++            ),
++            name="parent",
++        )
+ 
+     class Meta:
+         description = "Updates a category."
+@@ -35,6 +47,68 @@ class CategoryUpdate(CategoryCreate, ModelWithExtRefMutation):
+         support_meta_field = True
+         support_private_meta_field = True
+ 
++    @classmethod
++    def perform_mutation(cls, root, info: ResolveInfo, /, **data):
++        data["input"]["_parent_provided"] = bool(data.get("parent_id"))
++        data["input"]["_new_parent_id"] = data.pop("parent_id", None)
++        return super().perform_mutation(root, info, **data)
++
++    @classmethod
++    def clean_input(cls, info: ResolveInfo, instance, data, **kwargs):
++        cleaned_input = super().clean_input(info, instance, data, **kwargs)
++        # the parent is changed in `save`, under the tree lock
++        cleaned_input.pop("parent", None)
++        if data.get("_parent_provided"):
++            new_parent_id = data["_new_parent_id"]
++            new_parent = (
++                cls.get_node_or_error(
++                    info, new_parent_id, field="parent", only_type=Category
++                )
++                if new_parent_id
++                else None
++            )
++            if new_parent and (
++                new_parent.pk == instance.pk or instance.is_ancestor_of(new_parent)
++            ):
++                raise ValidationError(
++                    {
++                        "parent": ValidationError(
++                            "Cannot assign a category as a child of itself or of "
++                            "one of its descendants.",
++                            code=ProductErrorCode.INVALID.value,
++                        )
++                    }
++                )
++            cleaned_input["move_to_parent"] = new_parent
++        return cleaned_input
++
++    @classmethod
++    def save(cls, info: ResolveInfo, instance, cleaned_input, /, instance_tracker=None):
++        if "move_to_parent" not in cleaned_input:
++            super().save(info, instance, cleaned_input, instance_tracker)
++            return
++        new_parent = cleaned_input["move_to_parent"]
++        with traced_atomic_transaction():
++            acquire_category_tree_lock()
++            instance.save()
++            # mptt computes the move from in-memory tree fields, which may predate
++            # a concurrent writer's changes. Refresh them now that the lock is held.
++            instance._mptt_refresh()
++            instance._mptt_meta.update_mptt_cached_fields(instance)
++            if new_parent is not None:
++                new_parent._mptt_refresh()
++            instance.parent = new_parent
++            try:
++                instance.save()
++            except InvalidMove as error:
++                raise ValidationError(
++                    {
++                        "parent": ValidationError(
++                            str(error), code=ProductErrorCode.INVALID.value
++                        )
++                    }
++                ) from error
++
+     @classmethod
+     def construct_instance(cls, instance, cleaned_data):
+         # delete old background image and related thumbnails

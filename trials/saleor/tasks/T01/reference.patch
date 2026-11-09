@@ -1,0 +1,94 @@
+diff --git a/saleor/graphql/giftcard/resolvers.py b/saleor/graphql/giftcard/resolvers.py
+index 31348d2..17984d8 100644
+--- a/saleor/graphql/giftcard/resolvers.py
++++ b/saleor/graphql/giftcard/resolvers.py
+@@ -1,7 +1,26 @@
++import datetime
++
+ from ...giftcard import models
+ from ..core.context import get_database_connection_name
+ 
+ 
++def resolve_gift_card_balance(info, code):
++    today = datetime.datetime.now(tz=datetime.UTC).date()
++    gift_card = (
++        models.GiftCard.objects.using(get_database_connection_name(info.context))
++        .active(date=today)
++        .filter(code=code)
++        .first()
++    )
++    if gift_card is None:
++        return None
++    user = info.context.user
++    # A card restricted to a customer is reported exactly like an unknown code.
++    if gift_card.usage_restriction_reason(user.pk if user else None):
++        return None
++    return gift_card.current_balance
++
++
+ def resolve_gift_card(info, id):
+     return (
+         models.GiftCard.objects.using(get_database_connection_name(info.context))
+diff --git a/saleor/graphql/giftcard/schema.py b/saleor/graphql/giftcard/schema.py
+index 3fdfe5a..8fbb8a0 100644
+--- a/saleor/graphql/giftcard/schema.py
++++ b/saleor/graphql/giftcard/schema.py
+@@ -7,9 +7,10 @@ from ...permission.enums import GiftcardPermissions
+ from ..core import ResolveInfo
+ from ..core.connection import create_connection_slice, filter_connection_queryset
+ from ..core.context import get_database_connection_name
++from ..core.descriptions import ADDED_IN_323
+ from ..core.doc_category import DOC_CATEGORY_GIFT_CARDS
+-from ..core.fields import FilterConnectionField, PermissionsField
+-from ..core.types import NonNullList
++from ..core.fields import BaseField, FilterConnectionField, PermissionsField
++from ..core.types import Money, NonNullList
+ from ..core.utils import (
+     from_global_id_or_error,
+     validate_and_apply_search_rank_sorting,
+@@ -33,7 +34,12 @@ from .mutations import (
+     GiftCardUnassignUser,
+     GiftCardUpdate,
+ )
+-from .resolvers import resolve_gift_card, resolve_gift_card_tags, resolve_gift_cards
++from .resolvers import (
++    resolve_gift_card,
++    resolve_gift_card_balance,
++    resolve_gift_card_tags,
++    resolve_gift_cards,
++)
+ from .sorters import GiftCardSortField, GiftCardSortingInput
+ from .types import GiftCard, GiftCardCountableConnection, GiftCardTagCountableConnection
+ 
+@@ -73,6 +79,20 @@ class GiftCardQueries(graphene.ObjectType):
+         ],
+         doc_category=DOC_CATEGORY_GIFT_CARDS,
+     )
++    gift_card_balance = BaseField(
++        Money,
++        code=graphene.Argument(
++            graphene.String,
++            description="Code of the gift card.",
++            required=True,
++        ),
++        description=(
++            "Current balance of an active, unexpired gift card identified by its "
++            "code. Returns null when there is no usable gift card with that code. "
++            + ADDED_IN_323
++        ),
++        doc_category=DOC_CATEGORY_GIFT_CARDS,
++    )
+     gift_card_tags = FilterConnectionField(
+         GiftCardTagCountableConnection,
+         filter=GiftCardTagFilterInput(
+@@ -120,6 +140,10 @@ class GiftCardQueries(graphene.ObjectType):
+             GiftCardCountableConnection,
+         )
+ 
++    @staticmethod
++    def resolve_gift_card_balance(_root, info: ResolveInfo, /, *, code: str):
++        return resolve_gift_card_balance(info, code)
++
+     @staticmethod
+     def resolve_gift_card_currencies(_root, info: ResolveInfo):
+         return set(

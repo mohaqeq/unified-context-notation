@@ -1,0 +1,1 @@
+{"kind": "tempting", "rule": "docs/adr/0008-webhook-identifier-is-an-app-only-pointer.md", "naive": "Resolve the identifier for any caller with MANAGE_APPS (staff included) by filtering all webhooks on identifier and taking the first, although identifiers are unique per app only, so staff get an arbitrary app's webhook."}

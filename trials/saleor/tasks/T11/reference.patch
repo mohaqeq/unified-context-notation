@@ -1,0 +1,80 @@
+diff --git a/saleor/graphql/webhook/resolvers.py b/saleor/graphql/webhook/resolvers.py
+index f79cf8f..97fee12 100644
+--- a/saleor/graphql/webhook/resolvers.py
++++ b/saleor/graphql/webhook/resolvers.py
+@@ -1,4 +1,5 @@
+ from django.db.models import Exists, OuterRef, Q
++from graphql import GraphQLError
+ 
+ from ...app.models import App
+ from ...core.exceptions import PermissionDenied
+@@ -10,10 +11,21 @@ from ..core import ResolveInfo
+ from ..core.context import get_database_connection_name
+ from ..core.tracing import traced_resolver
+ from ..core.utils import from_global_id_or_error
++from ..core.validators import validate_one_of_args_is_in_query
+ from .types import Webhook, WebhookEvent
+ 
+ 
+-def resolve_webhook(info: ResolveInfo, id, app):
++def resolve_webhook(info: ResolveInfo, id, identifier, app):
++    validate_one_of_args_is_in_query("id", id, "identifier", identifier)
++    if identifier:
++        # Identifiers are unique per app only, so an app scope is required.
++        # See docs/adr/0008-webhook-identifier-is-an-app-only-pointer.md
++        if app is None:
++            raise GraphQLError(
++                "Webhook identifier can only be used by an app to look up its own "
++                "webhook. Use `id` instead."
++            )
++        return app.webhooks.filter(identifier=identifier).first()
+     _, id = from_global_id_or_error(id, Webhook)
+     if app:
+         return app.webhooks.filter(id=id).first()
+diff --git a/saleor/graphql/webhook/schema.py b/saleor/graphql/webhook/schema.py
+index e4bedeb..20308ca 100644
+--- a/saleor/graphql/webhook/schema.py
++++ b/saleor/graphql/webhook/schema.py
+@@ -4,6 +4,7 @@ from ...permission.auth_filters import AuthorizationFilters
+ from ...permission.enums import AppPermission
+ from ..app.dataloaders import app_promise_callback
+ from ..core import ResolveInfo
++from ..core.descriptions import ADDED_IN_324
+ from ..core.doc_category import DOC_CATEGORY_WEBHOOKS
+ from ..core.fields import BaseField, JSONString, PermissionsField
+ from ..core.types import NonNullList
+@@ -24,10 +25,23 @@ class WebhookQueries(graphene.ObjectType):
+     webhook = BaseField(
+         Webhook,
+         id=graphene.Argument(
+-            graphene.ID, required=True, description="ID of the webhook."
++            graphene.ID,
++            required=False,
++            description="ID of the webhook. Cannot be used together with `identifier`.",
++        ),
++        identifier=graphene.Argument(
++            graphene.String,
++            required=False,
++            description=(
++                "App-provided identifier of the webhook. Identifiers are unique per "
++                "app only, so this argument is available exclusively to an app "
++                "looking up its own webhook; staff users must use `id`. Cannot be "
++                "used together with `id`." + ADDED_IN_324
++            ),
+         ),
+         description=(
+-            "Look up a webhook by ID. Requires one of the following permissions: "
++            "Look up a webhook by ID or identifier. Requires one of the following "
++            "permissions: "
+             f"{AppPermission.MANAGE_APPS.name}, {AuthorizationFilters.OWNER.name}."
+         ),
+         doc_category=DOC_CATEGORY_WEBHOOKS,
+@@ -61,7 +75,7 @@ class WebhookQueries(graphene.ObjectType):
+     @staticmethod
+     @app_promise_callback
+     def resolve_webhook(_root, info: ResolveInfo, app, **data):
+-        return resolve_webhook(info, data["id"], app)
++        return resolve_webhook(info, data.get("id"), data.get("identifier"), app)
+ 
+     @staticmethod
+     def resolve_webhook_events(_root, _info: ResolveInfo):

@@ -1,0 +1,54 @@
+diff --git a/saleor/giftcard/gateway.py b/saleor/giftcard/gateway.py
+index 9189804..692356a 100644
+--- a/saleor/giftcard/gateway.py
++++ b/saleor/giftcard/gateway.py
+@@ -32,6 +32,7 @@ from .const import (
+ )
+ from .events import gift_card_refunded_in_order_event, gift_cards_used_in_order_event
+ from .models import GiftCard
++from .utils import deactivate_gift_card_if_exhausted
+ from .search import mark_gift_cards_search_index_as_dirty
+ 
+ logger = logging.getLogger(__name__)
+@@ -268,6 +269,7 @@ def charge_gift_card(
+             "last_used_on",
+         ]
+     )
++    deactivate_gift_card_if_exhausted(gift_card)
+ 
+ 
+ def charge_gift_card_transactions(
+diff --git a/saleor/giftcard/utils.py b/saleor/giftcard/utils.py
+index 2303f8c..8db7d9d 100644
+--- a/saleor/giftcard/utils.py
++++ b/saleor/giftcard/utils.py
+@@ -417,3 +417,9 @@ def get_user_gift_cards(user: "User") -> "QuerySet":
+         | Q(used_by=user)
+         | Q(created_by=user)
+     )
++
++
++def deactivate_gift_card_if_exhausted(gift_card: GiftCard):
++    """Set the gift card as inactive once its balance has reached zero."""
++    if gift_card.current_balance_amount <= 0:
++        deactivate_gift_card(gift_card)
+diff --git a/saleor/graphql/giftcard/mutations/gift_card_balance_adjust.py b/saleor/graphql/giftcard/mutations/gift_card_balance_adjust.py
+index ccf3f83..dccda7e 100644
+--- a/saleor/graphql/giftcard/mutations/gift_card_balance_adjust.py
++++ b/saleor/graphql/giftcard/mutations/gift_card_balance_adjust.py
+@@ -8,6 +8,7 @@ from ....core.utils.events import call_event
+ from ....giftcard import events
+ from ....giftcard.error_codes import GiftCardErrorCode
+ from ....giftcard.lock_objects import gift_card_qs_select_for_update
++from ....giftcard.utils import deactivate_gift_card_if_exhausted
+ from ....permission.enums import GiftcardPermissions
+ from ....webhook.event_types import WebhookEventAsyncType
+ from ...app.dataloaders import get_app_promise
+@@ -98,6 +99,7 @@ class GiftCardBalanceAdjust(BaseMutation):
+                 locked.initial_balance_amount = new_current
+                 update_fields.append("initial_balance_amount")
+             locked.save(update_fields=update_fields)
++            deactivate_gift_card_if_exhausted(locked)
+ 
+             events.gift_card_balance_adjusted_event(
+                 locked, old_current, old_initial, user, app

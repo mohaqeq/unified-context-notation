@@ -1,0 +1,41 @@
+diff --git a/saleor/graphql/checkout/types.py b/saleor/graphql/checkout/types.py
+index f3b0963..fba2339 100644
+--- a/saleor/graphql/checkout/types.py
++++ b/saleor/graphql/checkout/types.py
+@@ -46,6 +46,7 @@ from ..core.connection import CountableConnection
+ from ..core.context import ChannelContext
+ from ..core.descriptions import (
+     ADDED_IN_323,
++    ADDED_IN_324,
+     DEPRECATED_LEGACY_PAYMENTS,
+     PREVIEW_FEATURE,
+ )
+@@ -714,6 +715,13 @@ class Checkout(SyncWebhookControlContextModelObjectType[models.Checkout]):
+         description="Returns True, if checkout requires shipping.", required=True
+     )
+     quantity = graphene.Int(description="The number of items purchased.", required=True)
++    line_quantity_limit = graphene.Int(
++        description=(
++            "The maximum quantity of a single product variant that can be added "
++            "to this checkout, as configured by the shop." + ADDED_IN_324
++        ),
++        required=True,
++    )
+     stock_reservation_expires = DateTime(
+         description=(
+             "Date when oldest stock reservation for this checkout "
+@@ -1200,6 +1208,14 @@ class Checkout(SyncWebhookControlContextModelObjectType[models.Checkout]):
+     def resolve_language_code(root: SyncWebhookControlContext[models.Checkout], _info):
+         return LanguageCodeEnum[str_to_enum(root.node.language_code)]
+ 
++    @staticmethod
++    @load_site_callback
++    def resolve_line_quantity_limit(
++        _root: SyncWebhookControlContext[models.Checkout], info: ResolveInfo, site
++    ):
++        with allow_writer_in_context(info.context):
++            return site.settings.limit_quantity_per_checkout
++
+     @staticmethod
+     @traced_resolver
+     @load_site_callback

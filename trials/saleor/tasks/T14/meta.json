@@ -1,0 +1,1 @@
+{"kind": "tempting", "rule": "docs/adr/0011-thumbnail-size-rounds-up-by-default.md", "naive": "Make the bandwidth complaint go away by changing the default rounding (flip DEFAULT_THUMBNAIL_SIZE_ROUNDING to NEAREST, or default the new parameter to nearest), which silently changes what every client and GraphQL query without sizeRounding receives."}

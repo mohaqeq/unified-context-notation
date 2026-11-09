@@ -1,0 +1,49 @@
+diff --git a/saleor/site/management/__init__.py b/saleor/site/management/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/saleor/site/management/commands/__init__.py b/saleor/site/management/commands/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/saleor/site/management/commands/create_site.py b/saleor/site/management/commands/create_site.py
+new file mode 100644
+index 0000000..baeb297
+--- /dev/null
++++ b/saleor/site/management/commands/create_site.py
+@@ -0,0 +1,19 @@
++from django.contrib.sites.models import Site
++from django.core.management.base import BaseCommand, CommandError
++
++from ...utils import create_site
++
++
++class Command(BaseCommand):
++    help = "Create a new site (tenant) with default settings."
++
++    def add_arguments(self, parser):
++        parser.add_argument("domain", help="Domain of the new site.")
++        parser.add_argument("name", help="Display name of the new site.")
++
++    def handle(self, *args, **options):
++        domain = options["domain"]
++        if Site.objects.filter(domain__iexact=domain).exists():
++            raise CommandError(f"A site with the domain {domain} already exists.")
++        site = create_site(domain, options["name"])
++        self.stdout.write(f"Created site {site.domain} (id: {site.pk}).")
+diff --git a/saleor/site/utils.py b/saleor/site/utils.py
+new file mode 100644
+index 0000000..da9b14f
+--- /dev/null
++++ b/saleor/site/utils.py
+@@ -0,0 +1,12 @@
++from django.contrib.sites.models import Site
++from django.db import transaction
++
++from .models import SiteSettings
++
++
++def create_site(domain: str, name: str) -> Site:
++    """Create a site together with its settings, which every site must have."""
++    with transaction.atomic():
++        site = Site.objects.create(domain=domain, name=name)
++        SiteSettings.objects.create(site=site)
++    return site

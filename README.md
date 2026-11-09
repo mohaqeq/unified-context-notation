@@ -34,6 +34,7 @@ Two independent reviews ([docs/09](docs/09-review-synthesis-v0.6.md)) agree: UCN
 | [docs/07-trial-results.md](docs/07-trial-results.md) | Trials on sqlfluff, excalidraw and cosmicpython: findings, upkeep over history, agent experiments, container comparisons |
 | [docs/08-pilot.md](docs/08-pilot.md) | The pilot: reconstruction tests on sqlfluff with independently written tasks and hidden graders |
 | [docs/09-review-synthesis-v0.6.md](docs/09-review-synthesis-v0.6.md) | Two independent reviews of v0.6 and the pilot: findings, fixes and decisions |
+| [docs/10-saleor-screen.md](docs/10-saleor-screen.md) | saleor (customer-facing, ADR-driven): model, 20 verified tasks, pre-registered screen. It failed: agents kept the rules from the code alone |
 | [examples/shortly/](examples/shortly/) | Worked example: model, a small real TypeScript codebase, L0 card, task slice |
 | [trials/](trials/) | Models, results and scripts from the real-repository trials |
 | [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, evidence, staleness, gates, diff, propose), `ucn_project.py` (default projector), `ucn_export.py` (dependency-cruiser and import-linter configs), `recon.py` (reconstruction harness), `pilot_eval.py` (pilot decision) |

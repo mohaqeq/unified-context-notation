@@ -1,0 +1,31 @@
+diff --git a/saleor/graphql/giftcard/types.py b/saleor/graphql/giftcard/types.py
+index 57e4862..a0addd5 100644
+--- a/saleor/graphql/giftcard/types.py
++++ b/saleor/graphql/giftcard/types.py
+@@ -398,6 +398,13 @@ class GiftCard(ModelObjectType[models.GiftCard]):
+     )
+     last_used_on = DateTime(description="Date and time when gift card was last used.")
+     expiry_date = Date(description="Expiry date of the gift card.")
++    is_expired = graphene.Boolean(
++        required=True,
++        description=(
++            "Whether the gift card has expired, that is whether its expiry date is "
++            "before today." + ADDED_IN_323
++        ),
++    )
+     app = graphene.Field(
+         App,
+         description=(
+@@ -472,6 +479,12 @@ class GiftCard(ModelObjectType[models.GiftCard]):
+     def resolve_created(root: models.GiftCard, _info):
+         return root.created_at
+ 
++    @staticmethod
++    def resolve_is_expired(root: models.GiftCard, _info):
++        if root.expiry_date is None:
++            return False
++        return root.expiry_date < datetime.datetime.now(tz=datetime.UTC).date()
++
+     @staticmethod
+     def resolve_last_4_code_chars(root: models.GiftCard, _info):
+         return root.display_code

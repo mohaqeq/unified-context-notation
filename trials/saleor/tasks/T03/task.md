@@ -1,0 +1,5 @@
+# Bulk top-up of gift cards for the loyalty campaign
+
+Support has to give a group of customers a goodwill credit on their gift cards, and doing it one `giftCardBalanceAdjust` call at a time is not workable for a few hundred cards. Add a staff mutation `giftCardBulkBalanceAdjust(ids: [ID!]!, amount: Decimal!)` that applies the same signed `amount` to every listed gift card. It requires `MANAGE_GIFT_CARD`.
+
+For each card it must behave exactly like `giftCardBalanceAdjust` does for a single card: a positive amount increases the current balance and a negative one decreases it; a deduction that would take the balance below zero leaves it at exactly zero; a top-up that takes the current balance above the initial balance raises the initial balance to the new current balance; a balance-adjusted event is recorded on each card; an amount of zero is rejected with an error on field `amount` and code `INVALID` (and no card is changed). The payload returns `giftCards` (the adjusted cards, with their new `currentBalance` and `initialBalance`) and the usual `errors`.

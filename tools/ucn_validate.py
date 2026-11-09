@@ -85,8 +85,15 @@ TRUE = {"yes", "true", "uses"}
 
 
 # ----------------------------------------------------------------------------------------------- helpers
+def long_path(path):
+    """Windows refuses paths over 260 characters unless they use the extended-length prefix."""
+    if os.name == "nt" and len(os.path.abspath(path)) >= 240 and not path.startswith("\\\\?\\"):
+        return "\\\\?\\" + os.path.abspath(path).replace("/", "\\")
+    return path
+
+
 def slurp(path):
-    with open(path, encoding="utf-8", errors="replace") as f:
+    with open(long_path(path), encoding="utf-8", errors="replace") as f:
         return f.read()
 
 
@@ -692,7 +699,7 @@ def check(m, ctx):
             except (ValueError, KeyError):
                 cache = {}
         for f in scan:
-            st = os.stat(os.path.join(root, f))
+            st = os.stat(long_path(os.path.join(root, f)))
             key = f"{st.st_mtime_ns}:{st.st_size}"
             if f not in cache or cache[f]["key"] != key:
                 cache[f] = {"key": key, **scan_specs(os.path.join(root, f), f)}

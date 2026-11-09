@@ -1,0 +1,36 @@
+diff --git a/saleor/graphql/webhook/filters.py b/saleor/graphql/webhook/filters.py
+index d9f7c26..4139451 100644
+--- a/saleor/graphql/webhook/filters.py
++++ b/saleor/graphql/webhook/filters.py
+@@ -1,6 +1,9 @@
+ import django_filters
+ 
+-from ..core.filters import EnumFilter, FilterInputObjectType
++from ..core.descriptions import ADDED_IN_324
++from ..core.filters import EnumFilter, FilterInputObjectType, ObjectTypeFilter
++from ..core.types import DateTimeRangeInput
++from ..utils.filters import filter_range_field
+ from .enums import EventDeliveryStatusEnum, WebhookEventTypeEnum
+ 
+ 
+@@ -16,9 +19,20 @@ def filter_event_type(qs, _, value):
+     return qs
+ 
+ 
++def filter_created_at(qs, _, value):
++    if value:
++        qs = filter_range_field(qs, "created_at", value)
++    return qs
++
++
+ class EventDeliveryFilter(django_filters.FilterSet):
+     status = EnumFilter(input_class=EventDeliveryStatusEnum, method=filter_status)
+     event_type = EnumFilter(input_class=WebhookEventTypeEnum, method=filter_event_type)
++    created_at = ObjectTypeFilter(
++        input_class=DateTimeRangeInput,
++        method=filter_created_at,
++        help_text="Filter by the time the delivery was created." + ADDED_IN_324,
++    )
+ 
+ 
+ class EventDeliveryFilterInput(FilterInputObjectType):

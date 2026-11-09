@@ -1,0 +1,1 @@
+{"kind": "tempting", "rule": "AGENTS.md: Multi-tenancy: never rely on settings.SITE_ID", "naive": "Read the shop setting directly with SiteSettings.objects.get(site_id=settings.SITE_ID) (or Site.objects.get_current() with no request) inside the resolver instead of the get_site_promise/load_site_callback site picker, which breaks as soon as the site is chosen by request host."}

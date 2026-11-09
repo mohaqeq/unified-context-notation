@@ -1,0 +1,389 @@
+{
+ "kept": [
+  "T02",
+  "T15"
+ ],
+ "per": {
+  "T01": [
+   {
+    "run": "T01-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T01-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T01-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T02": [
+   {
+    "run": "T02-C1",
+    "success": 1,
+    "violation": 1,
+    "rule_failed": [
+     "test_rule_card_of_deleted_dormant_customer_stays_restricted",
+     "test_rule_restriction_is_kept_whatever_the_card_state[inactive_card]",
+     "test_rule_restriction_is_kept_whatever_the_card_state[active_card]"
+    ],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T02-C2",
+    "success": 1,
+    "violation": 1,
+    "rule_failed": [
+     "test_rule_card_of_deleted_dormant_customer_stays_restricted",
+     "test_rule_restriction_is_kept_whatever_the_card_state[inactive_card]",
+     "test_rule_restriction_is_kept_whatever_the_card_state[active_card]"
+    ],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T02-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T03": [
+   {
+    "run": "T03-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T03-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T03-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T04": [
+   {
+    "run": "T04-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T04-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T04-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T05": [
+   {
+    "run": "T05-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T05-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T05-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T06": [
+   {
+    "run": "T06-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T06-C2",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T06-C3",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T07": [
+   {
+    "run": "T07-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T07-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T07-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T11": [
+   {
+    "run": "T11-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T11-C2",
+    "success": 1,
+    "violation": 1,
+    "rule_failed": [
+     "test_rule_staff_cannot_use_identifier"
+    ],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T11-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T12": [
+   {
+    "run": "T12-C1",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T12-C2",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T12-C3",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T13": [
+   {
+    "run": "T13-C1",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T13-C2",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T13-C3",
+    "success": 0,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T14": [
+   {
+    "run": "T14-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T14-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T14-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T15": [
+   {
+    "run": "T15-C1",
+    "success": 0,
+    "violation": 1,
+    "rule_failed": [
+     "test_rule_second_site_gets_its_own_limit"
+    ],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T15-C2",
+    "success": 0,
+    "violation": 1,
+    "rule_failed": [
+     "test_rule_second_site_gets_its_own_limit"
+    ],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T15-C3",
+    "success": 0,
+    "violation": 1,
+    "rule_failed": [
+     "test_rule_second_site_gets_its_own_limit"
+    ],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T16": [
+   {
+    "run": "T16-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T16-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T16-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ],
+  "T17": [
+   {
+    "run": "T17-C1",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T17-C2",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   },
+   {
+    "run": "T17-C3",
+    "success": 1,
+    "violation": 0,
+    "rule_failed": [],
+    "validator_new": [],
+    "tampered": []
+   }
+  ]
+ },
+ "note": "validator hash mismatch ignored: the validator was changed by the experimenter (long-path fix) after prepare"
+}

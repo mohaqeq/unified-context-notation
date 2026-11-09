@@ -1,0 +1,3 @@
+# Do not let CDNs cache the "storefront traffic disabled" rejection
+
+Some merchants put a CDN in front of the GraphQL endpoint. When they switch `allowStorefrontTraffic` off, the HTTP 401 that anonymous and customer requests get back (error code `STOREFRONT_TRAFFIC_NOT_ALLOWED`) is sometimes stored by the CDN and then served to staff or apps that go through the same edge after they turn the setting back on. Please make that rejection response carry the header `Cache-Control: no-store`. The status code, the JSON body and who is rejected stay exactly as they are, and responses of requests that are let through must not get this header added.

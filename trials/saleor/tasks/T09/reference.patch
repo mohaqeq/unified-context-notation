@@ -1,0 +1,40 @@
+diff --git a/saleor/graphql/giftcard/filters.py b/saleor/graphql/giftcard/filters.py
+index befc7b8..59cb51a 100644
+--- a/saleor/graphql/giftcard/filters.py
++++ b/saleor/graphql/giftcard/filters.py
+@@ -18,6 +18,7 @@ from ..core.filters import (
+     MetadataFilterBase,
+     ObjectTypeFilter,
+ )
++from ..core.scalars import Date
+ from ..core.types import (
+     BaseInputObjectType,
+     NonNullList,
+@@ -105,6 +106,12 @@ def filter_created_by_email(qs, _, value):
+     return qs.filter(created_by_email=value)
+ 
+ 
++def filter_expires_before(qs, _, value):
++    if not value:
++        return qs
++    return qs.filter(expiry_date__lt=value)
++
++
+ class GiftCardFilter(MetadataFilterBase):
+     tags = ListObjectTypeFilter(input_class=graphene.String, method=filter_tags_list)
+     products = GlobalIDMultipleChoiceFilter(method=filter_products)
+@@ -132,6 +139,14 @@ class GiftCardFilter(MetadataFilterBase):
+     is_active = django_filters.BooleanFilter()
+     code = django_filters.CharFilter(method=filter_code)
+     created_by_email = django_filters.CharFilter(method=filter_created_by_email)
++    expires_before = ObjectTypeFilter(
++        input_class=Date,
++        method=filter_expires_before,
++        help_text=(
++            "Filter gift cards that expire before the given date. Gift cards without "
++            "an expiry date are not returned." + ADDED_IN_323
++        ),
++    )
+ 
+     class Meta:
+         model = models.GiftCard

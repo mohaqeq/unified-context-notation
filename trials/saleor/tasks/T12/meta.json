@@ -1,0 +1,1 @@
+{"kind": "tempting", "rule": "AGENTS.md: Deployment model - protect the shared database (bulk instead of per-row writes in loops)", "naive": "Loop over the deliveries and call manager.event_delivery_retry (what eventDeliveryRetry does) for each one, which issues one UPDATE per delivery against the shared database."}

@@ -1,0 +1,18 @@
+diff --git a/saleor/graphql/views.py b/saleor/graphql/views.py
+index 04fb790..4aa2af1 100644
+--- a/saleor/graphql/views.py
++++ b/saleor/graphql/views.py
+@@ -235,7 +235,12 @@ class GraphQLView(View):
+             status_code = max((code for response, code in responses), default=200)
+         else:
+             result, status_code = self.get_response(request, data)
+-        return JsonResponse(data=result, status=status_code, safe=False)
++        response = JsonResponse(data=result, status=status_code, safe=False)
++        if status_code == 401:
++            # Requests rejected as disallowed storefront traffic must never be
++            # stored by a CDN or a browser cache.
++            response["Cache-Control"] = "no-store"
++        return response
+ 
+     def handle_query(self, request: HttpRequest) -> JsonResponse:
+         request_start_time = time.monotonic()

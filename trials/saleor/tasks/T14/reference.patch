@@ -1,0 +1,48 @@
+diff --git a/saleor/thumbnail/views.py b/saleor/thumbnail/views.py
+index ae863bd..b86873d 100644
+--- a/saleor/thumbnail/views.py
++++ b/saleor/thumbnail/views.py
+@@ -19,7 +19,11 @@ from ..graphql.core.utils import from_global_id_or_error
+ from ..plugins.manager import get_plugins_manager
+ from ..product.models import Category, Collection, ProductMedia
+ from ..thumbnail.models import Thumbnail
+-from . import ALLOWED_ICON_THUMBNAIL_FORMATS, ALLOWED_THUMBNAIL_FORMATS
++from . import (
++    ALLOWED_ICON_THUMBNAIL_FORMATS,
++    ALLOWED_THUMBNAIL_FORMATS,
++    ThumbnailSizeRounding,
++)
+ from .exceptions import ImageTooLargeError
+ from .utils import (
+     ProcessedIconImage,
+@@ -59,8 +63,10 @@ UUID_IDENTIFIABLE_TYPES = ["User", "App", "AppInstallation"]
+ def handle_thumbnail(request, instance_id: str, size: str, format: str | None = None):
+     """Create and return thumbnail for given instance in provided size and format.
+ 
+-    If the provided size is not in the available resolution list, the thumbnail with
+-    the closest available size is created and returned, if it does not exist.
++    If the provided size is not in the available resolution list, it is matched to an
++    available size according to the optional `rounding` query parameter (`up` or
++    `nearest`), defaulting to `DEFAULT_THUMBNAIL_SIZE_ROUNDING`. The thumbnail of that
++    size is created and returned, if it does not exist.
+     """
+     # try to find corresponding instance based on given instance_id
+     try:
+@@ -79,8 +85,16 @@ def handle_thumbnail(request, instance_id: str, size: str, format: str | None =
+     elif format and format not in ALLOWED_THUMBNAIL_FORMATS:
+         return HttpResponseNotFound("Unsupported image format.")
+ 
++    rounding_value = request.GET.get("rounding")
++    rounding = None
++    if rounding_value is not None:
++        try:
++            rounding = ThumbnailSizeRounding(rounding_value.upper())
++        except ValueError:
++            return HttpResponseNotFound("Invalid size rounding.")
++
+     try:
+-        size_px = get_thumbnail_size(int(size))
++        size_px = get_thumbnail_size(int(size), rounding)
+     except ValueError:
+         return HttpResponseNotFound("Invalid size.")
+ 

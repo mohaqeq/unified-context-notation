@@ -1,0 +1,143 @@
+diff --git a/saleor/graphql/webhook/mutations/__init__.py b/saleor/graphql/webhook/mutations/__init__.py
+index 5ff5fe1..a54e67e 100644
+--- a/saleor/graphql/webhook/mutations/__init__.py
++++ b/saleor/graphql/webhook/mutations/__init__.py
+@@ -1,3 +1,4 @@
++from .event_delivery_bulk_retry import EventDeliveryBulkRetry
+ from .event_delivery_retry import EventDeliveryRetry
+ from .webhook_create import WebhookCreate
+ from .webhook_delete import WebhookDelete
+@@ -6,6 +7,7 @@ from .webhook_trigger import WebhookTrigger
+ from .webhook_update import WebhookUpdate
+ 
+ __all__ = [
++    "EventDeliveryBulkRetry",
+     "EventDeliveryRetry",
+     "WebhookCreate",
+     "WebhookDelete",
+diff --git a/saleor/graphql/webhook/mutations/event_delivery_bulk_retry.py b/saleor/graphql/webhook/mutations/event_delivery_bulk_retry.py
+new file mode 100644
+index 0000000..471b1ad
+--- /dev/null
++++ b/saleor/graphql/webhook/mutations/event_delivery_bulk_retry.py
+@@ -0,0 +1,63 @@
++import graphene
++from django.core.exceptions import ValidationError
++from django.db.models import Exists, OuterRef
++
++from ....app.models import App
++from ....core import models
++from ....permission.enums import AppPermission
++from ....webhook.error_codes import WebhookErrorCode
++from ....webhook.models import Webhook
++from ....webhook.transport.asynchronous.transport import retry_event_deliveries
++from ...core import ResolveInfo
++from ...core.descriptions import ADDED_IN_324
++from ...core.doc_category import DOC_CATEGORY_WEBHOOKS
++from ...core.mutations import BaseMutation
++from ...core.types import NonNullList, WebhookError
++from ..types import EventDelivery
++
++
++class EventDeliveryBulkRetry(BaseMutation):
++    count = graphene.Int(
++        required=True,
++        description="Number of event deliveries scheduled for another attempt.",
++    )
++
++    class Arguments:
++        ids = NonNullList(
++            graphene.ID,
++            required=True,
++            description="IDs of the event deliveries to retry.",
++        )
++
++    class Meta:
++        description = "Retries multiple event deliveries." + ADDED_IN_324
++        doc_category = DOC_CATEGORY_WEBHOOKS
++        permissions = (AppPermission.MANAGE_APPS,)
++        error_type_class = WebhookError
++
++    @classmethod
++    def handle_errors(cls, error, **extra):
++        return super().handle_errors(error, count=0, **extra)
++
++    @classmethod
++    def perform_mutation(cls, _root, info: ResolveInfo, /, **data):
++        apps = App.objects.filter(removed_at__isnull=True).values("pk")
++        webhooks = Webhook.objects.filter(
++            Exists(apps.filter(id=OuterRef("app_id")))
++        ).values("pk")
++        qs = models.EventDelivery.objects.filter(
++            Exists(webhooks.filter(id=OuterRef("webhook_id")))
++        ).select_related("webhook__app")
++        pks = cls.get_global_ids_or_error(data["ids"], EventDelivery, field="ids")
++        deliveries = list(qs.filter(pk__in=pks))
++        if len(deliveries) != len(set(pks)):
++            raise ValidationError(
++                {
++                    "ids": ValidationError(
++                        "Couldn't resolve all event deliveries.",
++                        code=WebhookErrorCode.NOT_FOUND.value,
++                    )
++                }
++            )
++        retry_event_deliveries(deliveries)
++        return EventDeliveryBulkRetry(count=len(deliveries))
+diff --git a/saleor/graphql/webhook/schema.py b/saleor/graphql/webhook/schema.py
+index e4bedeb..dd8eddc 100644
+--- a/saleor/graphql/webhook/schema.py
++++ b/saleor/graphql/webhook/schema.py
+@@ -9,6 +9,7 @@ from ..core.fields import BaseField, JSONString, PermissionsField
+ from ..core.types import NonNullList
+ from .enums import WebhookSampleEventTypeEnum
+ from .mutations import (
++    EventDeliveryBulkRetry,
+     EventDeliveryRetry,
+     WebhookCreate,
+     WebhookDelete,
+@@ -73,5 +74,6 @@ class WebhookMutations(graphene.ObjectType):
+     webhook_delete = WebhookDelete.Field()
+     webhook_update = WebhookUpdate.Field()
+     event_delivery_retry = EventDeliveryRetry.Field()
++    event_delivery_bulk_retry = EventDeliveryBulkRetry.Field()
+     webhook_dry_run = WebhookDryRun.Field()
+     webhook_trigger = WebhookTrigger.Field()
+diff --git a/saleor/webhook/transport/asynchronous/transport.py b/saleor/webhook/transport/asynchronous/transport.py
+index ebb97e6..77d6b92 100644
+--- a/saleor/webhook/transport/asynchronous/transport.py
++++ b/saleor/webhook/transport/asynchronous/transport.py
+@@ -352,6 +352,33 @@ def get_queue_name_for_webhook(webhook, default_queue):
+     )
+ 
+ 
++def retry_event_deliveries(deliveries: Sequence[EventDelivery]) -> None:
++    """Put the deliveries back to `PENDING` and schedule sending them again.
++
++    The status is changed with a single query, regardless of the number of
++    deliveries. Expects the deliveries loaded with `webhook` and `webhook__app`.
++    """
++    if not deliveries:
++        return
++    EventDelivery.objects.filter(pk__in=[delivery.pk for delivery in deliveries]).update(
++        status=EventDeliveryStatus.PENDING
++    )
++    domain = get_domain()
++    telemetry_context = get_task_context().to_dict()
++    for delivery in deliveries:
++        webhook = delivery.webhook
++        send_webhook_request_async.apply_async(
++            kwargs={
++                "event_delivery_id": delivery.pk,
++                "telemetry_context": telemetry_context,
++            },
++            queue=get_queue_name_for_webhook(
++                webhook, default_queue=settings.WEBHOOK_CELERY_QUEUE_NAME
++            ),
++            MessageGroupId=get_sqs_message_group_id(domain, webhook.app),
++        )
++
++
+ def trigger_webhooks_async_for_multiple_objects(
+     event_type,
+     webhooks,

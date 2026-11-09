@@ -1,0 +1,49 @@
+diff --git a/saleor/graphql/order/types.py b/saleor/graphql/order/types.py
+index 354ad2f..e719b7b 100644
+--- a/saleor/graphql/order/types.py
++++ b/saleor/graphql/order/types.py
+@@ -38,7 +38,7 @@ from ...order.models import FulfillmentStatus
+ from ...order.utils import (
+     get_order_country,
+ )
+-from ...payment import ChargeStatus, TransactionKind
++from ...payment import ChargeStatus, PaymentMethodType, TransactionKind
+ from ...payment.dataloaders import PaymentsByOrderIdLoader
+ from ...payment.model_helpers import get_last_payment, get_total_authorized
+ from ...permission.auth_filters import AuthorizationFilters, is_app, is_staff_user
+@@ -1737,6 +1737,13 @@ class Order(SyncWebhookControlContextModelObjectType[ModelObjectType[models.Orde
+         ),
+         required=True,
+     )
++    has_gift_card_payment = graphene.Boolean(
++        required=True,
++        description=(
++            "Whether any payment transaction of the order was paid with a gift card."
++            + ADDED_IN_323
++        ),
++    )
+     payments = NonNullList(
+         Payment,
+         description="List of payments for the order.",
+@@ -2599,6 +2606,21 @@ class Order(SyncWebhookControlContextModelObjectType[ModelObjectType[models.Orde
+             )
+         )
+ 
++    @staticmethod
++    def resolve_has_gift_card_payment(
++        root: SyncWebhookControlContext[models.Order], info
++    ):
++        return (
++            TransactionItemsByOrderIDLoader(info.context)
++            .load(root.node.id)
++            .then(
++                lambda transactions: any(
++                    transaction.payment_method_type == PaymentMethodType.GIFT_CARD
++                    for transaction in transactions
++                )
++            )
++        )
++
+     @staticmethod
+     def resolve_status_display(root: SyncWebhookControlContext[models.Order], _info):
+         return root.node.get_status_display()

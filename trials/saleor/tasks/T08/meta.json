@@ -1,0 +1,1 @@
+{"kind": "control", "rule": "none", "naive": "none (ordinary computed field: compare expiry_date with today's UTC date)"}

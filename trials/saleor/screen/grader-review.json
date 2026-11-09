@@ -1,0 +1,291 @@
+{
+ "T01": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_rule_card_restricted_to_another_customer_looks_like_unknown_code",
+    "why": "Asserts that a card assigned to another customer must return a response identical to an unknown code, but the rule only forbids leaking ownership; a reasonable implementation could return the balance for any active, non-expired card without revealing ownership, satisfying both ticket and rule."
+   },
+   {
+    "test": "test_rule_card_restricted_to_deleted_customer_looks_like_unknown_code",
+    "why": "Asserts that a card assigned to a deleted customer must return a response identical to an unknown code, but the rule only forbids leaking ownership; a reasonable implementation could return the balance for any active, non-expired card without revealing ownership, satisfying both ticket and rule."
+   }
+  ],
+  "ok": [
+   "test_behavior_returns_balance_of_usable_card",
+   "test_behavior_staff_can_read_balance",
+   "test_behavior_unknown_code_returns_null",
+   "test_behavior_reflects_current_balance",
+   "test_behavior_unusable_card_returns_null"
+  ]
+ },
+ "T02": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_deletes_customers_whose_last_login_is_before_cutoff",
+   "test_behavior_never_logged_in_customers_are_judged_by_join_date",
+   "test_behavior_staff_and_customers_with_orders_are_kept",
+   "test_behavior_returns_zero_when_nothing_is_dormant",
+   "test_rule_card_of_deleted_dormant_customer_stays_restricted",
+   "test_rule_restriction_is_kept_whatever_the_card_state"
+  ]
+ },
+ "T03": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_applies_the_same_delta_to_every_card",
+   "test_behavior_deduction_clamps_each_card_to_zero",
+   "test_behavior_top_up_above_initial_raises_initial",
+   "test_behavior_zero_amount_is_rejected",
+   "test_behavior_requires_manage_gift_card",
+   "test_rule_balance_is_changed_atomically_not_read_modify_write"
+  ]
+ },
+ "T04": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_charging_deactivates_card_only_once_balance_is_zero",
+   "test_behavior_adjustment_deactivates_card_only_once_balance_is_zero",
+   "test_rule_no_new_django_signal_receivers"
+  ]
+ },
+ "T05": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_default_expiry_applied_when_no_date_given",
+   "test_behavior_follows_current_settings_and_keeps_explicit_dates",
+   "test_behavior_period_unit_is_respected",
+   "test_rule_expiry_comes_from_the_site_resolved_for_the_request"
+  ]
+ },
+ "T07": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_lists_successful_refunds_oldest_first",
+   "test_rule_order_transactions_stay_restricted",
+   "test_rule_refund_entries_do_not_expose_internal_transaction_data"
+  ]
+ },
+ "T08": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_is_expired",
+   "test_behavior_is_expired_ignores_active_flag_and_balance"
+  ]
+ },
+ "T09": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_returns_cards_expiring_strictly_before_date",
+   "test_behavior_combines_with_other_filters",
+   "test_behavior_without_a_date_the_result_is_unchanged"
+  ]
+ },
+ "T10": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_true_when_a_transaction_was_paid_with_a_gift_card",
+   "test_behavior_false_without_transactions"
+  ]
+ },
+ "T11": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_behavior_id_and_identifier_together_is_error",
+    "why": "Asserts exactly one error, but the ticket only states that passing both is an error without specifying the error count."
+   },
+   {
+    "test": "test_behavior_neither_id_nor_identifier_is_error",
+    "why": "Asserts exactly one error, but the ticket only states that passing neither is an error without specifying the error count."
+   }
+  ],
+  "ok": [
+   "test_behavior_app_looks_up_own_webhook",
+   "test_behavior_app_unknown_identifier_returns_null",
+   "test_unchanged_lookup_by_id_still_works",
+   "test_behavior_app_never_sees_other_apps_webhook_with_same_identifier",
+   "test_rule_staff_cannot_use_identifier",
+   "test_unchanged_staff_still_uses_id"
+  ]
+ },
+ "T12": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_behavior_retries_all_given_deliveries",
+    "why": "Asserts the task is scheduled via Celery's `apply_async` with specific keyword arguments, which is an implementation detail not stated in the ticket."
+   },
+   {
+    "test": "test_behavior_only_given_deliveries_are_retried",
+    "why": "Asserts the task is scheduled via Celery's `apply_async` and checks call count, which is an implementation detail not stated in the ticket."
+   },
+   {
+    "test": "test_behavior_unresolvable_id_changes_nothing",
+    "why": "Asserts the task is not scheduled via Celery's `apply_async` by checking call count, which is an implementation detail not stated in the ticket."
+   },
+   {
+    "test": "test_behavior_requires_manage_apps",
+    "why": "Asserts the task is not scheduled via Celery's `apply_async` by checking call count, which is an implementation detail not stated in the ticket."
+   },
+   {
+    "test": "test_rule_status_is_changed_with_a_constant_number_of_writes",
+    "why": "Asserts exactly one UPDATE query, while the rule only requires bulk writes (constant number of writes, not necessarily exactly one)."
+   }
+  ],
+  "ok": []
+ },
+ "T13": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_behavior_move_subtree_under_other_tree",
+    "why": "Asserts MPTT tree consistency (lft, rght, tree_id, level) which is an implementation detail not required by the ticket."
+   },
+   {
+    "test": "test_unchanged_omitted_parent_keeps_parent",
+    "why": "Asserts MPTT tree consistency which is not stated in the ticket; the ticket only requires the parent to remain unchanged."
+   },
+   {
+    "test": "test_behavior_cannot_move_under_itself_or_descendant",
+    "why": "Asserts MPTT tree consistency after a failed move; the ticket only requires that nothing changes and an error is returned."
+   }
+  ],
+  "ok": [
+   "test_rule_move_takes_category_tree_advisory_lock_before_writing",
+   "test_rule_move_uses_tree_values_read_after_the_lock"
+  ]
+ },
+ "T14": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_behavior_rounding_nearest",
+    "why": "Asserts exact redirect URL structure (MEDIA_URL, file path, naming pattern) which is not specified in the ticket or rule."
+   },
+   {
+    "test": "test_behavior_rounding_is_case_insensitive",
+    "why": "Asserts the thumbnail URL contains a specific naming pattern (\"_thumbnail_512.\") not specified in the ticket or rule."
+   },
+   {
+    "test": "test_unchanged_rounding_up",
+    "why": "Asserts the thumbnail URL contains a specific naming pattern (\"_thumbnail_1024.\") not specified in the ticket or rule."
+   },
+   {
+    "test": "test_behavior_rounding_with_format",
+    "why": "Asserts the thumbnail URL ends with a specific naming pattern (\"_thumbnail_512.webp\") not specified in the ticket or rule."
+   },
+   {
+    "test": "test_rule_without_parameter_still_rounds_up",
+    "why": "Asserts the thumbnail URL contains a specific naming pattern (\"_thumbnail_1024.\") not specified in the ticket or rule (the rule only specifies rounding behavior, not URL format)."
+   }
+  ],
+  "ok": [
+   "test_behavior_unknown_rounding_is_404",
+   "test_rule_graphql_thumbnail_without_size_rounding_rounds_up",
+   "test_rule_default_size_matching_rounds_up"
+  ]
+ },
+ "T15": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_rule_other_site_selected_by_site_id",
+    "why": "The test asserts that setting SITE_ID changes the limit, but the project rule states never to rely on SITE_ID, and the ticket does not require SITE_ID-based behavior."
+   }
+  ],
+  "ok": [
+   "test_behavior_returns_shop_limit",
+   "test_behavior_follows_setting_changes",
+   "test_rule_second_site_gets_its_own_limit"
+  ]
+ },
+ "T16": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_behavior_creates_site_with_default_settings",
+    "why": "Asserts specific default values (allow_storefront_traffic=True, top_menu=None) not required by the ticket, which only says 'default values'."
+   }
+  ],
+  "ok": [
+   "test_behavior_existing_site_untouched",
+   "test_behavior_duplicate_domain_fails_without_side_effects",
+   "test_rule_no_signal_receivers_on_site_models"
+  ]
+ },
+ "T17": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_children_move_to_deleted_items_parent",
+   "test_behavior_children_of_top_level_item_become_top_level",
+   "test_unchanged_without_keep_children_whole_subtree_is_deleted",
+   "test_rule_nested_set_stays_consistent_after_promoting_children",
+   "test_rule_promoting_children_takes_menu_item_tree_lock_before_writing"
+  ]
+ },
+ "T18": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_rejection_is_not_cacheable",
+   "test_unchanged_privileged_requests_do_not_get_the_header",
+   "test_unchanged_allowed_traffic_does_not_get_the_header"
+  ]
+ },
+ "T19": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_counts_all_levels",
+   "test_behavior_leaf_has_zero",
+   "test_behavior_follows_tree_changes"
+  ]
+ },
+ "T20": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [],
+  "ok": [
+   "test_behavior_lower_bound",
+   "test_behavior_upper_bound",
+   "test_behavior_both_bounds",
+   "test_behavior_combines_with_status",
+   "test_behavior_empty_range_does_not_restrict"
+  ]
+ },
+ "T06-pre-narrowing": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_rule_failed_attempts_are_not_kept_in_process_memory",
+    "why": "The test asserts that no module-level container or scalar changes at all, but the rule only forbids using in-process state as the source of truth for failed attempts; a reasonable implementation might have other module-level caches that change during requests."
+   }
+  ],
+  "ok": [
+   "test_behavior_checkout_is_blocked_after_five_failed_attempts",
+   "test_behavior_successful_additions_do_not_count"
+  ]
+ },
+ "T06": {
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "over_specified": [
+   {
+    "test": "test_rule_failed_attempts_are_not_kept_in_process_memory",
+    "why": "The test asserts that no module-level state changes correlate with failed attempts (scalars growing by exactly 3 or reprs containing checkout identifiers), but a reasonable implementation using an external store (e.g., Redis) may have legitimate module-level side effects like connection pool stats or request counters that change incidentally during the calls, causing false failures."
+   }
+  ],
+  "ok": [
+   "test_behavior_checkout_is_blocked_after_five_failed_attempts",
+   "test_behavior_successful_additions_do_not_count"
+  ]
+ }
+}

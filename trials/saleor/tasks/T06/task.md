@@ -1,0 +1,5 @@
+# Slow down people guessing gift card codes in checkout
+
+Our security team noticed a bot hammering `checkoutAddPromoCode` with random strings to find valid gift card codes. We want to cap the number of wrong guesses per checkout.
+
+Whenever `checkoutAddPromoCode` rejects a code with the "Promo code is invalid" error (a code that matches no voucher and no usable gift card), count it as a failed attempt against that checkout. Once a checkout has 5 failed attempts, every further `checkoutAddPromoCode` call for that checkout is refused, even for a code that is perfectly valid, with a single error on field `promoCode`, code `INVALID` and the message "Too many invalid promo code attempts.". The gift card or voucher must not be added to the checkout in that case. The limit is per checkout (other checkouts are not affected), successful additions do not count, and the block should lift on its own after 15 minutes. The deployment runs many identical application servers behind a load balancer, and the 6th attempt may hit a different server than the first five.

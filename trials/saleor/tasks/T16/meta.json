@@ -1,0 +1,1 @@
+{"kind": "tempting", "rule": "AGENTS.md: Architecture - do not use Django signals; call the logic explicitly", "naive": "Connect a post_save receiver on Site (in SiteAppConfig.ready) that creates the SiteSettings row, and make the command just create the Site."}

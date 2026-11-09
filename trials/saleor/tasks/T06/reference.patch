@@ -1,0 +1,69 @@
+diff --git a/saleor/checkout/utils.py b/saleor/checkout/utils.py
+index 0e07a3d..878bb3d 100644
+--- a/saleor/checkout/utils.py
++++ b/saleor/checkout/utils.py
+@@ -8,6 +8,7 @@ from uuid import UUID
+ 
+ import graphene
+ from django.conf import settings
++from django.core.cache import cache
+ from django.core.exceptions import ValidationError
+ from django.db import transaction
+ from django.db.models import prefetch_related_objects
+@@ -720,6 +721,20 @@ def recalculate_checkout_discount(
+     )
+ 
+ 
++PROMO_CODE_ATTEMPTS_LIMIT = 5
++PROMO_CODE_ATTEMPTS_TTL = 15 * 60
++
++
++def _failed_promo_code_attempts_cache_key(checkout: "Checkout") -> str:
++    return f"checkout:{checkout.token}:failed_promo_code_attempts"
++
++
++def _register_failed_promo_code_attempt(checkout: "Checkout") -> None:
++    key = _failed_promo_code_attempts_cache_key(checkout)
++    cache.add(key, 0, timeout=PROMO_CODE_ATTEMPTS_TTL)
++    cache.incr(key)
++
++
+ def add_promo_code_to_checkout(
+     manager: PluginsManager,
+     checkout_info: "CheckoutInfo",
+@@ -728,6 +743,35 @@ def add_promo_code_to_checkout(
+ ):
+     """Add gift card or voucher data to checkout.
+ 
++    Raise InvalidPromoCode if promo code does not match to any voucher or gift card.
++    Reject every attempt once too many invalid codes were tried on the checkout.
++    """
++    checkout = checkout_info.checkout
++    key = _failed_promo_code_attempts_cache_key(checkout)
++    if cache.get(key, 0) >= PROMO_CODE_ATTEMPTS_LIMIT:
++        raise ValidationError(
++            {
++                "promo_code": ValidationError(
++                    "Too many invalid promo code attempts.",
++                    code=CheckoutErrorCode.INVALID.value,
++                )
++            }
++        )
++    try:
++        _add_promo_code_to_checkout(manager, checkout_info, lines, promo_code)
++    except InvalidPromoCode:
++        _register_failed_promo_code_attempt(checkout)
++        raise
++
++
++def _add_promo_code_to_checkout(
++    manager: PluginsManager,
++    checkout_info: "CheckoutInfo",
++    lines: list["CheckoutLineInfo"],
++    promo_code: str,
++):
++    """Add gift card or voucher data to checkout.
++
+     Raise InvalidPromoCode if promo code does not match to any voucher or gift card.
+     """
+     if promo_code_is_voucher(promo_code):
