@@ -30,7 +30,7 @@ Whether UCN is worth its upkeep on a large, eroded codebase is the open question
 | [examples/shortly/](examples/shortly/) | Worked example: model, a small real TypeScript codebase, L0 card, task slice |
 | [trials/](trials/) | Models, results and scripts from the real-repository trials |
 | [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, gates, diff, propose), `ucn_export.py` (dependency-cruiser and import-linter configs), `pilot_eval.py` (pilot decision) |
-| [tests/](tests/) | 71 tests, including a regression test for each reproduction from the v0.3 reviews |
+| [tests/](tests/) | 77 tests (earlier counts double-ran 9 inherited tests), including a regression test for each reproduction from the v0.3 reviews |
 | [reviews/](reviews/) | The raw reviews |
 
 ## Try it

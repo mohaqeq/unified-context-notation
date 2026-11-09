@@ -12,6 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import pilot_eval  # noqa: E402
 import ucn_export  # noqa: E402
+import ucn_project  # noqa: E402
 import ucn_parse  # noqa: E402
 import ucn_validate  # noqa: E402
 
@@ -119,7 +120,7 @@ class ParseAndProject(unittest.TestCase):
 
 
 # ------------------------------------------------------------------------------------------- the example
-class Example(unittest.TestCase):
+class ExampleBase(unittest.TestCase):
     def copy(self, model_text=None, edit=None):
         d = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, d)
@@ -130,6 +131,8 @@ class Example(unittest.TestCase):
             edit(d)
         return os.path.join(d, "model.ucn")
 
+
+class Example(ExampleBase):
     def test_example_findings(self):
         self.assertEqual(classes(run(MODEL)), [("KNOWN-CONFLICT", "RateLimit.maxLinksPerHour"),
                                                 ("MODEL-UPDATE", "Web.Form"),
@@ -191,7 +194,7 @@ class Example(unittest.TestCase):
 
 
 # ------------------------------------------------------------------------------------------- adopt gate
-class Gate(Example):
+class Gate(ExampleBase):
     def fixed(self):
         return read(MODEL).replace("    component Guard: abuse protection\n", "    component Guard: abuse protection\n      uses Links\n") \
                           .replace("      code: web/app.tsx\n", "      code: web/app.tsx\n      uses Client\n")
@@ -483,7 +486,7 @@ class Stale(Tmp):
 
 
 # ------------------------------------------------------------------------------------------- rationale links (v0.6)
-class Rationale(Example):
+class Rationale(ExampleBase):
     def test_links_resolve_and_breakage_is_reported(self):
         r = run(MODEL)
         self.assertEqual(r.get("rationale"), 4)
@@ -499,6 +502,40 @@ class Rationale(Example):
 
     def test_slugs(self):
         self.assertEqual(ucn_validate.heading_slugs("# A b\n## Why: (now)?\n## A b\n"), {"a-b", "why-now", "a-b-1"})
+
+
+# ------------------------------------------------------------------------------------------- default projector (v0.6)
+class Projector(unittest.TestCase):
+    TASK = "implement custom aliases: premium users can choose the code of a link"
+
+    def test_projections_pass_the_checker_at_every_budget(self):
+        for budget in (400, 800, 1500, 3000):
+            text, errs = ucn_project.project(MODEL, self.TASK, budget)
+            self.assertEqual(errs, [], budget)
+            self.assertIn("goal Abuse [pin]", text)             # global pins always present
+            self.assertIn("Blocklist", text)                    # scoped pins at least named
+
+    def test_seeds_and_detail(self):
+        text, _ = ucn_project.project(MODEL, self.TASK, 3000)
+        self.assertIn("req Alias", text)
+        self.assertIn("config AliasesEnabled", text)
+        self.assertIn("term PremiumUser", text)
+        self.assertIn("pre: isHttpUrl(url) [inferred]", text)   # create() upgraded to L2 when the budget allows
+
+    def test_stated_rules_follow_the_seeds(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(rmtree, d)
+        write(os.path.join(d, "model.ucn"), RULES)
+        text, errs = ucn_project.project(os.path.join(d, "model.ucn"), "change Q so it can show Side output", 1500)
+        self.assertEqual(errs, [])
+        self.assertIn("forbids Side", text)
+
+    def test_deterministic(self):
+        self.assertEqual(ucn_project.project(MODEL, self.TASK, 1500)[0], ucn_project.project(MODEL, self.TASK, 1500)[0])
+
+    def test_budget_too_small_is_reported(self):
+        _, errs = ucn_project.project(MODEL, self.TASK, 100)
+        self.assertTrue(any("exceed budget" in e for e in errs))
 
 
 # ------------------------------------------------------------------------------------------- export
