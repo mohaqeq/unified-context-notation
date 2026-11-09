@@ -1,0 +1,80 @@
+Bash: cd "<scratch>/pilot/runs/T10-B2" && cat context.ucn && echo ---- && ls && git status --short | head -20 && ls src test 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T10-B2" && ls src/sqlfluff/api && cat src/sqlfluff/api/__init__.py && echo ---- && cat src/sqlfluff/api/simple.py && echo ---- && ls test/api && grep -n "def \|_\(format\|violation\)" src/sqlfluff/core/formatter.py | head -80
+Bash: cd "<scratch>/pilot/runs/T10-B2" && grep -n "def format_violation\|def format_filename\|L:\|P:\|rjust\|rule_name\|_format_violation\|def _format" src/sqlfluff/core/formatter.py src/sqlfluff/core/linter/*.py src/sqlfluff/core/errors.py | head -60; echo ----; grep -n "def as_records\|def to_dict\|def get_info_dict\|\"name\"\|\"start_line_no\"\|\"start_line_pos\"\|\"code\"\|\"description\"" src/sqlfluff/core/linter/linted_file.py src/sqlfluff/core/errors.py src/sqlfluff/core/linter/linting_result.py src/sqlfluff/core/linter/linted_dir.py 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T10-B2" && sed -n 85,130p src/sqlfluff/core/errors.py; echo ----; sed -n 265,290p src/sqlfluff/core/errors.py; echo ----; sed -n 330,380p src/sqlfluff/core/errors.py; echo ----; grep -rn "def format_violation\|def _format_violation\|def format_linting_result_violations\|def format_violation_line" src/sqlfluff | head; echo ----; grep -n "def format_violation" -A40 src/sqlfluff/core/formatter.py | head -80
+Bash: cd "<scratch>/pilot/runs/T10-B2" && sed -n 470,530p src/sqlfluff/cli/formatters.py; echo ----; grep -n "^from\|^import" src/sqlfluff/cli/formatters.py; echo ----; grep -n "def strip_colors\|def colorize\|def format_position\|def format_code\|def format_violation\|def _format_violation\|def format_" src/sqlfluff/cli/formatters.py
+Bash: cd "<scratch>/pilot/runs/T10-B2" && sed -n 530,546p src/sqlfluff/cli/formatters.py; echo ----; grep -n "def split_string_on_spaces" -A30 src/sqlfluff/cli/helpers.py src/sqlfluff/core/helpers/*.py src/sqlfluff/utils/*.py 2>/dev/null | head -45; echo ----; grep -rn "def split_string_on_spaces" src/sqlfluff; grep -n "class Color" -A12 src/sqlfluff/core/types.py; echo ----; cat test/api/simple_test.py | head -60; ls src/sqlfluff/core/ | head -50
+Bash: cd "<scratch>/pilot/runs/T10-B2" && sed -n 60,400p test/api/simple_test.py | grep -n "^def \|^@\|^import\|^from" ; wc -l test/api/simple_test.py; tail -30 test/api/simple_test.py
+Edit: <scratch>/pilot/runs/T10-B2/src/sqlfluff/api/simple.py
+Edit: <scratch>/pilot/runs/T10-B2/src/sqlfluff/api/__init__.py
+Bash: cd "<scratch>/pilot/runs/T10-B2" && cat >> test/api/simple_test.py <<'EOF'
+
+
+def test__api__format_violations_empty():
+    """An empty list of violations formats to an empty string."""
+    assert sqlfluff.api.format_violations([]) == ""
+
+
+def test__api__format_violations_layout():
+    """Violations are formatted like the CLI, one per line, without a newline."""
+    violations = [
+        {
+            "code": "CP01",
+            "description": "Keywords must be consistently upper case.",
+            "name": "capitalisation.keywords",
+            "start_line_no": 1,
+            "start_line_pos": 1,
+            "warning": False,
+        },
+        {
+            "code": "PRS",
+            "description": "Unparsable section.",
+            "name": "",
+            "start_line_no": 12,
+            "start_line_pos": 105,
+            "warning": False,
+        },
+    ]
+    assert sqlfluff.api.format_violations(violations) == (
+        "L:   1 | P:   1 | CP01 | Keywords must be consistently upper case. "
+        "[capitalisation.keywords]\n"
+        "L:  12 | P: 105 |  PRS | Unparsable section."
+    )
+
+
+def test__api__format_violations_long_description_not_wrapped():
+    """Long descriptions are kept on a single line."""
+    description = " ".join(["word"] * 60)
+    violations = [
+        {
+            "code": "LT01",
+            "description": description,
+            "name": "layout.spacing",
+            "start_line_no": 3,
+            "start_line_pos": 2,
+            "warning": False,
+        }
+    ]
+    result = sqlfluff.api.format_violations(violations)
+    assert "\n" not in result
+    assert result == (
+        f"L:   3 | P:   2 | LT01 | {description} [layout.spacing]"
+    )
+EOF
+grep -n "^from\|^import" test/api/simple_test.py
+Bash: cd "<scratch>/pilot/runs/T10-B2" && python - <<'EOF'
+import re
+p = "test/api/simple_test.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace("from sqlfluff.api import APIParsingError\n", "from sqlfluff.api import APIParsingError, format_violations\n", 1)
+s = s.replace("sqlfluff.api.format_violations(", "format_violations(")
+s = s.replace('''    assert result == (
+        f"L:   3 | P:   2 | LT01 | {description} [layout.spacing]"
+    )
+''', '''    assert result == f"L:   3 | P:   2 | LT01 | {description} [layout.spacing]"
+''')
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+grep -n "format_violations" test/api/simple_test.py; python -m py_compile src/sqlfluff/api/simple.py src/sqlfluff/api/__init__.py test/api/simple_test.py && echo COMPILED; python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit $?"
+Bash: cd "<scratch>/pilot/runs/T10-B2" && git status --short && git diff --stat -- src test
+SubagentHandback:

@@ -1,0 +1,29 @@
+Bash: cd "<scratch>/pilot/runs/T02-C1" && git rev-parse --show-toplevel && git status --short && ls src/sqlfluff/api/ && cat src/sqlfluff/api/info.py && ls test/api/ 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T02-C1" && cat test/api/info_test.py && echo ---- && cat src/sqlfluff/__init__.py && echo ---- && cat src/sqlfluff/api/__init__.py && echo ---- && grep -rn "__version__\|python_requires\|requires-python" src/sqlfluff/__init__.py src/sqlfluff/core/*.py pyproject.toml setup.cfg 2>/dev/null | head -20; grep -rn "version" src/sqlfluff/core/__init__.py | head
+Edit: <scratch>/pilot/runs/T02-C1/src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-C1/src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-C1/src/sqlfluff/api/__init__.py
+Edit: <scratch>/pilot/runs/T02-C1/test/api/info_test.py
+Bash: cd "<scratch>/pilot/runs/T02-C1" && cat >> test/api/info_test.py <<'EOF'
+
+
+def test__api__info_version_info():
+    """Check the version info dict reports sqlfluff and Python versions."""
+    info = version_info()
+    assert set(info.keys()) == {"sqlfluff", "python", "implementation"}
+    assert all(isinstance(value, str) for value in info.values())
+    # The sqlfluff entry matches the package version.
+    assert info["sqlfluff"] == sqlfluff.__version__
+    # The python entry is major.minor.micro of the running interpreter.
+    assert info["python"] == (
+        f"{sys.version_info.major}.{sys.version_info.minor}."
+        f"{sys.version_info.micro}"
+    )
+    assert re.fullmatch(r"\d+\.\d+\.\d+", info["python"])
+    # The implementation is the lowercased interpreter implementation name.
+    assert info["implementation"] == platform.python_implementation().lower()
+    assert info["implementation"] == info["implementation"].lower()
+EOF
+tail -5 src/sqlfluff/api/__init__.py; grep -n "list_dialects" src/sqlfluff/__init__.py
+Bash: cd "<scratch>/pilot/runs/T02-C1" && head -12 test/api/info_test.py && git diff --stat -- src test
+SubagentHandback:

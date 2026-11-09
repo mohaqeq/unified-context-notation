@@ -1,0 +1,104 @@
+Bash: cd "<scratch>/pilot/runs/T05-B2" && cat context.ucn && echo ---- && cat src/sqlfluff/core/rules/context.py && echo ---- && cat src/sqlfluff/utils/identifers.py
+Bash: cd "<scratch>/pilot/runs/T05-B2" && git status --short && ls && grep -rn "identifiers_policy_applicable\|identifers" --include=*.py . | head -50 && cat src/sqlfluff/core/rules/__init__.py && grep -n "importlinter" -A60 pyproject.toml | head -120 && ls test/utils test/core/rules 2>/dev/null | head -80
+Bash: cd "<scratch>/pilot/runs/T05-B2" && grep -rln "RuleContext\|identifier" test | head -30; ls test/utils/analysis; sed -n 1,60p src/sqlfluff/rules/references/RF05.py | head -5; sed -n 210,230p src/sqlfluff/rules/references/RF05.py
+Bash: cd "<scratch>/pilot/runs/T05-B2" && sed -n 1,80p test/core/rules/rules_test.py; grep -n "RuleContext" test/core/rules/rules_test.py test/core/rules/crawlers_test.py | head; cat test/utils/analysis/query_test.py | head -30
+Bash: cd "<scratch>/pilot/runs/T05-B2" && sed -n 1,60p test/core/rules/crawlers_test.py; sed -n 130,150p test/core/rules/crawlers_test.py; grep -n "^class RawSegment\|^class BaseSegment" -A3 src/sqlfluff/core/parser/segments/*.py | head; grep -rn "def recursive_crawl\|def get_raw_segments\|def raw_segments" src/sqlfluff/core/parser/segments/base.py | head
+Bash: cd "<scratch>/pilot/runs/T05-B2" && sed -n 482,500p src/sqlfluff/core/parser/segments/base.py
+Bash: cd "<scratch>/pilot/runs/T05-B2" && cat > /tmp/x 2>/dev/null; python - <<'EOF'
+import re
+p = "src/sqlfluff/core/rules/context.py"
+s = open(p, encoding="utf-8").read()
+
+helper = '''
+
+def identifiers_policy_applicable(
+    policy: str, parent_stack: tuple[BaseSegment, ...]
+) -> bool:
+    """Does `(un)quoted_identifiers_policy` apply to this segment?
+
+    This is the implementation behind `RuleContext.identifier_policy_applies`.
+    It lives in `core` (rather than `sqlfluff.utils`) so that core rule
+    infrastructure can use it without breaking the layering contracts.
+    `sqlfluff.utils.identifers` re-exports it for existing rule code.
+    """
+    if policy == "all":
+        return True
+    if policy == "none":
+        return False
+    is_alias = parent_stack and parent_stack[-1].is_type(
+        "alias_expression", "column_definition", "with_compound_statement"
+    )
+    if policy == "aliases" and is_alias:
+        return True
+    # Walk outward from the identifier looking for the nearest of
+    # "select_clause" or "from_clause". A column alias that belongs to a
+    # derived table's own SELECT (e.g. `FROM (SELECT 1 AS x) sub`) is
+    # nested inside that inner select_clause, which is itself nested
+    # inside the *outer* from_clause - so scanning the whole parent_stack
+    # for any from_clause wrongly classifies it as a table alias. Stopping
+    # at the first select_clause encountered keeps such a column alias
+    # scoped to the SELECT it actually belongs to.
+    is_inside_from = False
+    for p in reversed(parent_stack):
+        if p.is_type("select_clause"):
+            break
+        if p.is_type("from_clause"):
+            is_inside_from = True
+            break
+    if policy == "column_aliases" and is_alias and not is_inside_from:
+        return True
+    if policy == "table_aliases" and is_alias and is_inside_from:
+        return True
+    return False
+'''
+
+s = s.replace("\n\n@dataclass\nclass RuleContext:", helper + "\n\n@dataclass\nclass RuleContext:", 1)
+
+method = '''
+    def identifier_policy_applies(self, policy: str) -> bool:
+        """Does `(un)quoted_identifiers_policy` apply at this context's position?
+
+        `policy` is one of `all`, `none`, `aliases`, `column_aliases` or
+        `table_aliases`. Equivalent to calling
+        `sqlfluff.utils.identifers.identifiers_policy_applicable` with
+        `self.parent_stack`.
+        """
+        return identifiers_policy_applicable(policy, self.parent_stack)
+'''
+anchor = "    segment_idx: int = field(default=0)\n"
+assert s.count(anchor) == 1
+s = s.replace(anchor, anchor + method, 1)
+open(p, "w", encoding="utf-8").write(s)
+EOF
+rm -f /tmp/x; git diff --stat
+Bash: cd "<scratch>/pilot/runs/T05-B2" && for f in src/sqlfluff/core/rules/context.py src/sqlfluff/utils/identifers.py test/core/rules/crawlers_test.py; do echo "$f CR-lines: $(grep -c $'\r$' $f) total: $(wc -l < $f)"; done; git show HEAD:src/sqlfluff/core/rules/context.py | grep -c $'\r$'
+Read: <scratch>/pilot/runs/T05-B2/src/sqlfluff/utils/identifers.py
+Bash: cd "<scratch>/pilot/runs/T05-B2" && python - <<'EOF'
+p = "src/sqlfluff/utils/identifers.py"
+s = open(p, encoding="utf-8", newline="").read()
+head = s.split("from sqlfluff.core.parser import BaseSegment", 1)[0]
+body = '''from sqlfluff.core.parser import BaseSegment
+from sqlfluff.core.rules.context import (
+    identifiers_policy_applicable as _core_identifiers_policy_applicable,
+)
+
+
+def identifiers_policy_applicable(
+    policy: str, parent_stack: tuple[BaseSegment, ...]
+) -> bool:
+    """Does `(un)quoted_identifiers_policy` apply to this segment?
+
+    This method is used in CP02, RF04 and RF05. Rule plugins can instead use
+    `RuleContext.identifier_policy_applies`, which gives the same answer for
+    the context's current position.
+    """
+    return _core_identifiers_policy_applicable(policy, parent_stack)
+'''
+s = head + body.replace("\n", "\r\n")
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+echo "CR: $(grep -c $'\r$' src/sqlfluff/utils/identifers.py) / $(wc -l < src/sqlfluff/utils/identifers.py)"; cat src/sqlfluff/utils/identifers.py | tr -d '\r'
+Write: <scratch>/pilot/runs/T05-B2/test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T05-B2" && python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"
+Bash: cd "<scratch>/pilot/runs/T05-B2" && git diff -- src/sqlfluff/core/rules/context.py | tr -d '\r' | head -90; git status --short
+SubagentHandback:

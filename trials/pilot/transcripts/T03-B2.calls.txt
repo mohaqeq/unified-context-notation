@@ -1,0 +1,53 @@
+Bash: cd "<scratch>/pilot/runs/T03-B2" && cat context.ucn && echo ---- && ls && cat src/sqlfluff/core/parser/helpers.py && ls test/core/parser/ 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T03-B2" && ls src/sqlfluff/core/parser/ && cat test/core/parser/helpers_test.py && grep -rn "RF01\|reference" src/sqlfluff/rules/references/RF01* 2>/dev/null | head -5; ls src/sqlfluff/rules/references/ 2>/dev/null; python -c "import sys" && cat model.ucn | head -80
+Bash: cd "<scratch>/pilot/runs/T03-B2" && grep -n "def object_ref_matches_table" -A 30 src/sqlfluff/core/rules/reference.py
+Edit: <scratch>/pilot/runs/T03-B2/src/sqlfluff/core/parser/helpers.py
+Bash: cd "<scratch>/pilot/runs/T03-B2" && python - <<'EOF'
+p = "test/core/parser/helpers_test.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace("from sqlfluff.core.parser.helpers import trim_non_code_segments",
+"from sqlfluff.core.parser.helpers import references_overlap, trim_non_code_segments", 1)
+s += '''
+
+@pytest.mark.parametrize(
+    "first,second,expected",
+    [
+        (("schema", "tbl"), ("schema", "tbl"), True),
+        (("tbl",), ("schema", "tbl"), True),
+        (("schema", "tbl"), ("tbl",), True),
+        (("b", "c"), ("a", "b", "c"), True),
+        (("schema",), ("schema", "tbl"), False),
+        (("tbl",), ("Tbl",), False),
+        (("Schema", "tbl"), ("schema", "tbl"), False),
+        (("a", "c"), ("a", "b", "c"), False),
+        ((), ("tbl",), False),
+        (("tbl",), (), False),
+        ((), (), False),
+    ],
+)
+def test__parser__helper_references_overlap(first, second, expected):
+    """Test references_overlap, including symmetry."""
+    assert references_overlap(first, second) is expected
+    assert references_overlap(second, first) is expected
+'''
+open(p, "w", encoding="utf-8").write(s)
+EOF
+python -m ruff --version 2>/dev/null; python -c "
+import sys; sys.path.insert(0,'src')
+import importlib.util
+spec=importlib.util.spec_from_file_location('h','src/sqlfluff/core/parser/helpers.py')
+" ; cd "D:/personal/repos/unified-context-notation" 2>/dev/null; echo; ls D:/personal/repos/unified-context-notation/tools | head
+Bash: cd "<scratch>/pilot/runs/T03-B2" && python - <<'EOF'
+import ast
+src = open("src/sqlfluff/core/parser/helpers.py", encoding="utf-8").read()
+fn = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "references_overlap"][0]
+ns = {}
+exec(compile(ast.Module([fn], []), "h", "exec"), ns)
+f = ns["references_overlap"]
+cases = [(("schema","tbl"),("schema","tbl"),True),(("tbl",),("schema","tbl"),True),(("b","c"),("a","b","c"),True),(("schema",),("schema","tbl"),False),(("tbl",),("Tbl",),False),((),("tbl",),False),((),(),False),(("a","c"),("a","b","c"),False)]
+for a,b,e in cases:
+    assert f(a,b) is e and f(b,a) is e, (a,b)
+print("ok")
+EOF
+python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit $?"
+SubagentHandback:

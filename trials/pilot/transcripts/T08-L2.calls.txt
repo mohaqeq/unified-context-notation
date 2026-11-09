@@ -1,0 +1,84 @@
+Bash: cd "<scratch>/pilot/runs/T08-L2" && find . -name AGENTS.md -not -path "./.git/*" && echo --- && cat AGENTS.md && echo --- && git status --short && ls
+Bash: cd "<scratch>/pilot/runs/T08-L2" && cat src/sqlfluff/AGENTS.md; echo ---; cat test/AGENTS.md | head -150; echo ---; grep -n "importlinter" -A80 pyproject.toml | head -150
+Bash: cd "<scratch>/pilot/runs/T08-L2" && wc -l src/sqlfluff/core/parser/segments/base.py && grep -n "^from\|^import\|def \|^class " src/sqlfluff/core/parser/segments/base.py | head -150
+Bash: cd "<scratch>/pilot/runs/T08-L2" && grep -rn "noqa" src/sqlfluff/core --include=*.py | grep -v "# noqa" | head -60; echo ---; sed -n 1222,1290p src/sqlfluff/core/parser/segments/base.py; echo ---; sed -n 20,32p src/sqlfluff/core/parser/segments/base.py; sed -n 1157,1170p src/sqlfluff/core/parser/segments/base.py
+Bash: cd "<scratch>/pilot/runs/T08-L2" && sed -n 1,80p src/sqlfluff/core/rules/noqa.py; echo ---; sed -n 140,240p src/sqlfluff/core/rules/noqa.py
+Bash: cd "<scratch>/pilot/runs/T08-L2" && sed -n 360,445p src/sqlfluff/core/parser/segments/base.py; sed -n 905,912p src/sqlfluff/core/parser/segments/base.py; sed -n 1185,1200p src/sqlfluff/core/parser/segments/base.py; echo ---; grep -rn "get_noqa\|recursive_crawl(\"comment\"\|recursive_crawl(\s*$" src test --include=*.py | head; ls test/core/parser/; grep -n "^def test\|^import\|^from" test/core/parser/segments_test.py | head -60
+Bash: cd "<scratch>/pilot/runs/T08-L2" && ls test/core/parser/segments; grep -n "^def test\|^import\|^from" test/core/parser/segments/*.py | head -80; grep -n "class CommentSegment" -A12 src/sqlfluff/core/parser/segments/common.py 2>/dev/null | head -30; grep -rn "class CommentSegment" src | head
+Bash: cd "<scratch>/pilot/runs/T08-L2" && grep -rn "inline_comment\|block_comment" src/sqlfluff/core/dialects/*.py src/sqlfluff/core/parser/*.py src/sqlfluff/core/parser/segments/*.py | head -20; sed -n 405,420p src/sqlfluff/core/parser/segments/base.py; grep -n "def class_is_type" -A6 src/sqlfluff/core/parser/segments/base.py; sed -n 413,440p test/core/parser/segments/segments_base_test.py
+Bash: cd "<scratch>/pilot/runs/T08-L2" && grep -rn "inline_comment" src/sqlfluff/core/parser/lexer.py src/sqlfluff/dialects/dialect_ansi.py | head; grep -n "is_comment\|\"comment\"" src/sqlfluff/core/parser/segments/raw.py | head; grep -n "_class_types" src/sqlfluff/core/parser/segments/raw.py | head
+Bash: cd "<scratch>/pilot/runs/T08-L2" && sed -n 90,115p src/sqlfluff/dialects/dialect_ansi.py; grep -n "comment" src/sqlfluff/core/parser/lexer.py | head -20; grep -rn "class_types" src/sqlfluff/core/parser/segments/raw.py | head -5
+Bash: cd "<scratch>/pilot/runs/T08-L2" && sed -n 115,135p src/sqlfluff/dialects/dialect_ansi.py; grep -n "trim_post_subdivide" -B3 -A12 src/sqlfluff/core/parser/lexer.py | sed -n 1,60p
+Edit: <scratch>/pilot/runs/T08-L2/src/sqlfluff/core/parser/segments/base.py
+Edit: <scratch>/pilot/runs/T08-L2/src/sqlfluff/core/parser/segments/base.py
+Bash: cd "<scratch>/pilot/runs/T08-L2" && tail -c 300 test/core/parser/segments/segments_base_test.py | cat -A | tail -5; grep -n "^import pytest\|^from sqlfluff.core import Linter" test/core/parser/segments/segments_base_test.py
+Bash: cd "<scratch>/pilot/runs/T08-L2" && cat >> test/core/parser/segments/segments_base_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "comment,is_noqa",
+    [
+        ("-- noqa", True),
+        ("--noqa: LT05", True),
+        ("# noqa: LT05", True),
+        ("/* noqa */", True),
+        ("/*noqa*/", True),
+        ("-- note -- noqa: LT05", True),
+        ("-- see the noqa docs", False),
+        ("-- Noqa", False),
+        ("-- nonoqa", False),
+        ("/* a noqa mention */", False),
+        ("-- noqa -- note", False),
+    ],
+)
+def test__parser__base_segments_get_noqa_comments_directive(comment, is_noqa):
+    """Test which comment forms count as noqa directives."""
+    tree = Linter(dialect="ansi").parse_string(f"SELECT 1 {comment}\nFROM t\n").tree
+    assert [seg.raw for seg in tree.get_noqa_comments()] == (
+        [comment] if is_noqa else []
+    )
+
+
+def test__parser__base_segments_get_noqa_comments_order_and_subtree():
+    """Test noqa comments are returned in source order and scoped to the subtree."""
+    sql = (
+        "-- noqa: LT01\n"
+        "SELECT a -- noqa: AL01\n"
+        "FROM t /* noqa */\n"
+        "-- see the noqa docs\n"
+    )
+    tree = Linter(dialect="ansi").parse_string(sql).tree
+    found = tree.get_noqa_comments()
+    assert [seg.raw for seg in found] == [
+        "-- noqa: LT01",
+        "-- noqa: AL01",
+        "/* noqa */",
+    ]
+    select = next(tree.recursive_crawl("select_statement"))
+    raws = [seg.raw for seg in select.get_noqa_comments()]
+    assert "-- noqa: LT01" not in raws
+    assert "-- noqa: AL01" in raws
+    # A noqa comment segment is its own result.
+    assert found[0].get_noqa_comments() == [found[0]]
+EOF
+git diff --stat
+Bash: cd "<scratch>/pilot/runs/T08-L2" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T08-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -40
+Bash: cd "C:/Users/mohaq/AppData/Local/Temp/claude/1d11edbaacebcf92/a36fd43d-7e35-4353-a3ad-ea5859286a7a/scratchpad" && cat > noqa_check.py <<'EOF'
+def _is_noqa_comment(raw: str) -> bool:
+    text = raw.strip()
+    if text.startswith("/*"):
+        text = text[2:]
+    if text.endswith("*/"):
+        text = text[:-2]
+    if text.startswith("#"):
+        text = text[1:]
+    return text.split("--")[-1].strip().startswith("noqa")
+
+cases = ["-- noqa", "--noqa: LT05", "# noqa: LT05", "/* noqa */", "/*noqa*/",
+         "-- note -- noqa: LT05", "-- see the noqa docs", "-- Noqa", "-- nonoqa",
+         "/* a noqa mention */", "-- noqa -- note", " noqa */"]
+for c in cases:
+    print(repr(c), _is_noqa_comment(c))
+EOF
+python -I noqa_check.py
+SubagentHandback:

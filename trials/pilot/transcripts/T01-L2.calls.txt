@@ -1,0 +1,203 @@
+Bash: cd "<scratch>/pilot/runs/T01-L2" && git status --short | head -20; find . -name AGENTS.md -not -path "./.git/*"; cat AGENTS.md
+Bash: cd "<scratch>/pilot/runs/T01-L2" && grep -n "class SQLBaseError" -A80 src/sqlfluff/core/errors.py | head -150; grep -n "^import\|^from" src/sqlfluff/core/errors.py
+Bash: cd "<scratch>/pilot/runs/T01-L2" && cat src/sqlfluff/AGENTS.md | head -150; echo ----; cat test/AGENTS.md | head -80; echo ----; grep -n "importlinter" -A60 pyproject.toml | head -120
+Bash: cd "<scratch>/pilot/runs/T01-L2" && sed -n 120,200p src/sqlfluff/core/errors.py; grep -n "class SQLLintError" -A30 src/sqlfluff/core/errors.py; ls test/core | head -50; grep -rln "SQLBaseError\|errors import" test/core | head
+Bash: cd "<scratch>/pilot/runs/T01-L2" && sed -n 1,38p src/sqlfluff/core/errors.py; echo ----; cat test/core/errors_test.py | head -80; wc -l test/core/errors_test.py; grep -n "^def \|^@pytest" test/core/errors_test.py
+Bash: cd "<scratch>/pilot/runs/T01-L2" && python - <<'EOF'
+import re
+p = "src/sqlfluff/core/errors.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace("from typing import TYPE_CHECKING, Any, Optional, Union\n",
+              "import textwrap\nfrom typing import TYPE_CHECKING, Any, Optional, Union\n", 1)
+old = '''        return self.__class__.__name__  # pragma: no cover
+
+    def to_dict(self) -> SerializedObject:'''
+new = '''        return self.__class__.__name__  # pragma: no cover
+
+    def desc_lines(self, width: int) -> list[str]:
+        """Fetch the description of this violation wrapped to a fixed width.
+
+        Lines are broken on whitespace so that each returned line is at most
+        `width` characters long. A word which is itself longer than `width`
+        is split so that the limit is still respected.
+
+        Args:
+            width (int): The maximum number of characters per line. Must be
+                greater than zero.
+
+        Returns:
+            list[str]: The wrapped lines of `desc()`. A short description is
+                returned as a single line.
+
+        Raises:
+            ValueError: If `width` is not greater than zero.
+        """
+        return textwrap.wrap(
+            self.desc(),
+            width=width,
+            break_long_words=True,
+            break_on_hyphens=False,
+        )
+
+    def to_dict(self) -> SerializedObject:'''
+assert s.count(old) == 1
+s = s.replace(old, new, 1)
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+git diff --stat
+Bash: cd "<scratch>/pilot/runs/T01-L2" && tail -c 200 test/core/errors_test.py | od -c | tail -3 && cat >> test/core/errors_test.py <<'EOF'
+
+
+@pytest.mark.parametrize("error_class", [SQLParseError, SQLLintError])
+def test__desc_lines_short_description_is_one_line(error_class):
+    """A description which fits in the width comes back as a single line."""
+    kwargs = {"rule": Rule_T078} if error_class is SQLLintError else {}
+    err = error_class("Short message.", **kwargs)
+    assert err.desc_lines(80) == ["Short message."]
+
+
+def test__desc_lines_wraps_on_whitespace():
+    """Long descriptions are wrapped on whitespace within the width."""
+    desc = "The quick brown fox jumps over the lazy dog and keeps running far away"
+    err = SQLLintError(desc, segment=None, rule=Rule_T078)  # type: ignore
+    lines = err.desc_lines(20)
+    assert lines == [
+        "The quick brown fox",
+        "jumps over the lazy",
+        "dog and keeps running",
+        "far away",
+    ]
+    assert all(len(line) <= 20 for line in lines)
+    assert " ".join(lines) == desc
+
+
+def test__desc_lines_uses_desc_output():
+    """The wrapped lines are built from desc(), not the raw description."""
+    err = SQLBaseError(description="alpha beta gamma delta")
+    assert err.desc_lines(11) == ["alpha beta", "gamma delta"]
+
+
+def test__desc_lines_splits_overlong_word():
+    """A single word longer than the width is split to respect the limit."""
+    err = SQLBaseError(description="abcdefghij klm")
+    lines = err.desc_lines(4)
+    assert all(len(line) <= 4 for line in lines)
+    assert "".join(lines).replace(" ", "") == "abcdefghijklm"
+
+
+def test__desc_lines_does_not_break_on_hyphens():
+    """Hyphenated words are not split at the hyphen."""
+    err = SQLBaseError(description="a well-known-phrase here")
+    assert err.desc_lines(12) == ["a", "well-known-", "phrase here"][0:0] or True
+    lines = err.desc_lines(12)
+    assert "well-known-phrase" in lines or "well-known-" not in lines[0]
+
+
+def test__desc_lines_invalid_width():
+    """A width of zero or less is rejected."""
+    err = SQLBaseError(description="anything")
+    with pytest.raises(ValueError):
+        err.desc_lines(0)
+EOF
+Bash: cd "<scratch>/pilot/runs/T01-L2" && sed -n 318,335p src/sqlfluff/core/errors.py; grep -n "def __init__" -A12 src/sqlfluff/core/errors.py | sed -n 1,5p
+Bash: cd "<scratch>/pilot/runs/T01-L2" && sed -n 336,352p src/sqlfluff/core/errors.py
+Bash: cd "<scratch>/pilot/runs/T01-L2" && grep -rn "def __init__" -A8 src/sqlfluff/core/parser/segments/raw.py | head -14
+Bash: cd "<scratch>/pilot/runs/T01-L2" && python - <<'EOF'
+p = "test/core/errors_test.py"
+s = open(p, encoding="utf-8").read()
+idx = s.index("\n\n@pytest.mark.parametrize(\"error_class\", [SQLParseError, SQLLintError])\ndef test__desc_lines_short")
+s = s[:idx] + '''
+
+def _make_error(error_class, description):
+    """Build an error of the given class with a description."""
+    if error_class is SQLLintError:
+        return SQLLintError(
+            description, segment=RawSegment("SELECT"), rule=Rule_T078
+        )
+    return error_class(description)
+
+
+@pytest.mark.parametrize("error_class", [SQLParseError, SQLLintError])
+def test__desc_lines_short_description_is_one_line(error_class):
+    """A description which fits in the width comes back as a single line."""
+    err = _make_error(error_class, "Short message.")
+    assert err.desc_lines(80) == ["Short message."]
+
+
+@pytest.mark.parametrize("error_class", [SQLParseError, SQLLintError])
+def test__desc_lines_wraps_on_whitespace(error_class):
+    """Long descriptions are wrapped on whitespace within the width."""
+    desc = "The quick brown fox jumps over the lazy dog and keeps running far away"
+    lines = _make_error(error_class, desc).desc_lines(20)
+    assert lines == [
+        "The quick brown fox",
+        "jumps over the lazy",
+        "dog and keeps running",
+        "far away",
+    ]
+    assert all(len(line) <= 20 for line in lines)
+    assert " ".join(lines) == desc
+
+
+def test__desc_lines_uses_desc_output():
+    """The wrapped lines are built from desc(), so the class fallback applies."""
+    err = SQLBaseError()
+    assert err.desc_lines(80) == ["SQLBaseError"]
+
+
+def test__desc_lines_splits_overlong_word():
+    """A single word longer than the width is split to respect the limit."""
+    lines = SQLBaseError(description="abcdefghij klm").desc_lines(4)
+    assert all(len(line) <= 4 for line in lines)
+    assert "".join(lines).replace(" ", "") == "abcdefghijklm"
+
+
+def test__desc_lines_does_not_break_on_hyphens():
+    """Hyphenated words are only broken on whitespace, not at hyphens."""
+    lines = SQLBaseError(description="a well-known-phrase here").desc_lines(20)
+    assert lines == ["a well-known-phrase", "here"]
+
+
+def test__desc_lines_invalid_width():
+    """A width of zero or less is rejected."""
+    err = SQLBaseError(description="anything")
+    with pytest.raises(ValueError):
+        err.desc_lines(0)
+'''
+s = s.replace("from sqlfluff.core.parser import PositionMarker, RawSegment, WhitespaceSegment", "from sqlfluff.core.parser import PositionMarker, RawSegment, WhitespaceSegment", 1)
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+git diff --stat; tail -5 test/core/errors_test.py
+Bash: cd "$TEMP" && python -c "
+import textwrap
+w=lambda s,n: textwrap.wrap(s,width=n,break_long_words=True,break_on_hyphens=False)
+print(w('The quick brown fox jumps over the lazy dog and keeps running far away',20))
+print(w('abcdefghij klm',4))
+print(w('a well-known-phrase here',20))
+print(w('Short message.',80))
+"
+Bash: cd "<scratch>/pilot/runs/T01-L2" && python - <<'EOF'
+p = "test/core/errors_test.py"
+s = open(p, encoding="utf-8").read()
+old = '''        "dog and keeps running",
+        "far away",'''
+new = '''        "dog and keeps",
+        "running far away",'''
+assert s.count(old) == 1
+s = s.replace(old, new)
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+git diff test/core/errors_test.py | head -30
+Bash: cd "<scratch>/pilot/runs/T01-L2" && python - <<'EOF'
+p = "test/core/errors_test.py"
+s = open(p, encoding="utf-8").read()
+old = '''        return SQLLintError(
+            description, segment=RawSegment("SELECT"), rule=Rule_T078
+        )'''
+new = '''        return SQLLintError(description, segment=RawSegment("SELECT"), rule=Rule_T078)'''
+assert s.count(old) == 1
+s = s.replace(old, new)
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T01-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+SubagentHandback:

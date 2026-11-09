@@ -1,0 +1,55 @@
+Bash: cd "<scratch>/pilot/runs/T07-L1" && find . -name AGENTS.md -not -path "./.git/*" && cat AGENTS.md && cat src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T07-L1" && cat src/sqlfluff/AGENTS.md test/AGENTS.md | head -250; echo ----; grep -rn "siblings_pre\|siblings_post\|is_code\b" --include=*.py src test | head -60; echo ----; grep -n "is_code\|is_meta\|is_whitespace\|is_comment\|is_type" src/sqlfluff/core/parser/segments/base.py | head -40; echo ----; grep -n "is_code\|is_meta\|is_whitespace\|is_comment\|is_type\|class " src/sqlfluff/core/parser/segments/meta.py src/sqlfluff/core/parser/segments/raw.py | head -60
+Bash: cd "<scratch>/pilot/runs/T07-L1" && sed -n 30,80p src/sqlfluff/core/parser/segments/common.py; echo ----; grep -n "_is_code\|_is_comment\|_is_whitespace\|class " src/sqlfluff/core/parser/segments/*.py | grep -v "^.*#" | head -60; echo ----; sed -n 335,400p src/sqlfluff/core/parser/segments/base.py; echo ----; ls test/core/rules/; grep -rln "RuleContext(" test | head
+Bash: cd "<scratch>/pilot/runs/T07-L1" && grep -n "RuleContext(" -B5 -A15 test/core/rules/crawlers_test.py | head -80; echo ----; sed -n 1,40p test/core/rules/crawlers_test.py; echo ----; sed -n 1,30p src/sqlfluff/core/rules/__init__.py; grep -n "is_meta\|is_code" src/sqlfluff/core/parser/segments/raw.py src/sqlfluff/core/parser/segments/base.py | head; echo ----; grep -n "def __init__" -A12 src/sqlfluff/core/parser/segments/raw.py | head -30; echo; sed -n 1,20p test/AGENTS.md | head -0; grep -n "pragma\|Test\|test_" test/AGENTS.md | head -30
+Edit: <scratch>/pilot/runs/T07-L1/src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T07-L1" && grep -n "    def __init__" -A14 src/sqlfluff/core/parser/segments/base.py | head -40; grep -n "class MetaSegment" -A12 src/sqlfluff/core/parser/segments/meta.py; grep -rn "Indent(\|Dedent(" src/sqlfluff/core/parser/segments/meta.py | head -3; grep -rn "pos_marker=" test/core/parser/segments_test.py | head -3
+Write: <scratch>/pilot/runs/T07-L1/test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T07-L1" && python3 - <<'EOF'
+import re
+p = "test/core/rules/context_test.py"
+s = open(p).read()
+s = s.replace('''def _is_skipped(segment: BaseSegment) -> bool:''', '''def _index_of(parent: BaseSegment, target: BaseSegment) -> int:
+    """Return the position of target in parent, matching by identity."""
+    for idx, seg in enumerate(parent.segments):
+        if seg is target:
+            return idx
+    raise AssertionError("segment not found in parent")  # pragma: no cover
+
+
+def _is_skipped(segment: BaseSegment) -> bool:''')
+s = s.replace('''    comments = [
+        (path, idx)
+        for path, idx, child in _walk(root, (root,))
+        if child.is_type("comment")
+    ]
+    assert comments, "expected a comment in the parse tree"
+
+    path, idx = comments[0]
+    parent = path[-1]
+    before = _expected_previous(parent, idx)
+    after = _expected_next(parent, idx)
+    assert before is not None and after is not None
+''', '''    candidates = []
+    for path, idx, child in _walk(root, (root,)):
+        if child.is_type("comment"):
+            parent = path[-1]
+            before = _expected_previous(parent, idx)
+            after = _expected_next(parent, idx)
+            if before is not None and after is not None:
+                candidates.append((path, idx, before, after))
+    assert candidates, "expected a comment between two code segments"
+
+    path, idx, before, after = candidates[0]
+    parent = path[-1]
+''')
+s = s.replace('''    after_idx = parent.segments.index(after)''', '''    after_idx = _index_of(parent, after)''')
+s = s.replace('''    first_code = next(s for s in root.segments if _is_skipped(s) is False)
+    first_idx = root.segments.index(first_code)''', '''    first_code = next(s for s in root.segments if not _is_skipped(s))
+    first_idx = _index_of(root, first_code)''')
+s = s.replace('''    last_idx = root.segments.index(last_code)''', '''    last_idx = _index_of(root, last_code)''')
+open(p, "w").write(s)
+EOF
+grep -n "index(" test/core/rules/context_test.py; python3 -m py_compile test/core/rules/context_test.py src/sqlfluff/core/rules/context.py && echo OK
+Bash: cd /c/Users/mohaq/AppData/Local/Temp/claude/1d11edbaacebcf92/a36fd43d-7e35-4353-a3ad-ea5859286a7a/scratchpad/pilot/runs/T07-L1 && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T07-L1:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+SubagentHandback:

@@ -1,0 +1,54 @@
+Bash: cd "<scratch>/pilot/runs/T01-L1" && git status --short && find . -name AGENTS.md -not -path "./.git/*" && cat AGENTS.md && cat sqlfluff/core/errors.py 2>/dev/null | head -5; ls
+Bash: cd "<scratch>/pilot/runs/T01-L1" && cat src/sqlfluff/AGENTS.md; echo ----; cat test/AGENTS.md | head -150; echo ----; grep -n "importlinter" -A80 pyproject.toml | head -150
+Bash: cd "<scratch>/pilot/runs/T01-L1" && cat -n src/sqlfluff/core/errors.py | head -400
+Bash: cd "<scratch>/pilot/runs/T01-L1" && sed -n 400,500p src/sqlfluff/core/errors.py; echo ----; ls test/core | head -50; grep -rln "SQLBaseError\|SQLLintError" test | head -20; echo ----; grep -rn "textwrap" src/sqlfluff | head
+Bash: cd "<scratch>/pilot/runs/T01-L1" && cat -n test/core/errors_test.py; echo ----; cat src/sqlfluff/cli/helpers.py | sed -n 1,40p
+Edit: <scratch>/pilot/runs/T01-L1/src/sqlfluff/core/errors.py
+Edit: <scratch>/pilot/runs/T01-L1/src/sqlfluff/core/errors.py
+Bash: cd "<scratch>/pilot/runs/T01-L1" && cat >> test/core/errors_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "description,width,expected",
+    [
+        # A short description comes back as a single line.
+        ("Short", 80, ["Short"]),
+        # Lines are broken on whitespace and never exceed the width.
+        (
+            "The quick brown fox jumps over the lazy dog",
+            10,
+            ["The quick", "brown fox", "jumps over", "the lazy", "dog"],
+        ),
+        # A word longer than the width is split so no line exceeds it.
+        ("abcdefghijklmno", 5, ["abcde", "fghij", "klmno"]),
+    ],
+)
+def test__error_desc_lines(description, width, expected):
+    """Wrap the description of an error into lines of at most ``width``."""
+    assert SQLParseError(description).desc_lines(width) == expected
+
+
+def test__error_desc_lines_uses_desc():
+    """desc_lines wraps the same text that desc returns."""
+    template = TemplatedFile.from_string("foobar")
+    segment = RawSegment("foobar", PositionMarker(slice(0, 6), slice(0, 6), template))
+    err = SQLLintError(
+        "A long description which needs to be wrapped",
+        segment=segment,
+        rule=Rule_T078,
+    )
+    lines = err.desc_lines(12)
+    assert lines == ["A long", "description", "which needs", "to be", "wrapped"]
+    assert all(len(line) <= 12 for line in lines)
+    assert " ".join(lines) == err.desc()
+
+
+def test__error_desc_lines_invalid_width():
+    """A non-positive width is rejected."""
+    with pytest.raises(ValueError):
+        SQLBaseError("Foo").desc_lines(0)
+EOF
+git diff --stat; python -c "import ast,sys; ast.parse(open('test/core/errors_test.py').read()); ast.parse(open('src/sqlfluff/core/errors.py').read()); print('syntax ok')"
+Bash: cd "<scratch>/pilot/runs/T01-L1" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T01-L1:/repo:ro" ucn-il --no-cache 2>&1; echo "exit=$?"
+Bash: cd "<scratch>/pilot/runs/T01-L1" && git diff -U0 | grep '^+' | awk 'length($0) > 89 {print "LONG:", length($0)-1, $0}'; echo checked
+SubagentHandback:

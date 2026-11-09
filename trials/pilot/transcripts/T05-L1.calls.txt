@@ -1,0 +1,105 @@
+Bash: cd "<scratch>/pilot/runs/T05-L1" && git status --short && find . -name AGENTS.md -not -path './.git/*' && cat AGENTS.md && cat src/sqlfluff/core/rules/context.py && cat src/sqlfluff/utils/identifers.py
+Bash: cd "<scratch>/pilot/runs/T05-L1" && grep -n -A40 "importlinter" pyproject.toml | head -150; echo ----; cat src/sqlfluff/AGENTS.md | head -150; echo ----; grep -rn "identifiers_policy_applicable\|identifers" --include=*.py . | grep -v "^./.git/"; echo ----; cat test/AGENTS.md | head -80; ls src/sqlfluff/utils/ src/sqlfluff/core/rules/
+Bash: cd "<scratch>/pilot/runs/T05-L1" && grep -rln "identifers\|RuleContext(" test | head -20; ls test/utils test/core/rules 2>/dev/null; grep -rn "RuleContext" test --include=*.py | head -20; cat src/sqlfluff/utils/__init__.py | head -20
+Bash: cd "<scratch>/pilot/runs/T05-L1" && sed -n 1,80p test/core/rules/crawlers_test.py; sed -n 1,30p test/core/rules/rules_test.py; grep -n "def \|^import\|^from" test/core/rules/docstring_test.py | head; ls test/utils/analysis test/utils/reflow | head
+Bash: cd "<scratch>/pilot/runs/T05-L1" && MSYS_NO_PATHCONV=1 timeout 500 docker run --rm -v "<scratch>/pilot/runs/T05-L1:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+Bash: cd "<scratch>/pilot/runs/T05-L1" && cat > src/sqlfluff/utils/identifers.py <<'EOF'
+"""Helper utilities for identifiers.
+
+These are primarily common functions used by multiple rule
+bundles. Defined here to avoid duplication, but also avoid
+circular imports.
+
+The implementation lives in :mod:`sqlfluff.core.rules.context` so that
+:class:`~sqlfluff.core.rules.context.RuleContext` can offer the same check
+as a method, without `core` depending on `utils`.
+"""
+
+from sqlfluff.core.rules.context import identifiers_policy_applicable
+
+__all__ = ["identifiers_policy_applicable"]
+EOF
+python3 - <<'EOF'
+p = "src/sqlfluff/core/rules/context.py"
+s = open(p).read()
+
+func = '''
+
+def identifiers_policy_applicable(
+    policy: str, parent_stack: tuple[BaseSegment, ...]
+) -> bool:
+    """Does `(un)quoted_identifiers_policy` apply to this segment?
+
+    This is used (via `RuleContext.identifier_policy_applies`) in CP02, RF04
+    and RF05.
+    """
+    if policy == "all":
+        return True
+    if policy == "none":
+        return False
+    is_alias = parent_stack and parent_stack[-1].is_type(
+        "alias_expression", "column_definition", "with_compound_statement"
+    )
+    if policy == "aliases" and is_alias:
+        return True
+    # Walk outward from the identifier looking for the nearest of
+    # "select_clause" or "from_clause". A column alias that belongs to a
+    # derived table's own SELECT (e.g. `FROM (SELECT 1 AS x) sub`) is
+    # nested inside that inner select_clause, which is itself nested
+    # inside the *outer* from_clause - so scanning the whole parent_stack
+    # for any from_clause wrongly classifies it as a table alias. Stopping
+    # at the first select_clause encountered keeps such a column alias
+    # scoped to the SELECT it actually belongs to.
+    is_inside_from = False
+    for p in reversed(parent_stack):
+        if p.is_type("select_clause"):
+            break
+        if p.is_type("from_clause"):
+            is_inside_from = True
+            break
+    if policy == "column_aliases" and is_alias and not is_inside_from:
+        return True
+    if policy == "table_aliases" and is_alias and is_inside_from:
+        return True
+    return False
+'''
+
+method = '''
+    def identifier_policy_applies(self, policy: str) -> bool:
+        """Does `(un)quoted_identifiers_policy` apply at this position?
+
+        Checks `policy` against the current `parent_stack`, in the same way
+        as `sqlfluff.utils.identifers.identifiers_policy_applicable`.
+
+        Args:
+            policy: The policy value, one of `all`, `none`, `aliases`,
+                `column_aliases` or `table_aliases`.
+
+        Returns:
+            True if the policy applies to the current segment.
+        """
+        return identifiers_policy_applicable(policy, self.parent_stack)
+'''
+
+# Insert the module-level function before the RuleContext class.
+marker = "\n\n@dataclass\nclass RuleContext:"
+assert s.count(marker) == 1
+s = s.replace(marker, func + marker)
+
+# Append the method at the end of the class (after siblings_post).
+assert s.endswith("            return tuple()  # pragma: no cover\n")
+s = s + method
+open(p, "w").write(s)
+EOF
+git diff --stat
+Bash: cd "<scratch>/pilot/runs/T05-L1" && for f in src/sqlfluff/core/rules/context.py src/sqlfluff/utils/identifers.py src/sqlfluff/rules/references/RF04.py test/core/rules/crawlers_test.py; do printf "%s CRLF=%s\n" $f $(grep -c $'\r$' $f); done; git show HEAD:src/sqlfluff/utils/identifers.py | grep -c $'\r$'; git show HEAD:src/sqlfluff/core/rules/context.py | grep -c $'\r$'
+Bash: cd "<scratch>/pilot/runs/T05-L1" && wc -l src/sqlfluff/core/rules/context.py src/sqlfluff/utils/identifers.py; git diff HEAD --stat; cat src/sqlfluff/utils/identifers.py | od -c | head -3
+Bash: cd "<scratch>/pilot/runs/T05-L1" && file src/sqlfluff/core/rules/context.py src/sqlfluff/utils/identifers.py src/sqlfluff/rules/references/RF04.py; git diff HEAD -- src/sqlfluff/core/rules/context.py | head -20 | cat -A | cut -c1-100 | head -20
+Bash: cd "<scratch>/pilot/runs/T05-L1" && grep -n "parent_stack" src/sqlfluff/core/rules/crawlers.py | head -20
+Write: <scratch>/pilot/runs/T05-L1/test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T05-L1" && grep -n "def is_raw\|def segments\|segments:" src/sqlfluff/core/parser/segments/base.py src/sqlfluff/core/parser/segments/raw.py | head; grep -n "max-line\|line-length\|line_length" pyproject.toml setup.cfg tox.ini .flake8 2>/dev/null | head -5
+Bash: cd "<scratch>/pilot/runs/T05-L1" && grep -rn "def is_raw\|class RawSegment\|class BaseSegment" src/sqlfluff/core/parser/segments/*.py | head; grep -n "def is_raw" -A3 src/sqlfluff/core/parser/segments/*.py | head -12; grep -n "self.segments\|segments = " src/sqlfluff/core/parser/segments/raw.py | head -5
+Edit: <scratch>/pilot/runs/T05-L1/test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T05-L1" && MSYS_NO_PATHCONV=1 timeout 500 docker run --rm -v "<scratch>/pilot/runs/T05-L1:/repo:ro" ucn-il --no-cache 2>&1 | tail -15
+Bash: cd "<scratch>/pilot/runs/T05-L1" && tail -22 src/sqlfluff/core/rules/context.py; git status --short
+SubagentHandback:

@@ -1,0 +1,55 @@
+Bash: cd "<scratch>/pilot/runs/T07-L2" && git status --short | head -20; find . -name AGENTS.md -not -path './.git/*'; cat AGENTS.md; cat src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T07-L2" && cat test/AGENTS.md | head -80; grep -rn "is_code" src/sqlfluff/core/parser/segments/base.py src/sqlfluff/core/parser/segments/raw.py src/sqlfluff/core/parser/segments/meta.py | head -30; grep -rln "siblings_pre\|RuleContext(" test src | head -30; ls test/rules; git log --oneline -3 -- src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T07-L2" && sed -n 335,360p src/sqlfluff/core/parser/segments/base.py; sed -n 1,40p src/sqlfluff/core/parser/segments/meta.py; sed -n 125,140p src/sqlfluff/core/parser/segments/raw.py; grep -n "is_meta" src/sqlfluff/core/parser/segments/base.py | head -5; grep -n "is_code\|is_comment\|is_whitespace\|is_meta" src/sqlfluff/core/parser/segments/raw.py src/sqlfluff/core/parser/segments/common.py 2>/dev/null | head; cat test/core/rules/crawlers_test.py | head -60; grep -n "RuleContext" -A12 src/sqlfluff/utils/functional/context.py | head -40; grep -n "importlinter" -A60 pyproject.toml | grep -n "rules\|core" | head -30
+Bash: cd "<scratch>/pilot/runs/T07-L2" && grep -rn "_is_code = \|_is_comment = \|_is_whitespace = " src/sqlfluff/core/parser/ | head -30; grep -n "class \|is_code" src/sqlfluff/core/parser/segments/common.py | head -30; sed -n 60,140p test/core/rules/crawlers_test.py | head -5; grep -rn "siblings_pre\|siblings_post" src | head
+Bash: cd "<scratch>/pilot/runs/T07-L2" && ls test/core/rules/; sed -n 60,140p test/core/rules/crawlers_test.py
+Edit: <scratch>/pilot/runs/T07-L2/src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T07-L2" && grep -n "def recursive_crawl\|def get_child\|def path_to" src/sqlfluff/core/parser/segments/base.py; head -5 test/core/rules/reference_test.py; grep -rn "def test" test/core/rules/reference_test.py | head -3
+Write: <scratch>/pilot/runs/T07-L2/test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T07-L2" && sed -n 1222,1245p src/sqlfluff/core/parser/segments/base.py; grep -n "def __eq__" -A8 src/sqlfluff/core/parser/segments/base.py | head -12
+Bash: cd "<scratch>/pilot/runs/T07-L2" && python3 - <<'EOF'
+import re
+p = "test/core/rules/context_test.py"
+s = open(p).read()
+s = s.replace('''def _reference_previous''', '''def _index_of(parent, seg) -> int:
+    """Index of seg in parent, by identity (segment __eq__ is structural)."""
+    return next(i for i, s in enumerate(parent.segments) if s is seg)
+
+
+def _reference_previous''')
+old_start = s.index("def test_code_siblings_skip_non_code")
+old_end = s.index("def test_code_siblings_none_at_edges")
+new = '''def test_code_siblings_skip_non_code():
+    """Comments and whitespace between code siblings are skipped."""
+    cfg = FluffConfig(overrides={"dialect": "ansi"})
+    root = Linter(config=cfg).parse_string("SELECT a /* note */ , b\\nFROM t").tree
+    select_clause = next(root.recursive_crawl("select_clause"))
+
+    comma = select_clause.get_child("comma")
+    element_a, element_b = select_clause.get_children("select_clause_element")[:2]
+    comma_idx = _index_of(select_clause, comma)
+
+    # The comma sits between the two elements, with whitespace and a comment
+    # on either side of it.
+    ctx = _context(cfg, root, select_clause, comma_idx)
+    assert ctx.previous_code_sibling is element_a
+    assert ctx.next_code_sibling is element_b
+
+    # Looking back from element b, past the comment and whitespace, the
+    # nearest code is the comma.
+    ctx = _context(cfg, root, select_clause, _index_of(select_clause, element_b))
+    assert ctx.previous_code_sibling is comma
+
+
+'''
+s = s[:old_start] + new + s[old_end:]
+s = s.replace('''    select_clause = root.recursive_crawl("select_clause")[0]''', '''    select_clause = next(root.recursive_crawl("select_clause"))''')
+s = s.replace('''    for parent in [root, *root.recursive_crawl_all()]:''', '''    for parent in root.recursive_crawl_all():''')
+s = s.replace("from sqlfluff.core.templaters.base import TemplatedFile\n", "from sqlfluff.core.templaters.base import TemplatedFile\n")
+open(p, "w").write(s)
+EOF
+grep -n "recursive_crawl\|_index_of\|BaseSegment" test/core/rules/context_test.py
+Read: <scratch>/pilot/runs/T07-L2/test/core/rules/context_test.py
+Edit: <scratch>/pilot/runs/T07-L2/test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T07-L2" && python3 -m py_compile test/core/rules/context_test.py src/sqlfluff/core/rules/context.py && echo COMPILED; MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T07-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+SubagentHandback:

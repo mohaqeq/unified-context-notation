@@ -1,0 +1,75 @@
+Bash: cd "<scratch>/pilot/runs/T12-L2" && find . -name AGENTS.md -not -path "./.git/*" && cat AGENTS.md && cat src/sqlfluff/core/helpers/string.py && ls test/core/helpers* 2>/dev/null; grep -rn "split_comma_separated_string" --include=*.py . | head -50
+Bash: cd "<scratch>/pilot/runs/T12-L2" && cat test/core/helpers/string_test.py && cat test/AGENTS.md | head -80 && cat src/sqlfluff/AGENTS.md | head -80 && sed -n 140,160p src/sqlfluff/core/config/fluffconfig.py && sed -n 80,95p src/sqlfluff/core/config/file.py && git status --short
+Bash: cd "<scratch>/pilot/runs/T12-L2" && python3 - <<'EOF'
+import re
+p = "src/sqlfluff/core/helpers/string.py"
+s = open(p, encoding="utf-8").read()
+old = '''def split_comma_separated_string(raw: Union[str, list[str]]) -> list[str]:
+    """Converts comma separated string to List, stripping whitespace."""
+    if isinstance(raw, str):
+        return [s.strip() for s in raw.split(",") if s.strip()]
+    assert isinstance(raw, list)
+    return raw
+'''
+new = '''def split_comma_separated_string(
+    raw: Union[str, list[str], tuple[str, ...]],
+) -> list[str]:
+    """Converts a comma separated string, list or tuple to a list.
+
+    Each item is stripped of surrounding whitespace and empty items are
+    dropped. A string is split on commas first; a list or tuple is used
+    item by item. The result is always a new list.
+
+    >>> split_comma_separated_string("a, b,, ")
+    ['a', 'b']
+    >>> split_comma_separated_string(["a ", "", " b"])
+    ['a', 'b']
+    >>> split_comma_separated_string((" a", "b ", " "))
+    ['a', 'b']
+    """
+    items: Iterable[str] = raw.split(",") if isinstance(raw, str) else raw
+    return [s.strip() for s in items if s.strip()]
+'''
+assert s.count(old) == 1
+s = s.replace(old, new)
+s = s.replace("from collections.abc import Iterator\n", "from collections.abc import Iterable, Iterator\n", 1)
+open(p, "w", encoding="utf-8", newline="").write(s)
+
+t = "test/core/helpers/string_test.py"
+s = open(t, encoding="utf-8").read()
+old = '''        (["AL01", "LT08", "AL07"], ["AL01", "LT08", "AL07"]),
+    ],
+)
+def test__helpers_string__split_comma_separated_string(raw_str, expected):
+    """Tests that string and lists are output correctly."""
+    assert split_comma_separated_string(raw_str) == expected
+'''
+new = '''        (["AL01", "LT08", "AL07"], ["AL01", "LT08", "AL07"]),
+        (["AL01 ", "", " LT08"], ["AL01", "LT08"]),
+        (("AL01", "LT08"), ["AL01", "LT08"]),
+        ((" AL01 ", "", "LT08 "), ["AL01", "LT08"]),
+        ([], []),
+        ((), []),
+        ("", []),
+    ],
+)
+def test__helpers_string__split_comma_separated_string(raw_str, expected):
+    """Tests that strings, lists and tuples are output correctly."""
+    result = split_comma_separated_string(raw_str)
+    assert result == expected
+    assert isinstance(result, list)
+
+
+def test__helpers_string__split_comma_separated_string_new_list():
+    """Tests that a list input is not returned or mutated."""
+    raw = ["AL01", "LT08"]
+    result = split_comma_separated_string(raw)
+    assert result is not raw
+    assert raw == ["AL01", "LT08"]
+'''
+assert s.count(old) == 1
+s = s.replace(old, new)
+open(t, "w", encoding="utf-8", newline="").write(s)
+EOF
+git diff --stat; MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T12-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -40
+SubagentHandback:

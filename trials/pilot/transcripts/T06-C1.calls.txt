@@ -1,0 +1,69 @@
+Bash: cd "<scratch>/pilot/runs/T06-C1" 2>&1 && pwd && git rev-parse --show-toplevel && git status --short && ls && cat sqlfluff/core/helpers/slice.py 2>/dev/null || find . -path '*helpers/slice.py' -not -path '*/node_modules/*'
+Bash: cd "<scratch>/pilot/runs/T06-C1" && cat src/sqlfluff/core/helpers/slice.py && echo ---- && grep -rl "helpers.slice\|helpers/slice" test src | head -20 && echo ---- && ls test/core/helpers 2>/dev/null; git status --short -uall | head -5
+Bash: cd "<scratch>/pilot/runs/T06-C1" && cat test/core/helpers/slice_test.py
+Edit: <scratch>/pilot/runs/T06-C1/src/sqlfluff/core/helpers/slice.py
+Bash: cd "<scratch>/pilot/runs/T06-C1" && python - <<'EOF'
+import re
+p = "test/core/helpers/slice_test.py"
+src = open(p, encoding="utf-8").read()
+src = src.replace(
+    "from sqlfluff.core.helpers.slice import slice_overlaps\n",
+    "from sqlfluff.core.helpers.slice import slice_contains, slice_overlaps\n", 1)
+src += '''
+
+@pytest.mark.parametrize(
+    "s,i,result",
+    [
+        # Start is inclusive, stop is exclusive
+        (slice(2, 5), 2, True),
+        (slice(2, 5), 4, True),
+        (slice(2, 5), 1, False),
+        (slice(2, 5), 5, False),
+        # Zero length slices contain nothing
+        (slice(3, 3), 3, False),
+        (slice(3, 3), 2, False),
+        (slice(3, 3), 4, False),
+        # Single element slice
+        (slice(0, 1), 0, True),
+        (slice(0, 1), 1, False),
+    ],
+)
+def test__parser__slice_contains_result(s, i, result):
+    """Test slice_contains."""
+    assert slice_contains(s, i) == result
+
+
+@pytest.mark.parametrize(
+    "s",
+    [
+        slice(None, 1),
+        slice(0, None),
+        slice(None, None),
+    ],
+)
+def test__parser__slice_contains_error(s):
+    """Test assertions of slice_contains."""
+    with pytest.raises(AssertionError):
+        slice_contains(s, 0)
+'''
+open(p, "w", encoding="utf-8").write(src)
+EOF
+python -c "
+import ast,sys
+for f in ['src/sqlfluff/core/helpers/slice.py','test/core/helpers/slice_test.py']:
+    ast.parse(open(f,encoding='utf-8').read()); print('ok', f)
+"; git diff --stat -- src test
+Bash: cd "<scratch>/pilot/runs/T06-C1" && file test/core/helpers/slice_test.py src/sqlfluff/core/helpers/slice.py && git show HEAD:test/core/helpers/slice_test.py | file - && git show HEAD:src/sqlfluff/core/helpers/slice.py | file -
+Bash: cd "<scratch>/pilot/runs/T06-C1" && python -I -c "
+import importlib.util
+spec = importlib.util.spec_from_file_location('s', 'src/sqlfluff/core/helpers/slice.py')
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+c = m.slice_contains
+assert c(slice(2,5),4) and not c(slice(2,5),5) and not c(slice(2,5),1) and c(slice(2,5),2)
+assert not c(slice(3,3),3)
+for bad in [slice(None,1), slice(0,None)]:
+    try: c(bad,0); raise SystemExit('no assert')
+    except AssertionError: pass
+print('ok')
+"
+SubagentHandback:

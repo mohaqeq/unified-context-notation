@@ -1,0 +1,62 @@
+Bash: cd "<scratch>/pilot/runs/T04-C1" && git status && git log --oneline -3 && ls && ls src test 2>/dev/null; find . -path ./.git -prune -o -name "*.py" -path "*helpers*" -print | head -30
+Bash: cd "<scratch>/pilot/runs/T04-C1" && cat src/sqlfluff/core/helpers/string.py && echo ---- && cat test/core/helpers/string_test.py && echo ---- && cat src/sqlfluff/core/helpers/__init__.py && echo ---- && cat src/sqlfluff/core/helpers/dict.py | head -60
+Edit: <scratch>/pilot/runs/T04-C1/src/sqlfluff/core/helpers/string.py
+Edit: <scratch>/pilot/runs/T04-C1/src/sqlfluff/core/helpers/string.py
+Edit: <scratch>/pilot/runs/T04-C1/test/core/helpers/string_test.py
+Bash: cd "<scratch>/pilot/runs/T04-C1" && cat >> test/core/helpers/string_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("", {}),
+        ("   ", {}),
+        ("core.dialect=ansi", {"core": {"dialect": "ansi"}}),
+        (
+            "rules.LT01.foo=1, core.dialect=ansi",
+            {"rules": {"LT01": {"foo": "1"}}, "core": {"dialect": "ansi"}},
+        ),
+        # Keys sharing a prefix are merged.
+        (
+            "rules.LT01.foo=1,rules.LT01.bar=2,rules.AL01.baz=3",
+            {"rules": {"LT01": {"foo": "1", "bar": "2"}, "AL01": {"baz": "3"}}},
+        ),
+        # Whitespace around keys, values and commas is ignored.
+        (
+            "  rules . LT01.foo  =  1  ,\n core.dialect = ansi  ",
+            {"rules": {"LT01": {"foo": "1"}}, "core": {"dialect": "ansi"}},
+        ),
+        # Values stay as strings, and may contain '='.
+        ("a.b=true, a.c=, a.d=x=y", {"a": {"b": "true", "c": "", "d": "x=y"}}),
+        # Empty segments (e.g. a trailing comma) are skipped.
+        ("a=1,,", {"a": "1"}),
+    ],
+)
+def test__helpers_string__parse_dotted_assignments(raw, expected):
+    """Test parse_dotted_assignments on valid input."""
+    assert parse_dotted_assignments(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "core",  # No '='.
+        "core.dialect",  # No '='.
+        "a..b=1",  # Empty key segment.
+        ".a=1",  # Empty leading key segment.
+        "a.=1",  # Empty trailing key segment.
+        "=1",  # Empty key.
+        "a=1, a.b=2",  # Key used as both value and section.
+        "a.b=1, a.b.c=2",  # Value used as a section.
+        "a.b=1, a.b=2",  # Duplicate assignment.
+    ],
+)
+def test__helpers_string__parse_dotted_assignments_invalid(raw):
+    """Test parse_dotted_assignments rejects malformed input."""
+    with pytest.raises(ValueError):
+        parse_dotted_assignments(raw)
+EOF
+git diff --stat; python -c "import ast,sys; [ast.parse(open(f,encoding='utf-8').read()) for f in sys.argv[1:]]; print('syntax ok')" src/sqlfluff/core/helpers/string.py test/core/helpers/string_test.py
+Bash: cd "<scratch>/pilot/runs/T04-C1" && grep -n "def test__helpers_string\|^from\|^import\|^    findall\|^    parse_dotted\|^    split_comma" test/core/helpers/string_test.py && grep -c "def parse_dotted_assignments" src/sqlfluff/core/helpers/string.py && git diff src/sqlfluff/core/helpers/string.py | head -20
+ToolSearch:
+SubagentHandback:

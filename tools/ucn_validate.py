@@ -89,6 +89,14 @@ def slurp(path):
         return f.read()
 
 
+MIN_FOLLOW = 10  # a moved line is followed only if it is distinctive: '}', 'return;' or 'pass' match too much
+
+
+def relocations(lines, want):
+    """Line numbers whose content hash is `want`, among lines distinctive enough to follow."""
+    return [i + 1 for i, t in enumerate(lines) if len("".join(t.split())) >= MIN_FOLLOW and line_hash(t) == want]
+
+
 def line_hash(text):
     """8-hex content hash of one source line, insensitive to indentation and whitespace runs."""
     import hashlib
@@ -561,7 +569,10 @@ def cases_for(test_file, case_glob, cases):
     out = []
     for c in cases:
         if c["file"]:
-            hit = c["file"].endswith(test_file.lstrip("./")) or c["file"].rsplit("/", 1)[-1] == base and test_file.endswith(c["file"])
+            # drop leading './' and '../' segments (the model's paths are relative to its root), as a prefix, not a char set
+            f, t = (re.sub(r"^(\.\.?/)+", "", x.replace("\\", "/")) for x in (c["file"], test_file))
+            # one path must be a suffix of the other on a '/' boundary (never 'foo_test_x.py' for 'test_x.py')
+            hit = f == t or f.endswith("/" + t) or t.endswith("/" + f)
         else:
             parts = c["classname"].split(".")
             hit = False
@@ -1055,14 +1066,17 @@ def check(m, ctx):
                 add(VIOLATION if m.authority(nid) == "model" else UPDATE, "provenance", f"{nid}: src {s} does not exist (stale)", el=nid)
                 continue
             lines = slurp(p).split("\n")
-            if sm.group(2) and int(sm.group(2)) > len(lines):
-                add(UPDATE, "provenance", f"{nid}: src {s} points past the end of the file (stale)", el=nid)
+            if sm.group(2) and not 1 <= int(sm.group(2)) <= len(lines):
+                add(UPDATE, "provenance", f"{nid}: src {s} points outside the file (stale)", el=nid)
             elif sm.group(2) and sm.group(3):
                 want, ln = sm.group(3), int(sm.group(2))
                 if line_hash(lines[ln - 1]) != want:
-                    moved = [i + 1 for i, t in enumerate(lines) if t.strip() and line_hash(t) == want]
-                    if moved:
+                    moved = relocations(lines, want)
+                    if len(moved) == 1:
                         add(UPDATE, "provenance", f"{nid}: src {s} moved to line {moved[0]} (run --stamp)", el=nid)
+                    elif moved:
+                        add(UPDATE, "provenance", f"{nid}: src {s}: the referenced line now appears {len(moved)} times "
+                            f"(lines {', '.join(map(str, moved[:5]))}); fix the line number by hand", el=nid)
                     else:
                         add(UPDATE, "provenance", f"{nid}: src {s}: the referenced code changed; review the fact, then --stamp --accept-changed", el=nid)
                         stats["stale"] = stats.get("stale", 0) + 1
@@ -1347,10 +1361,18 @@ def stamp(model_path, accept_changed=False):
         if sm and sm.group(2) and os.path.exists(os.path.join(root, sm.group(1))):
             lines = slurp(os.path.join(root, sm.group(1))).split("\n")
             ln, old = int(sm.group(2)), sm.group(3)
+            if ln < 1:
+                changes.append(f"needs review (invalid line number): {mm.group(2)}")
+                out.append(line)
+                continue
             if old and (ln > len(lines) or line_hash(lines[ln - 1]) != old):
-                moved = [i + 1 for i, t in enumerate(lines) if t.strip() and line_hash(t) == old]
-                if moved:
+                moved = relocations(lines, old)
+                if len(moved) == 1:
                     ln = moved[0]
+                elif moved:  # the same content now appears several times: never guess
+                    changes.append(f"needs review (line appears {len(moved)} times): {mm.group(2)}")
+                    out.append(line)
+                    continue
                 elif not accept_changed:
                     changes.append(f"needs review (content changed): {mm.group(2)}")
                     out.append(line)
@@ -1360,9 +1382,12 @@ def stamp(model_path, accept_changed=False):
                 if new != mm.group(2):
                     changes.append(f"{mm.group(2)} -> {new}")
                 line = mm.group(1) + new
+            else:
+                changes.append(f"needs review (past the end of the file): {mm.group(2)}")
         out.append(line)
-    with open(model_path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("\n".join(out))
+    if any("->" in c for c in changes):  # only rewrite the model when a reference actually changed
+        with open(model_path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n".join(out))
     return changes
 
 

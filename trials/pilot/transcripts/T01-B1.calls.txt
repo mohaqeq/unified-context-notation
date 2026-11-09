@@ -1,0 +1,67 @@
+Bash: cd "<scratch>/pilot/runs/T01-B1" && cat context.ucn && echo ---- && cat sqlfluff/core/errors.py 2>/dev/null | head -5; ls; git status --short | head
+Bash: cd "<scratch>/pilot/runs/T01-B1" && git rev-parse --show-toplevel && cat model.ucn | head -80 && echo ---- && grep -n "def desc\|class \|^import\|^from\|textwrap" src/sqlfluff/core/errors.py | head -60
+Bash: cd "<scratch>/pilot/runs/T01-B1" && sed -n 1,160p src/sqlfluff/core/errors.py; echo ----; ls test | head -50; grep -rln "SQLBaseError\|core.errors" test | head -20
+Bash: cd "<scratch>/pilot/runs/T01-B1" && sed -n 1,30p test/core/errors_test.py; echo ...; grep -n "^def \|^class " test/core/errors_test.py; echo ----; sed -n 286,300p src/sqlfluff/core/errors.py; grep -n "def desc" -A12 src/sqlfluff/core/errors.py | sed -n 1,60p
+Edit: <scratch>/pilot/runs/T01-B1/src/sqlfluff/core/errors.py
+Edit: <scratch>/pilot/runs/T01-B1/src/sqlfluff/core/errors.py
+Bash: cd "<scratch>/pilot/runs/T01-B1" && cat >> test/core/errors_test.py <<'EOF'
+
+
+def test__desc_lines_short_description_is_one_line():
+    """A description that fits within the width comes back as one line."""
+    err = SQLLintError(description="Short message.")
+    assert err.desc_lines(80) == ["Short message."]
+
+
+@pytest.mark.parametrize(
+    "description, width, expected",
+    [
+        (
+            "The quick brown fox jumps over the lazy dog",
+            15,
+            ["The quick brown", "fox jumps over", "the lazy dog"],
+        ),
+        # Exactly at the limit stays on one line.
+        ("abcd efgh", 9, ["abcd efgh"]),
+        # Whitespace is collapsed and used as the break point.
+        ("one   two\nthree", 7, ["one two", "three"]),
+    ],
+)
+def test__desc_lines_wraps_on_whitespace(description, width, expected):
+    """Descriptions wrap on whitespace, with no line over the width."""
+    err = SQLLintError(description=description)
+    lines = err.desc_lines(width)
+    assert lines == expected
+    assert all(len(line) <= width for line in lines)
+
+
+def test__desc_lines_splits_overlong_word():
+    """A single word longer than the width is split so lines stay within it."""
+    err = SQLLintError(description="abcdefghijklmnop")
+    lines = err.desc_lines(5)
+    assert all(len(line) <= 5 for line in lines)
+    assert "".join(lines) == "abcdefghijklmnop"
+
+
+def test__desc_lines_uses_desc_on_base_error():
+    """Subclasses without a description fall back to desc() via the base class."""
+    err = SQLBaseError(description="Some base error text here")
+    assert err.desc_lines(10) == ["Some base", "error text", "here"]
+
+
+def test__desc_lines_rejects_non_positive_width():
+    """A width below 1 is rejected."""
+    err = SQLLintError(description="Anything")
+    with pytest.raises(ValueError):
+        err.desc_lines(0)
+EOF
+python -c "import ast,sys; ast.parse(open('test/core/errors_test.py').read()); ast.parse(open('src/sqlfluff/core/errors.py').read()); print('ok')"
+Edit: <scratch>/pilot/runs/T01-B1/test/core/errors_test.py
+Bash: cd "<scratch>/pilot/runs/T01-B1" && python -I -c "
+import textwrap
+print(textwrap.wrap('one   two\nthree', width=12))
+print(textwrap.wrap('The quick brown fox jumps over the lazy dog', width=15))
+print(textwrap.wrap('Some base error text here', width=10))
+print(textwrap.wrap('abcdefghijklmnop', width=5))
+" && python -I D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"
+SubagentHandback:

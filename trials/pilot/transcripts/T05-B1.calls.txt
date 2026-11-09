@@ -1,0 +1,139 @@
+Bash: cd "<scratch>/pilot/runs/T05-B1" && pwd && git status --short && ls -la && cat context.ucn
+Bash: cd "<scratch>/pilot/runs/T05-B1" && cat src/sqlfluff/core/rules/context.py && echo ---- && cat src/sqlfluff/utils/identifers.py && echo ---- && grep -rn "identifiers_policy_applicable\|identifier_policy" src test | head -50
+Bash: cd "<scratch>/pilot/runs/T05-B1" && cat model.ucn && echo ---- && git log --oneline -3 && ls test/sqlfluff/utils/ 2>/dev/null; grep -rln "identifiers_policy\|identifers\|RuleContext(" test | head -20; ls test/sqlfluff/core/rules/ 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T05-B1" && grep -rln "identifers\|RuleContext" test src | head -30; echo ----; ls test/utils 2>/dev/null; ls test/core/rules; echo ----; cat src/sqlfluff/core/rules/__init__.py | head -60; echo ----; grep -n "importlinter" -A60 pyproject.toml | head -90
+Bash: cd "<scratch>/pilot/runs/T05-B1" && ls test | head -50; echo ----; sed -n 1,80p test/core/rules/crawlers_test.py; echo ----; grep -n "RuleContext" -B3 -A15 test/core/rules/crawlers_test.py | head -60; echo ----; ls src/sqlfluff/utils; ls test/utils 2>&1 | head
+Edit: <scratch>/pilot/runs/T05-B1/src/sqlfluff/core/rules/context.py
+Edit: <scratch>/pilot/runs/T05-B1/src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T05-B1" && cat > src/sqlfluff/utils/identifers.py <<'EOF'
+"""Helper utilities for identifiers.
+
+These are primarily common functions used by multiple rule
+bundles. Defined here to avoid duplication, but also avoid
+circular imports.
+"""
+
+from sqlfluff.core.parser import BaseSegment
+from sqlfluff.core.rules.context import (
+    identifiers_policy_applicable as _identifiers_policy_applicable,
+)
+
+
+def identifiers_policy_applicable(
+    policy: str, parent_stack: tuple[BaseSegment, ...]
+) -> bool:
+    """Does `(un)quoted_identifiers_policy` apply to this segment?
+
+    This method is used in CP02, RF04 and RF05. The implementation lives in
+    `sqlfluff.core.rules.context` so that `RuleContext` can use it without
+    core depending on utils.
+    """
+    return _identifiers_policy_applicable(policy, parent_stack)
+EOF
+git diff -- src/sqlfluff/utils/identifers.py | head -80
+Bash: cd "<scratch>/pilot/runs/T05-B1" && cat > test/core/rules/context_test.py <<'EOF'
+"""Tests for RuleContext."""
+
+from typing import Iterator
+
+import pytest
+
+from sqlfluff.core.config import FluffConfig
+from sqlfluff.core.linter.linter import Linter
+from sqlfluff.core.rules.context import RuleContext
+from sqlfluff.core.templaters.base import TemplatedFile
+from sqlfluff.utils.identifers import identifiers_policy_applicable
+
+POLICIES = ["all", "none", "aliases", "column_aliases", "table_aliases"]
+
+# Column alias (x), derived-table column alias (y) and table alias (sub, z).
+SELECT_SQL = (
+    "SELECT a AS x FROM (SELECT 1 AS y) AS sub JOIN t AS z ON t.a = z.a\n"
+)
+CREATE_SQL = "CREATE TABLE t (a INT)\n"
+
+
+def _contexts(sql: str) -> Iterator[RuleContext]:
+    """Yield a RuleContext for every segment in the parsed SQL."""
+    cfg = FluffConfig(overrides={"dialect": "ansi"})
+    root = Linter(config=cfg).parse_string(sql).tree
+    dialect = cfg.get("dialect_obj")
+    templated_file = TemplatedFile(sql, "<test-case>")
+
+    def walk(segment, stack):
+        for child in segment.segments:
+            yield RuleContext(
+                dialect=dialect,
+                fix=False,
+                templated_file=templated_file,
+                path=None,
+                segment=child,
+                config=cfg,
+                parent_stack=stack + (segment,),
+            )
+            yield from walk(child, stack + (segment,))
+
+    yield from walk(root, ())
+
+
+def _context_for(sql: str, raw: str, parent_type: str) -> RuleContext:
+    """Find the context of the raw segment `raw` directly under `parent_type`."""
+    for ctx in _contexts(sql):
+        if (
+            ctx.segment.raw == raw
+            and ctx.parent_stack
+            and ctx.parent_stack[-1].is_type(parent_type)
+        ):
+            return ctx
+    raise AssertionError(f"No {raw!r} under {parent_type!r}")  # pragma: no cover
+
+
+@pytest.mark.parametrize("sql", [SELECT_SQL, CREATE_SQL])
+@pytest.mark.parametrize("policy", POLICIES)
+def test_identifier_policy_applies_matches_utility(sql, policy):
+    """The method answers the same as the utility for every position."""
+    contexts = list(_contexts(sql))
+    assert contexts
+    for ctx in contexts:
+        assert ctx.identifier_policy_applies(policy) == (
+            identifiers_policy_applicable(policy, ctx.parent_stack)
+        )
+
+
+@pytest.mark.parametrize(
+    "raw,parent_type,policy,expected",
+    [
+        # Column alias in a plain SELECT.
+        ("x", "alias_expression", "aliases", True),
+        ("x", "alias_expression", "column_aliases", True),
+        ("x", "alias_expression", "table_aliases", False),
+        # Column alias inside a derived table's own SELECT is not a table alias.
+        ("y", "alias_expression", "column_aliases", True),
+        ("y", "alias_expression", "table_aliases", False),
+        # Table alias in FROM / JOIN.
+        ("sub", "alias_expression", "aliases", True),
+        ("sub", "alias_expression", "column_aliases", False),
+        ("sub", "alias_expression", "table_aliases", True),
+        ("z", "alias_expression", "table_aliases", True),
+        # Policies that never apply.
+        ("x", "alias_expression", "all", True),
+        ("x", "alias_expression", "none", False),
+    ],
+)
+def test_identifier_policy_applies_select(raw, parent_type, policy, expected):
+    """Explicit expectations for alias positions in a SELECT."""
+    ctx = _context_for(SELECT_SQL, raw, parent_type)
+    assert ctx.identifier_policy_applies(policy) is expected
+
+
+def test_identifier_policy_applies_column_definition():
+    """Column names in CREATE TABLE count as column aliases."""
+    ctx = _context_for(CREATE_SQL, "a", "column_definition")
+    assert ctx.identifier_policy_applies("column_aliases") is True
+    assert ctx.identifier_policy_applies("table_aliases") is False
+    assert ctx.identifier_policy_applies("aliases") is True
+EOF
+git status --short
+Bash: cd "<scratch>/pilot/runs/T05-B1" && python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"
+Edit: <scratch>/pilot/runs/T05-B1/test/core/rules/context_test.py
+SubagentHandback:

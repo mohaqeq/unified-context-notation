@@ -1,6 +1,7 @@
 """Tests for the UCN prototype tools. Run: python -m unittest discover -s tests"""
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -446,6 +447,13 @@ class Evidence(Tmp):
         r = self.evidence([("other.test_safe", "test_ok", "passed", "")])
         self.assertTrue(has(r, "INFO", "req Safe has no passing evidence"))
 
+    def test_file_attribute_matches_on_a_path_boundary(self):
+        # 'tests/old_test_later.ts' ends with 'test_later.ts' but is a different file (review v0.6)
+        r = self.evidence([("Later suite", "does later things", "failed", "tests/old_test_later.ts")])
+        self.assertFalse(has(r, "INFO", "req Later is not met"))
+        r = self.evidence([("Later suite", "does later things", "failed", "repo/tests/test_later.ts")])
+        self.assertTrue(has(r, "INFO", "req Later is not met"))
+
 
 # ------------------------------------------------------------------------------------------- stale sources (v0.6)
 class Stale(Tmp):
@@ -483,6 +491,27 @@ class Stale(Tmp):
     def test_indentation_does_not_matter(self):
         write(self.code, read(self.code).replace("export function", "    export   function"))
         self.assertFalse(any(f["check"] == "provenance" for f in run(self.path)["findings"]))
+
+    def test_ambiguous_move_is_never_guessed(self):
+        fn = read(self.code).split("\n")[1]
+        write(self.code, f"// h\n// h2\n{fn}\n// gap\n{fn}\n")
+        self.assertTrue(has(run(self.path), "MODEL-UPDATE", "now appears 2 times"))
+        before = read(self.path)
+        self.assertTrue(any("appears 2 times" in c for c in ucn_validate.stamp(self.path)))
+        self.assertEqual(read(self.path), before)
+
+    def test_trivial_lines_are_not_followed(self):
+        # a reference to '}' must not "move" to another function's '}' (review v0.6)
+        write(self.code, "function f() {\n}\nfunction g() {\n}\n")
+        write(self.path, re.sub(r"x\.ts:2@\w+", "x.ts:2", read(self.path)))
+        ucn_validate.stamp(self.path)
+        write(self.code, "function f() {\n  return 1;\n}\n")
+        self.assertTrue(has(run(self.path), "MODEL-UPDATE", "the referenced code changed"))
+
+    def test_line_zero_is_invalid(self):
+        write(self.path, read(self.path).replace(re.search(r"x\.ts:2@\w+", read(self.path)).group(0), "x.ts:0@deadbeef"))
+        self.assertTrue(has(run(self.path), "MODEL-UPDATE", "points outside the file"))
+        self.assertTrue(any("invalid line number" in c for c in ucn_validate.stamp(self.path)))
 
 
 # ------------------------------------------------------------------------------------------- rationale links (v0.6)
@@ -670,6 +699,74 @@ class Rules(Tmp):
 
 
 # ------------------------------------------------------------------------------------------- pilot harness
+class ReconGrading(Tmp):
+    """recon.grade_one with the containers faked: it must fail closed and catch tampering (review v0.6)."""
+
+    def setUp(self):
+        super().setUp()
+        import recon
+        self.recon = recon
+        self.model = self.project(files={"app/a/x.ts": "export const x = 1;\n"})
+        for cmd in (["init", "-q"], ["add", "-A"], ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"]):
+            subprocess.run(["git", "-C", self.d, *cmd], capture_output=True, check=True)
+        self.pristine = os.path.join(self.d, "..", os.path.basename(self.d) + "-pristine.ucn")
+        shutil.copy(self.model, self.pristine)
+        self.addCleanup(os.remove, self.pristine)
+        os.makedirs(os.path.join(self.d, "_task", "grader"))
+        self.spec = {"model": self.pristine, "validator": os.path.join(ROOT, "tools", "ucn_validate.py"),
+                     "grader_image": "G", "lint_image": "L"}
+
+    def grade(self, lint_stdout, cond="L", guarded=None):
+        real = self.recon.run
+
+        def fake(cmd, **kw):
+            if cmd[0] != "docker":
+                return real(cmd, **kw)
+            if "G" in cmd:  # the hidden grader: one passing case
+                out = [a for a in cmd if a.endswith(":/out")][0].rsplit(":", 1)[0]
+                write(os.path.join(out, "r1.xml"), junit([("test_t", "test_ok", "passed", "")]))
+            return subprocess.CompletedProcess(cmd, 0, lint_stdout if "L" in cmd else "", "")
+        self.recon.run = fake
+        self.addCleanup(setattr, self.recon, "run", real)
+        entry = {"run": "r1", "task": "t", "cond": cond, "workspace": self.d, "guarded": guarded or {},
+                 "validator_sha": self.recon.sha(self.spec["validator"])}
+        return self.recon.grade_one(self.spec, entry, {"dir": os.path.join(self.d, "_task")}, set())
+
+    def test_clean_run(self):
+        r = self.grade("Contracts: 4 kept, 0 broken.")
+        self.assertEqual((r["success"], r["violations"], r["tampered"]), (1, 0, []))
+
+    def test_missing_import_linter_result_fails_closed(self):
+        r = self.grade("Traceback: something broke")
+        self.assertEqual(r["violations"], 1)
+        self.assertIn("grading_error", r)
+
+    def test_missing_contract_fails_closed_and_old_results_are_not_reused(self):
+        self.spec["contracts"] = 4
+        self.assertEqual(self.grade("Contracts: 3 kept, 0 broken.")["violations"], 1)
+        real = self.recon.run  # second grading: the grader container "fails" and writes nothing
+        self.recon.run = lambda cmd, **kw: (subprocess.CompletedProcess(cmd, 125, "", "") if cmd[0] == "docker" else real(cmd, **kw))
+        try:
+            entry = {"run": "r1", "task": "t", "cond": "L", "workspace": self.d}
+            r = self.recon.grade_one(self.spec, entry, {"dir": os.path.join(self.d, "_task")}, set())
+        finally:
+            self.recon.run = real
+        self.assertEqual(r["success"], 0)
+
+    def test_tampering_with_model_context_or_contracts(self):
+        ctx = os.path.join(self.d, "context.ucn")
+        write(ctx, "ucn 0.4 system: S\n")
+        guarded = {"context.ucn": self.recon.sha(ctx)}
+        shutil.copy(self.pristine, os.path.join(self.d, "model.ucn"))
+        self.assertEqual(self.grade("Contracts: 4 kept, 0 broken.", "B", guarded)["tampered"], [])
+        write(ctx, "ucn 0.4 system: S\n# edited\n")
+        write(os.path.join(self.d, "model.ucn"), read(self.pristine) + "\n# loosened\n")
+        write(os.path.join(self.d, "pyproject.toml"), "[tool.importlinter]\n")
+        r = self.grade("Contracts: 4 kept, 0 broken.", "B", guarded)
+        self.assertEqual(r["tampered"], ["context.ucn", "model.ucn", "pyproject.toml"])
+        self.assertEqual(r["violations"], 1)
+
+
 class Pilot(unittest.TestCase):
     def data(self, light, ucn, n=40, tempting=None, upkeep=(30, 1000), absent=0):
         tasks = [{"id": f"T{i}", "kind": "change",

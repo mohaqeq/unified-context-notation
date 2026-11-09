@@ -1,0 +1,60 @@
+Bash: cd "<scratch>/pilot/runs/T10-C1" && git status --short && git rev-parse --show-toplevel && ls && cat src/sqlfluff/api/__init__.py && cat src/sqlfluff/api/simple.py
+Bash: cd "<scratch>/pilot/runs/T10-C1" && grep -rn "def format_violation\|L:\|P:\|rule_name\|def get_violations\|def lint\b" src/sqlfluff/core/linter/*.py src/sqlfluff/cli/*.py src/sqlfluff/core/errors.py 2>/dev/null | head -60; ls test/api 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T10-C1" && sed -n 470,560p src/sqlfluff/cli/formatters.py && sed -n 80,130p src/sqlfluff/core/errors.py && sed -n 355,375p src/sqlfluff/core/errors.py && grep -n "def as_record\|def get_info_dict\|def to_dict\|def to_dict" -A30 src/sqlfluff/core/errors.py | head -80
+Bash: cd "<scratch>/pilot/runs/T10-C1" && grep -n "def as_records\|def violation_records\|def get_info_dict" -A25 src/sqlfluff/core/linter/linted_file.py src/sqlfluff/core/linter/linting_result.py | head -120; cat test/api/simple_test.py | head -60
+Read: <scratch>/pilot/runs/T10-C1/src/sqlfluff/api/simple.py
+Read: <scratch>/pilot/runs/T10-C1/test/api/simple_test.py
+Read: <scratch>/pilot/runs/T10-C1/src/sqlfluff/api/__init__.py
+Bash: cd "<scratch>/pilot/runs/T10-C1" && wc -l test/api/simple_test.py && tail -n 25 test/api/simple_test.py && grep -n "^def \|^@" test/api/simple_test.py
+Edit: <scratch>/pilot/runs/T10-C1/src/sqlfluff/api/simple.py
+Edit: <scratch>/pilot/runs/T10-C1/src/sqlfluff/api/__init__.py
+Edit: <scratch>/pilot/runs/T10-C1/src/sqlfluff/api/simple.py
+Bash: cd "<scratch>/pilot/runs/T10-C1" && cat >> test/api/simple_test.py <<'EOF'
+
+
+def test__api__format_violations():
+    """Test format_violations output layout, including empty input."""
+    assert sqlfluff.api.format_violations([]) == ""
+
+    violations = [
+        {
+            "code": "LT01",
+            "description": "Expected only single space before star '*'. Found '  '.",
+            "start_line_no": 1,
+            "start_line_pos": 7,
+            "name": "layout.spacing",
+            "warning": False,
+        },
+        {
+            "code": "PRS",
+            "description": "Unparsable section.",
+            "start_line_no": 12,
+            "start_line_pos": 123,
+            "name": "",
+            "warning": False,
+        },
+    ]
+    assert sqlfluff.api.format_violations(violations) == (
+        "L:   1 | P:   7 | LT01 | Expected only single space before star '*'. "
+        "Found '  '. [layout.spacing]\n"
+        "L:  12 | P: 123 |  PRS | Unparsable section."
+    )
+
+
+def test__api__format_violations_from_lint():
+    """Test format_violations on real lint output, with no colour codes."""
+    violations = sqlfluff.lint(my_bad_query, dialect="ansi")
+    output = sqlfluff.api.format_violations(violations)
+    lines = output.split("\n")
+    assert len(lines) == len(violations)
+    assert not output.endswith("\n")
+    assert "\x1b[" not in output
+    for line, viol in zip(lines, violations):
+        assert line.startswith(
+            f"L:{viol['start_line_no']:4d} | P:{viol['start_line_pos']:4d} | "
+            f"{viol['code'].rjust(4)} | {viol['description']}"
+        )
+EOF
+tail -n 5 test/api/simple_test.py; grep -n "^import\|^from" test/api/simple_test.py
+Bash: cd "<scratch>/pilot/runs/T10-C1" && python -m py_compile src/sqlfluff/api/simple.py src/sqlfluff/api/__init__.py test/api/simple_test.py && echo COMPILED; awk 'length > 88 {print FILENAME": "FNR": "length}' src/sqlfluff/api/simple.py src/sqlfluff/api/__init__.py test/api/simple_test.py; git status --short
+SubagentHandback:

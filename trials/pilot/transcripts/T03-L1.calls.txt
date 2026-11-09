@@ -1,0 +1,43 @@
+Bash: cd "<scratch>/pilot/runs/T03-L1" && git status --short | head -20; find . -name AGENTS.md -not -path "*/node_modules/*" -not -path "./.git/*"; ls
+Bash: cd "<scratch>/pilot/runs/T03-L1" && cat AGENTS.md; echo ----; cat src/sqlfluff/AGENTS.md; echo ----; cat test/AGENTS.md; echo ----; ls src/sqlfluff/core/parser/; cat src/sqlfluff/core/parser/helpers.py; echo ----; grep -n "importlinter" -A200 pyproject.toml | head -300
+Bash: cd "<scratch>/pilot/runs/T03-L1" && sed -n 1,400p AGENTS.md | tail -n +30 | head -250
+Bash: cd "<scratch>/pilot/runs/T03-L1" && cat src/sqlfluff/AGENTS.md | head -150; echo ----; cat test/AGENTS.md | head -120; echo ----; ls src/sqlfluff/core/parser/; echo ----; cat src/sqlfluff/core/parser/helpers.py 2>/dev/null || echo "NO helpers.py"
+Bash: cd "<scratch>/pilot/runs/T03-L1" && grep -n "importlinter" pyproject.toml; awk '/importlinter/,0' pyproject.toml | head -120; echo ----; grep -rn "RF01\|references_overlap\|overlap" src/sqlfluff/rules/references/*.py | head -30; echo ----; ls test/core/parser/ ; grep -n "helpers" -r test/core/parser/*.py | head
+Bash: cd "<scratch>/pilot/runs/T03-L1" && cat test/core/parser/helpers_test.py
+Edit: <scratch>/pilot/runs/T03-L1/src/sqlfluff/core/parser/helpers.py
+Edit: <scratch>/pilot/runs/T03-L1/test/core/parser/helpers_test.py
+Bash: cd "<scratch>/pilot/runs/T03-L1" && cat >> test/core/parser/helpers_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "first,second,expected",
+    [
+        (("schema", "tbl"), ("schema", "tbl"), True),
+        (("tbl",), ("schema", "tbl"), True),
+        (("schema", "tbl"), ("tbl",), True),
+        (("b", "c"), ("a", "b", "c"), True),
+        (("schema",), ("schema", "tbl"), False),
+        (("tbl",), ("other",), False),
+        (("Tbl",), ("tbl",), False),
+        (("a", "c"), ("a", "b", "c"), False),
+        ((), ("tbl",), False),
+        (("tbl",), (), False),
+        ((), (), False),
+    ],
+)
+def test__parser__helper_references_overlap(first, second, expected):
+    """Test references_overlap, including symmetry."""
+    assert references_overlap(first, second) is expected
+    assert references_overlap(second, first) is expected
+EOF
+git diff --stat
+Bash: cd "<scratch>/pilot/runs/T03-L1" && head -6 test/core/parser/helpers_test.py && git diff --stat && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T03-L1:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+Bash: cd "<scratch>/pilot/runs/T03-L1" && python -c "
+import ast,sys
+src=open('src/sqlfluff/core/parser/helpers.py').read()
+fn=[n for n in ast.parse(src).body if isinstance(n,ast.FunctionDef) and n.name=='references_overlap'][0]
+ns={}; exec(compile(ast.Module([fn],[]),'x','exec'),ns); f=ns['references_overlap']
+cases=[(('schema','tbl'),('schema','tbl'),True),(('tbl',),('schema','tbl'),True),(('b','c'),('a','b','c'),True),(('schema',),('schema','tbl'),False),(('Tbl',),('tbl',),False),(('a','c'),('a','b','c'),False),((),('tbl',),False),((),(),False)]
+print(all(f(a,b) is e and f(b,a) is e for a,b,e in cases))
+"
+SubagentHandback:

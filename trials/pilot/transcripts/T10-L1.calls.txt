@@ -1,0 +1,77 @@
+Bash: cd "<scratch>/pilot/runs/T10-L1" && git status --short && find . -name AGENTS.md -not -path './.git/*' && cat AGENTS.md && cat src/sqlfluff/api/__init__.py && cat src/sqlfluff/api/simple.py
+Bash: cd "<scratch>/pilot/runs/T10-L1" && cat src/sqlfluff/AGENTS.md; echo ----; cat test/AGENTS.md | head -150; echo ----; grep -n -A60 "importlinter" pyproject.toml | head -120; echo ----; ls test/api; grep -rn "def format_violation\|def format_\|L:\|P:" src/sqlfluff/cli/formatters.py | head -40
+Bash: cd "<scratch>/pilot/runs/T10-L1" && sed -n 440,546p src/sqlfluff/cli/formatters.py; echo ----; grep -n "def as_records" -A60 src/sqlfluff/core/linter/linted_file.py src/sqlfluff/core/linter/linted_dir.py 2>/dev/null | head -5; grep -rn "def as_records" src/sqlfluff/core | head; echo ----; cat test/api/simple_test.py | head -80; grep -n "^def \|^import\|^from" test/api/simple_test.py
+Bash: cd "<scratch>/pilot/runs/T10-L1" && sed -n 340,372p test/api/simple_test.py; echo ----; sed -n 700,730p test/api/simple_test.py; echo ----; grep -rn "__all__" test/api | head; grep -rln "api.lint\|from sqlfluff.api import" docsv 2>/dev/null | head
+Edit: <scratch>/pilot/runs/T10-L1/src/sqlfluff/api/simple.py
+Edit: <scratch>/pilot/runs/T10-L1/src/sqlfluff/api/__init__.py
+Bash: cd "<scratch>/pilot/runs/T10-L1" && cat src/sqlfluff/__init__.py | head -40
+Bash: cd "<scratch>/pilot/runs/T10-L1" && tail -c 200 test/api/simple_test.py | od -c | tail -3
+Edit: <scratch>/pilot/runs/T10-L1/test/api/simple_test.py
+Bash: cd "<scratch>/pilot/runs/T10-L1" && cat >> test/api/simple_test.py <<'EOF'
+
+
+def test__api__format_violations_empty():
+    """An empty list of violations formats to an empty string."""
+    assert format_violations([]) == ""
+
+
+def test__api__format_violations():
+    """Violations are formatted one per line, in the CLI layout."""
+    expected = (
+        "L:   1 | P:   1 |   CP01 | Keywords must be consistently upper case. "
+        "[capitalisation.keywords]\n"
+        "L:   1 | P:   1 |   LT09 | Select targets should be on a new line unless "
+        "there is only one select target. [layout.select_targets]"
+    )
+    result = format_violations(lint_result)
+    assert result == expected
+    assert "\x1b[" not in result
+    assert not result.endswith("\n")
+
+
+def test__api__format_violations_from_lint():
+    """Formatting the output of lint gives one line per violation."""
+    violations = sqlfluff.lint(my_bad_query)
+    lines = format_violations(violations).split("\n")
+    assert len(lines) == len(violations)
+    assert lines[0].startswith("L:   1 | P:   1 |   CP01 | ")
+
+
+def test__api__format_violations_no_name():
+    """No rule name suffix is added when the name is empty."""
+    violation = {
+        "code": "PRS",
+        "description": "Unparsable section.",
+        "name": "",
+        "start_line_no": 12,
+        "start_line_pos": 3,
+    }
+    assert (
+        format_violations([violation])
+        == "L:  12 | P:   3 |  PRS | Unparsable section."
+    )
+
+
+def test__api__format_violations_long_code_and_desc():
+    """Long rule codes and descriptions are not truncated or wrapped."""
+    long_desc = "word " * 60
+    violation = {
+        "code": "ABCDEF",
+        "description": long_desc.strip(),
+        "name": "some.rule",
+        "start_line_no": 1000,
+        "start_line_pos": 12345,
+    }
+    result = format_violations([violation])
+    assert result == (
+        f"L:1000 | P:12345 | ABCDEF | {long_desc.strip()} [some.rule]"
+    )
+    assert "\n" not in result
+EOF
+tail -5 test/api/simple_test.py
+Read: <scratch>/pilot/runs/T10-L1/test/api/simple_test.py
+Grep: <scratch>/pilot/runs/T10-L1/test/api/simple_test.py <scratch>/pilot/runs/T10-L1/test/api/simple_test.py
+Edit: <scratch>/pilot/runs/T10-L1/test/api/simple_test.py
+Edit: <scratch>/pilot/runs/T10-L1/test/api/simple_test.py
+Bash: cd "<scratch>/pilot/runs/T10-L1" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T10-L1:/repo:ro" ucn-il --no-cache 2>&1; echo "EXIT=$?"
+SubagentHandback:

@@ -1,0 +1,34 @@
+Bash: cd "<scratch>/pilot/runs/T02-B2" && cat context.ucn && echo ---- && ls -la && find src test -name '*.py' | head -100 && cat src/sqlfluff/api/info.py 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T02-B2" && cat model.ucn && echo ---- && cat src/sqlfluff/api/__init__.py && echo ---- && grep -n "__version__" -r src/sqlfluff/__init__.py && ls test/api && cat test/api/info_test.py 2>/dev/null; grep -rn "sqlfluff.api" test/api/*.py | head -20
+Bash: cd "<scratch>/pilot/runs/T02-B2" && cat src/sqlfluff/__init__.py && echo ---- && grep -rn "list_dialects\|list_rules" docs README.md 2>/dev/null | head; ls docs 2>/dev/null; grep -rn "python -m\|ruff\|import-linter\|importlinter" tox.ini pyproject.toml | head -20
+Edit: <scratch>/pilot/runs/T02-B2/src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-B2/src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-B2/src/sqlfluff/api/__init__.py
+Bash: cd "<scratch>/pilot/runs/T02-B2" && grep -n "line-length" pyproject.toml; grep -n "info_test\|api" tox.ini | head -5; awk 'length > 88 {print FILENAME": "FNR": "length}' src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-B2/src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-B2/test/api/info_test.py
+Bash: cd "<scratch>/pilot/runs/T02-B2" && cat >> test/api/info_test.py <<'EOF'
+
+
+def test__api__info_version_info():
+    """The version_info() dict reports sqlfluff and Python build details."""
+    info = version_info()
+    assert set(info.keys()) == {"sqlfluff", "python", "implementation"}
+    assert all(isinstance(value, str) for value in info.values())
+    # The sqlfluff entry matches the package version.
+    assert info["sqlfluff"] == sqlfluff.__version__
+    # The python entry is major.minor.micro of the running interpreter.
+    assert info["python"] == "{}.{}.{}".format(*sys.version_info[:3])
+    assert info["implementation"] == platform.python_implementation().lower()
+    assert info["implementation"] == info["implementation"].lower()
+
+
+def test__api__info_version_info_exported():
+    """version_info() is available from the top-level api package."""
+    import sqlfluff.api
+
+    assert sqlfluff.api.version_info is version_info
+    assert "version_info" in sqlfluff.api.__all__
+EOF
+python -m py_compile src/sqlfluff/api/info.py src/sqlfluff/api/__init__.py test/api/info_test.py && echo COMPILED; python -m ruff --version 2>/dev/null; python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo EXIT=$?
+SubagentHandback:

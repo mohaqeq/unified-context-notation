@@ -32,6 +32,15 @@ SUFFIX = ("Make the change in the code under src/, and add or update tests under
           "files inside that repository directory.\n\nWhen you are done, reply with a short summary: files changed and why.")
 
 
+CONTRACT_FILES = ("pyproject.toml", "setup.cfg", ".importlinter", ".dependency-cruiser.js", ".dependency-cruiser.cjs")
+
+
+def sha(path):
+    import hashlib
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
 def run(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", **kw)
 
@@ -67,6 +76,7 @@ def instructions(cond, ws, spec):
 
 
 def prepare(spec, out):
+    spec = dict(spec, validator=os.path.abspath(spec["validator"]))  # prompts must name a path that works anywhere
     os.makedirs(out, exist_ok=True)
     index = []
     for t in tasks_of(spec):
@@ -91,11 +101,14 @@ def prepare(spec, out):
                         raise SystemExit(f"{rid}: projection failed: {errs}")
                     with open(os.path.join(ws, "context.ucn"), "w", encoding="utf-8", newline="\n") as fh:
                         fh.write(text)
+                ctx = os.path.join(ws, "context.ucn")
+                guarded = {"context.ucn": sha(ctx)} if os.path.exists(ctx) else {}
                 prompt = (f"You are a developer working in the git repository at {ws.replace(chr(92), '/')} (Windows; use forward "
                           f"slashes). {instructions(cond, ws, spec)}\n\nTask: {t['text']}\n\n{SUFFIX}")
                 with open(os.path.join(out, f"{rid}.prompt.txt"), "w", encoding="utf-8", newline="\n") as fh:
                     fh.write(prompt)
-                index.append({"run": rid, "task": t["id"], "cond": cond, "workspace": ws})
+                index.append({"run": rid, "task": t["id"], "cond": cond, "workspace": ws, "guarded": guarded,
+                              "validator_sha": sha(spec["validator"]) if os.path.exists(spec["validator"]) else None})
     json.dump(index, open(os.path.join(out, "index.json"), "w"), indent=1)
     return index
 
@@ -106,6 +119,9 @@ def grade_one(spec, entry, task, baseline):
     # 1. hidden grader (behavior)
     junit_dir = os.path.join(os.path.dirname(ws), "_junit")
     os.makedirs(junit_dir, exist_ok=True)
+    old = os.path.join(junit_dir, f"{entry['run']}.xml")
+    if os.path.exists(old):  # never re-read a previous grading's results if the container fails to start
+        os.remove(old)
     g = run(["docker", "run", "--rm", "-v", f"{ws}:/repo:ro", "-v", f"{os.path.join(task['dir'], 'grader')}:/grader:ro",
              "-v", f"{junit_dir}:/out", spec["grader_image"], f"--junitxml=/out/{entry['run']}.xml"])
     cases = ucn_validate.load_test_results([os.path.join(junit_dir, f"{entry['run']}.xml")]) if os.path.exists(
@@ -116,7 +132,14 @@ def grade_one(spec, entry, task, baseline):
     il = run(["docker", "run", "--rm", "-v", f"{ws}:/repo:ro", spec["lint_image"], "--no-cache"])
     line = next((l for l in il.stdout.splitlines() if l.startswith("Contracts:")), "")
     res["import_linter"] = line
-    broken = int(line.split("kept,")[1].split("broken")[0]) if "broken" in line else -1
+    if "broken" in line:
+        kept, broken = int(line.split()[1]), int(line.split("kept,")[1].split("broken")[0])
+        if spec.get("contracts") and kept + broken != spec["contracts"]:  # a contract went missing: fail closed
+            broken = max(broken, 1)
+            res["grading_error"] = f"expected {spec['contracts']} contracts, import-linter saw {kept + broken}"
+    else:  # fail closed: no result line means the check did not run (or the code no longer imports)
+        broken = 1
+        res["grading_error"] = "import-linter produced no 'Contracts:' line: " + (il.stdout + il.stderr)[-300:]
     # 3. the UCN validator with the pristine model (new findings only)
     gm = os.path.join(ws, "_grade_model.ucn")
     shutil.copy(spec["model"], gm)
@@ -130,13 +153,25 @@ def grade_one(spec, entry, task, baseline):
     st = run(["git", "-C", ws, "status", "--porcelain", "--untracked-files=all"]).stdout
     changed = [l[3:] for l in st.splitlines() if l.strip()]
     res["changed"] = [c for c in changed if c not in ("model.ucn", "context.ucn") and not c.endswith("AGENTS.md") and c != "CLAUDE.md"]
-    res["tampered"] = [c for c in changed if (entry["cond"] == "B" and c in ("model.ucn", "context.ucn") and
-                                              open(os.path.join(ws, c), encoding="utf-8").read() != open(spec["model"], encoding="utf-8").read()
-                                              and c == "model.ucn") or c == "pyproject.toml"]
+    tampered = [c for c in changed if c.rsplit("/", 1)[-1] in CONTRACT_FILES]  # the project's own contracts, any arm
+    if entry["cond"] == "B":
+        mp = os.path.join(ws, "model.ucn")
+        if not os.path.exists(mp) or sha(mp) != sha(spec["model"]):
+            tampered.append("model.ucn")
+        for name, digest in entry.get("guarded", {}).items():
+            p = os.path.join(ws, name)
+            if not os.path.exists(p) or sha(p) != digest:
+                tampered.append(name)
+    if entry.get("validator_sha") and os.path.exists(spec["validator"]) and sha(spec["validator"]) != entry["validator_sha"]:
+        tampered.append(spec["validator"])
+    res["tampered"] = sorted(set(tampered))
+    if res["tampered"]:
+        res["violations"] = 1
     return res
 
 
 def grade(spec, out):
+    spec = dict(spec, validator=os.path.abspath(spec["validator"]))
     index = json.load(open(os.path.join(out, "index.json")))
     tasks = {t["id"]: t for t in tasks_of(spec)}
     base_ws = os.path.join(out, "_baseline")

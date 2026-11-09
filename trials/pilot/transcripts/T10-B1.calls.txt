@@ -1,0 +1,74 @@
+Bash: cd "<scratch>/pilot/runs/T10-B1" && cat context.ucn && echo ---- && git status --short && ls && cat src/sqlfluff/api/__init__.py 2>/dev/null; cat src/sqlfluff/api/simple.py;
+Bash: cd "<scratch>/pilot/runs/T10-B1" && grep -rn "def format_violation\|def format_linting_result_header\|rule_name\|start_line_pos" src/sqlfluff/core/errors.py src/sqlfluff/cli/formatters.py | head -40; echo ----; grep -n "def as_records" -A40 src/sqlfluff/core/linter/linted_file.py src/sqlfluff/core/linter/linting_result.py | head -80; echo ----; ls test/api; grep -n "" test/api/simple_test.py | head -60; echo; grep -rn "ClickOnly\|from sqlfluff.api\|import click" src/sqlfluff/api | head
+Bash: cd "<scratch>/pilot/runs/T10-B1" && sed -n 475,530p src/sqlfluff/cli/formatters.py; echo ----; grep -n "def format_violation\|def _format_violation" -B2 -A30 src/sqlfluff/cli/formatters.py | sed -n 1,5p; echo ----; sed -n 60,200p test/api/simple_test.py; echo ----; grep -n "def \|^import\|^from" test/api/simple_test.py | tail -30; echo; grep -n "def pretty_format_violation\|_format_violation" -r src/sqlfluff | head; echo; cat model.ucn | head -80
+Bash: cd "<scratch>/pilot/runs/T10-B1" && sed -n 530,560p src/sqlfluff/cli/formatters.py; sed -n 700,730p test/api/simple_test.py; grep -n "to_dict" -A3 src/sqlfluff/core/errors.py | head; grep -n "def rule_name" -A6 src/sqlfluff/core/errors.py | head -20; grep -n "api" pyproject.toml | head
+Edit: <scratch>/pilot/runs/T10-B1/src/sqlfluff/api/simple.py
+Edit: <scratch>/pilot/runs/T10-B1/src/sqlfluff/api/__init__.py
+Bash: cd "<scratch>/pilot/runs/T10-B1" && sed -n 355,372p test/api/simple_test.py; echo ----; tail -c 200 test/api/simple_test.py | od -c | tail -3
+Bash: cd "<scratch>/pilot/runs/T10-B1" && cat >> test/api/simple_test.py <<'EOF'
+
+
+def test__api__format_violations_empty():
+    """An empty list of violations formats to an empty string."""
+    assert sqlfluff.format_violations([]) == ""
+
+
+def test__api__format_violations():
+    """Violations are formatted one per line in the CLI layout."""
+    expected = (
+        "L:   1 | P:   1 | CP01 | Keywords must be consistently upper case."
+        " [capitalisation.keywords]\n"
+        "L:   1 | P:   1 | LT09 | Select targets should be on a new line unless "
+        "there is only one select target. [layout.select_targets]\n"
+        "L:   1 | P:   7 | LT01 | Expected only single space before star '*'. "
+        "Found '  '. [layout.spacing]\n"
+        "L:   1 | P:   9 | AM04 | Query produces an unknown number of result "
+        "columns. [ambiguous.column_count]\n"
+        "L:   1 | P:  12 | AL03 | Column expression without alias. Use explicit "
+        "`AS` clause. [aliasing.expression]\n"
+        "L:   1 | P:  20 | CP01 | Keywords must be consistently upper case."
+        " [capitalisation.keywords]"
+    )
+    result = sqlfluff.format_violations(lint_result)
+    assert result == expected.rstrip("\n").replace("\n", "\n")
+    assert not result.endswith("\n")
+    assert "\x1b[" not in result
+
+
+def test__api__format_violations_no_name_and_multidigit():
+    """Missing or empty names add no suffix; wide numbers are not truncated."""
+    violations = [
+        {
+            "code": "PRS",
+            "start_line_no": 123,
+            "start_line_pos": 4567,
+            "description": "Unparsable section.",
+            "name": "",
+        },
+        {
+            "code": "LT01",
+            "start_line_no": 2,
+            "start_line_pos": 3,
+            "description": "Spacing.",
+        },
+    ]
+    assert sqlfluff.format_violations(violations) == (
+        "L: 123 | P:4567 |  PRS | Unparsable section.\n"
+        "L:   2 | P:   3 | LT01 | Spacing."
+    )
+
+
+def test__api__format_violations_from_lint():
+    """Formatting real lint output gives one line per violation."""
+    violations = sqlfluff.lint(my_bad_query)
+    lines = sqlfluff.format_violations(violations).split("\n")
+    assert len(lines) == len(violations)
+    assert lines[0].startswith("L:   1 | P:   1 |  CP01 | ")
+EOF
+echo done
+Bash: cd "<scratch>/pilot/runs/T10-B1" && awk 'NR>=15 && NR<=357' test/api/simple_test.py | grep -c '"code":'; grep -n "^]" test/api/simple_test.py | head -2
+Edit: <scratch>/pilot/runs/T10-B1/test/api/simple_test.py
+Edit: <scratch>/pilot/runs/T10-B1/test/api/simple_test.py
+Bash: cd "<scratch>/pilot/runs/T10-B1" && python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"
+Bash: cd "<scratch>/pilot/runs/T10-B1" && git diff --stat && python -m py_compile src/sqlfluff/api/simple.py src/sqlfluff/api/__init__.py test/api/simple_test.py && echo compiled
+SubagentHandback:

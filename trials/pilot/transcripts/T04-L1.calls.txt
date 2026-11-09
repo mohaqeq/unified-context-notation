@@ -1,0 +1,90 @@
+Bash: cd "<scratch>/pilot/runs/T04-L1" && find . -name AGENTS.md -not -path "./.git/*" && cat AGENTS.md && ls src/sqlfluff/core/helpers/ && cat src/sqlfluff/core/helpers/string.py && grep -n -A30 "importlinter" pyproject.toml | head -120
+Bash: cd "<scratch>/pilot/runs/T04-L1" && cat src/sqlfluff/AGENTS.md | head -150 && echo ---- && cat test/AGENTS.md | head -80 && echo ---- && ls test/core/helpers/ 2>/dev/null; grep -rn "helpers.string" test | head; grep -n "^import\|^from" src/sqlfluff/core/helpers/*.py
+Bash: cd "<scratch>/pilot/runs/T04-L1" && cat test/core/helpers/string_test.py && git status --short && sed -n 1,30p src/sqlfluff/core/helpers/dict.py
+Edit: <scratch>/pilot/runs/T04-L1/src/sqlfluff/core/helpers/string.py
+Edit: <scratch>/pilot/runs/T04-L1/src/sqlfluff/core/helpers/string.py
+Bash: cd "<scratch>/pilot/runs/T04-L1" && python - <<'EOF'
+p = "test/core/helpers/string_test.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace(
+    "from sqlfluff.core.helpers.string import findall, split_comma_separated_string\n",
+    "from sqlfluff.core.helpers.string import (\n"
+    "    findall,\n"
+    "    parse_dotted_assignments,\n"
+    "    split_comma_separated_string,\n"
+    ")\n", 1)
+s += '''
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("", {}),
+        ("   ", {}),
+        ("core.dialect=ansi", {"core": {"dialect": "ansi"}}),
+        (
+            "rules.LT01.foo=1, core.dialect=ansi",
+            {"rules": {"LT01": {"foo": "1"}}, "core": {"dialect": "ansi"}},
+        ),
+        # Keys sharing a prefix are merged.
+        (
+            "rules.LT01.foo=1,rules.LT01.bar=2,rules.AL01=x",
+            {"rules": {"LT01": {"foo": "1", "bar": "2"}, "AL01": "x"}},
+        ),
+        # Whitespace around keys, values and commas is ignored.
+        (
+            "  rules . LT01 . foo =  1  ,\\n core.dialect = ansi  ",
+            {"rules": {"LT01": {"foo": "1"}}, "core": {"dialect": "ansi"}},
+        ),
+        # Empty items from stray commas are skipped.
+        ("a=1,,b=2,", {"a": "1", "b": "2"}),
+        # Only the first '=' separates key and value.
+        ("a.b=x=y", {"a": {"b": "x=y"}}),
+        # Empty values are kept as empty strings.
+        ("a.b=", {"a": {"b": ""}}),
+    ],
+)
+def test__helpers_string__parse_dotted_assignments(raw, expected):
+    """Dotted assignments expand to a nested dict of stripped strings."""
+    assert parse_dotted_assignments(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "core",  # No '='.
+        "core.dialect",  # No '=' with a dotted key.
+        "=1",  # Empty key.
+        "a..b=1",  # Empty middle key part.
+        ".a=1",  # Empty leading key part.
+        "a.=1",  # Empty trailing key part.
+        "a=1, b",  # Second pair has no '='.
+        "a=1, a.b=2",  # 'a' is a value, so it cannot also be a section.
+        "a.b=1, a=2",  # 'a' is a section, so it cannot also be a value.
+    ],
+)
+def test__helpers_string__parse_dotted_assignments_invalid(raw):
+    """Malformed assignments raise ValueError."""
+    with pytest.raises(ValueError):
+        parse_dotted_assignments(raw)
+'''
+open(p, "w", encoding="utf-8").write(s)
+EOF
+python -c "
+import sys; sys.path.insert(0,'src')
+" ; python - <<'EOF'
+import sys, doctest, re, ast
+# Quick standalone check of the logic (no project deps needed; string.py only imports stdlib).
+src = open("<scratch>/pilot/runs/T04-L1/src/sqlfluff/core/helpers/string.py", encoding="utf-8").read()
+ns = {}
+exec(compile(src, "string.py", "exec"), ns)
+f = ns["parse_dotted_assignments"]
+print(f("rules.LT01.foo=1, core.dialect=ansi"))
+print(f("  rules . LT01 . foo =  1  ,\n core.dialect = ansi  "))
+print(f(""), f("a=1,,b=2,"), f("a.b=x=y"))
+for bad in ["core","=1","a..b=1","a=1, a.b=2","a.b=1, a=2"]:
+    try: f(bad); print("NO RAISE", bad)
+    except ValueError as e: print("ValueError:", e)
+EOF
+Bash: cd "<scratch>/pilot/runs/T04-L1" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T04-L1:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+Bash: cd "<scratch>/pilot/runs/T04-L1" && git diff --stat && git diff test/core/helpers/string_test.py | head -30
+SubagentHandback:

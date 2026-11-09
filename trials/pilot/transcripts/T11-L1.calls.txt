@@ -1,0 +1,54 @@
+Bash: cd "<scratch>/pilot/runs/T11-L1" && find . -name AGENTS.md -not -path "./.git/*" && echo --- && cat AGENTS.md && echo --- && find . -path ./.git -prune -o -name "*.py" -print | grep -i -E "api|info" && git status --short
+Bash: cd "<scratch>/pilot/runs/T11-L1" && cat src/sqlfluff/api/info.py && echo ---INIT--- && cat src/sqlfluff/api/__init__.py && echo ---TEST--- && cat test/api/info_test.py && echo ---AGENTS--- && cat src/sqlfluff/api/AGENTS.md 2>/dev/null; cat src/sqlfluff/AGENTS.md | head -150; echo ---IL---; grep -n -A12 "importlinter" pyproject.toml | head -150
+Bash: cd "<scratch>/pilot/runs/T11-L1" && cat src/sqlfluff/__init__.py | grep -n -i "api\|dialect" ; grep -rn "list_dialects" --include=*.py --include=*.md --include=*.rst . | grep -v "^./.git/" | head -30; grep -n -B2 -A12 "class DialectTuple" -r src/sqlfluff/core/dialects/
+Bash: cd "<scratch>/pilot/runs/T11-L1" && sed -n 1,80p src/sqlfluff/core/dialects/__init__.py; sed -n 89,110p src/sqlfluff/core/dialects/__init__.py; grep -n "dialect_readout\|dialect_names\|_dialect_lookup" -r src/sqlfluff | head -20
+Bash: cd "<scratch>/pilot/runs/T11-L1" && python3 - <<'EOF'
+import re
+p = "src/sqlfluff/api/info.py"
+s = open(p).read()
+s = s.replace('''def list_dialects() -> list[DialectTuple]:
+    """Return a list of available dialect info."""
+    return list(dialect_readout())
+''', '''def list_dialects() -> list[DialectTuple]:
+    """Return a list of available dialect info."""
+    return list(dialect_readout())
+
+
+def list_dialect_names() -> list[str]:
+    """Return the labels of all available dialects, sorted alphabetically.
+
+    Returns:
+        A sorted list of dialect labels, e.g. ``["ansi", "bigquery", ...]``.
+    """
+    return sorted(dialect.label for dialect in list_dialects())
+''')
+open(p, "w").write(s)
+
+p = "src/sqlfluff/api/__init__.py"
+s = open(p).read()
+s = s.replace("from sqlfluff.api.info import list_dialects, list_rules",
+              "from sqlfluff.api.info import list_dialect_names, list_dialects, list_rules")
+s = s.replace('    "list_dialects",\n)', '    "list_dialects",\n    "list_dialect_names",\n)')
+open(p, "w").write(s)
+
+p = "test/api/info_test.py"
+s = open(p).read()
+s = s.replace('''def test__api__info_rules():''', '''def test__api__info_dialect_names():
+    """The dialect names are plain, sorted labels."""
+    names = sqlfluff.api.list_dialect_names()
+    assert isinstance(names, list)
+    assert all(type(name) is str for name in names)
+    assert names == sorted(names)
+    assert "ansi" in names
+    assert "postgres" in names
+    assert names == [dialect.label for dialect in sqlfluff.api.list_dialects()]
+
+
+def test__api__info_rules():''')
+s = s.replace('import sqlfluff\n', 'import sqlfluff\nimport sqlfluff.api\n', 1)
+open(p, "w").write(s)
+EOF
+git diff
+Bash: cd "<scratch>/pilot/runs/T11-L1" && for f in src/sqlfluff/api/info.py src/sqlfluff/api/__init__.py test/api/info_test.py src/sqlfluff/api/simple.py; do printf "%s CRLF lines: " $f; grep -c $'\r$' $f; wc -l < $f; done; git show HEAD:src/sqlfluff/api/info.py | grep -c $'\r$'
+Bash: cd "<scratch>/pilot/runs/T11-L1" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T11-L1:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+SubagentHandback:

@@ -1,0 +1,55 @@
+Bash: cd "<scratch>/pilot/runs/T04-B2" && cat context.ucn && ls && git status --short && ls src/sqlfluff/core/helpers/ && cat src/sqlfluff/core/helpers/string.py && ls test/core/helpers* 2>/dev/null; find test -path '*helpers*' | head
+Bash: cd "<scratch>/pilot/runs/T04-B2" && cat test/core/helpers/string_test.py && python -I D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo EXIT $?
+Edit: <scratch>/pilot/runs/T04-B2/src/sqlfluff/core/helpers/string.py
+Edit: <scratch>/pilot/runs/T04-B2/src/sqlfluff/core/helpers/string.py
+Edit: <scratch>/pilot/runs/T04-B2/test/core/helpers/string_test.py
+Bash: cd "<scratch>/pilot/runs/T04-B2" && cat >> test/core/helpers/string_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "raw_str, expected",
+    [
+        ("", {}),
+        ("   ", {}),
+        (
+            "rules.LT01.foo=1, core.dialect=ansi",
+            {"rules": {"LT01": {"foo": "1"}}, "core": {"dialect": "ansi"}},
+        ),
+        (
+            "core.dialect=ansi,core.templater=jinja",
+            {"core": {"dialect": "ansi", "templater": "jinja"}},
+        ),
+        (
+            "  rules . LT01 . foo =  1 ,\n core.dialect = ansi  ",
+            {"rules": {"LT01": {"foo": "1"}}, "core": {"dialect": "ansi"}},
+        ),
+        ("a=b=c", {"a": "b=c"}),
+        ("a=", {"a": ""}),
+    ],
+)
+def test__helpers_string__parse_dotted_assignments(raw_str, expected):
+    """Tests that dotted assignments expand into nested string dicts."""
+    assert parse_dotted_assignments(raw_str) == expected
+
+
+@pytest.mark.parametrize(
+    "raw_str",
+    [
+        "core",
+        "core.dialect",
+        "a..b=1",
+        ".a=1",
+        "a.=1",
+        "=1",
+        "a=1, a.b=2",
+    ],
+)
+def test__helpers_string__parse_dotted_assignments_invalid(raw_str):
+    """Tests that malformed or conflicting assignments raise ValueError."""
+    with pytest.raises(ValueError):
+        parse_dotted_assignments(raw_str)
+EOF
+cat src/sqlfluff/core/helpers/string.py | sed -n '1,5p'; python -I -c "import ast,sys; [ast.parse(open(p,encoding='utf8').read()) for p in ['src/sqlfluff/core/helpers/string.py','test/core/helpers/string_test.py']]; print('syntax ok')"
+Bash: cd "<scratch>/pilot/runs/T04-B2" && git diff --stat -- src test && git diff -- test/core/helpers/string_test.py | head -30 && grep -c "parse_dotted_assignments" test/core/helpers/string_test.py
+Bash: cd "<scratch>/pilot/runs/T04-B2" && python -I D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo EXIT $?
+SubagentHandback:

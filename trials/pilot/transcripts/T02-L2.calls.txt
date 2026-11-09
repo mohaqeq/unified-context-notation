@@ -1,0 +1,65 @@
+Bash: cd "<scratch>/pilot/runs/T02-L2" && git status --short && find . -name AGENTS.md -not -path "./.git/*" && ls src/sqlfluff/api && cat AGENTS.md
+Bash: cd "<scratch>/pilot/runs/T02-L2" && cat src/sqlfluff/AGENTS.md; echo ----; cat test/AGENTS.md | head -150; echo ----; cat src/sqlfluff/api/__init__.py; echo ----; cat src/sqlfluff/api/info.py; echo ----; cat src/sqlfluff/__init__.py; echo ----; ls test/api; grep -n -A60 "importlinter" pyproject.toml
+Bash: cd "<scratch>/pilot/runs/T02-L2" && cat test/api/info_test.py; echo ----; grep -rn "list_dialects\|list_rules" docs docsv --include=*.md 2>/dev/null | head; echo ----; git log -3 --format=%H%n%s -- src/sqlfluff/api/info.py
+Edit: <scratch>/pilot/runs/T02-L2/src/sqlfluff/api/info.py
+Bash: cd "<scratch>/pilot/runs/T02-L2" && cat >> src/sqlfluff/api/info.py <<'EOF'
+
+
+def version_info() -> dict[str, str]:
+    """Return the sqlfluff and Python versions in use.
+
+    Intended for bug reports, so the reporter can say which sqlfluff and
+    Python build they were running.
+
+    Returns:
+        A dict with the string entries ``"sqlfluff"`` (the installed sqlfluff
+        version), ``"python"`` (the interpreter version as
+        ``major.minor.micro``) and ``"implementation"`` (the lowercase Python
+        implementation name, e.g. ``"cpython"`` or ``"pypy"``).
+    """
+    # Imported here rather than at module level: the top-level ``sqlfluff``
+    # package imports this module (via ``sqlfluff.api``) before it defines
+    # ``__version__``, so a module-level import would be circular.
+    import sqlfluff
+
+    version = sys.version_info
+    return {
+        "sqlfluff": sqlfluff.__version__,
+        "python": f"{version.major}.{version.minor}.{version.micro}",
+        "implementation": platform.python_implementation().lower(),
+    }
+EOF
+cat src/sqlfluff/api/info.py | head -8
+Bash: cd "<scratch>/pilot/runs/T02-L2" && cat >> test/api/info_test.py <<'EOF'
+
+
+def test__api__info_version_info():
+    """The version info dict reports sqlfluff, Python and implementation."""
+    info = version_info()
+    assert set(info.keys()) == {"sqlfluff", "python", "implementation"}
+    assert all(isinstance(value, str) for value in info.values())
+    assert info["sqlfluff"] == sqlfluff.__version__
+    assert info["python"] == "{}.{}.{}".format(*sys.version_info[:3])
+    assert info["implementation"] == platform.python_implementation().lower()
+    assert info["implementation"] == info["implementation"].lower()
+EOF
+python - <<'EOF'
+import re
+p = "test/api/info_test.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace(
+    "import sqlfluff\nfrom sqlfluff.core.linter import RuleTuple\n",
+    "import platform\nimport sys\n\nimport sqlfluff\nfrom sqlfluff.api.info import version_info\nfrom sqlfluff.core.linter import RuleTuple\n",
+    1,
+)
+open(p, "w", encoding="utf-8").write(s)
+EOF
+head -10 test/api/info_test.py
+Bash: cd "<scratch>/pilot/runs/T02-L2" && python - <<'EOF'
+p = "test/api/info_test.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace('    assert info["implementation"] == info["implementation"].lower()\n', "")
+open(p, "w", encoding="utf-8").write(s)
+EOF
+tail -12 test/api/info_test.py; MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T02-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+SubagentHandback:

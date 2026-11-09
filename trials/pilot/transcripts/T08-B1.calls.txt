@@ -1,0 +1,70 @@
+Read: <scratch>/pilot/runs/T08-B1/context.ucn
+Bash: cd <scratch>/pilot/runs/T08-B1 && git status --short && ls && grep -rn "noqa" src/sqlfluff/core/parser/segments/base.py | head -50
+Bash: cd <scratch>/pilot/runs/T08-B1 && cat AGENTS.md 2>/dev/null | head -5; git show HEAD:AGENTS.md | head -80; echo ----; grep -n "def \|^class " src/sqlfluff/core/parser/segments/base.py | head -150
+Bash: cd <scratch>/pilot/runs/T08-B1 && sed -n 1150,1300p src/sqlfluff/core/parser/segments/base.py; echo ----; grep -rn "noqa" src/sqlfluff/core/linter/*.py src/sqlfluff/core/parser/*.py | head -30; echo ----; grep -rn "startswith\|noqa" src/sqlfluff/core/parser/segments/*.py | head; echo ---; grep -rln "noqa" src/sqlfluff/core | head -20
+Bash: cd <scratch>/pilot/runs/T08-B1 && sed -n 1,140p src/sqlfluff/core/rules/noqa.py; echo ----; grep -n "inline_comment\|block_comment" src/sqlfluff/core/parser/segments/*.py src/sqlfluff/core/rules/noqa.py | head -20; echo ----; sed -n 325,380p src/sqlfluff/core/parser/segments/base.py; sed -n 1,60p src/sqlfluff/core/parser/segments/base.py | grep -n import
+Bash: cd <scratch>/pilot/runs/T08-B1 && sed -n 404,445p src/sqlfluff/core/parser/segments/base.py; echo ----; grep -rn "inline_comment\|block_comment" src/sqlfluff/core/parser/ src/sqlfluff/dialects/dialect_ansi.py | head -20; echo ----; grep -rn "class CommentSegment" -A 30 src/sqlfluff/core/parser/segments/common.py src/sqlfluff/core/parser/segments/*.py | head -60; echo ----; ls test/core/parser/ | head -50; ls test/core/rules | head -40
+Bash: cd <scratch>/pilot/runs/T08-B1 && sed -n 140,200p src/sqlfluff/core/rules/noqa.py; echo ----; sed -n 90,112p src/sqlfluff/dialects/dialect_ansi.py; echo ----; ls test/core/parser/segments; grep -n "^def \|^class \|^import\|^from" test/core/parser/segments/test_base.py 2>/dev/null | head -40
+Bash: cd <scratch>/pilot/runs/T08-B1 && grep -n "def raw_trimmed" -A 12 src/sqlfluff/core/parser/segments/raw.py; echo ----; sed -n 1,40p test/core/parser/segments/segments_base_test.py; grep -n "^def \|^class " test/core/parser/segments/segments_base_test.py | head -60; grep -rn "noqa" test/core/parser/segments/*.py | head
+Bash: cd <scratch>/pilot/runs/T08-B1 && sed -n 186,200p test/core/parser/segments/segments_base_test.py; grep -n "Linter(" -A3 test/core/parser/segments/segments_base_test.py | head -20; sed -n 1482,1520p src/sqlfluff/core/parser/segments/base.py | head -5; sed -n 1222,1232p src/sqlfluff/core/parser/segments/base.py >/dev/null; grep -n "def parse_string" -A4 src/sqlfluff/core/linter/linter.py | head
+Edit: <scratch>/pilot/runs/T08-B1/src/sqlfluff/core/parser/segments/base.py
+Bash: cd <scratch>/pilot/runs/T08-B1 && sed -n 98,104p src/sqlfluff/core/parser/segments/base.py
+Edit: <scratch>/pilot/runs/T08-B1/src/sqlfluff/core/parser/segments/base.py
+Bash: cd <scratch>/pilot/runs/T08-B1 && tail -c 200 test/core/parser/segments/segments_base_test.py | od -c | tail -3
+Bash: cd <scratch>/pilot/runs/T08-B1 && cat >> test/core/parser/segments/segments_base_test.py <<'EOF'
+
+
+def test__parser__base_segments_get_noqa_comments_source_order():
+    """Test .get_noqa_comments() returns noqa comments in source order."""
+    sql = (
+        "select 1 -- noqa: LT05\n"
+        "from t /* noqa */\n"
+        "-- see the noqa docs\n"
+        "# noqa\n"
+        "select 2 -- note -- noqa: CP01\n"
+    )
+    tree = Linter(dialect="ansi").parse_string(sql).tree
+    found = tree.get_noqa_comments()
+    assert [seg.raw for seg in found] == [
+        "-- noqa: LT05",
+        "/* noqa */",
+        "# noqa",
+        "-- note -- noqa: CP01",
+    ]
+    assert all(seg.is_type("inline_comment", "block_comment") for seg in found)
+
+
+@pytest.mark.parametrize(
+    "comment,expected",
+    [
+        ("-- noqa", True),
+        ("--noqa", True),
+        ("-- noqa: LT05", True),
+        ("-- note -- noqa: LT05", True),
+        ("# noqa: LT05", True),
+        ("/* noqa */", True),
+        ("/*noqa: LT05*/", True),
+        ("/* note -- noqa */", True),
+        ("-- see the noqa docs", False),
+        ("-- NOQA", False),
+        ("-- noqa -- note", False),
+        ("-- plain comment", False),
+        ("/* plain comment */", False),
+    ],
+)
+def test__parser__base_segments_get_noqa_comments_directive(comment, expected):
+    """Test which comments count as a noqa directive."""
+    tree = Linter(dialect="ansi").parse_string(f"select 1 {comment}\n").tree
+    assert bool(tree.get_noqa_comments()) is expected
+
+
+def test__parser__base_segments_get_noqa_comments_includes_self():
+    """Test .get_noqa_comments() includes the segment itself if it is a comment."""
+    tree = Linter(dialect="ansi").parse_string("select 1 -- noqa\n").tree
+    comment = tree.get_noqa_comments()[0]
+    assert comment.get_noqa_comments() == [comment]
+EOF
+git diff --stat
+Bash: cd <scratch>/pilot/runs/T08-B1 && python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"
+Bash: cd <scratch>/pilot/runs/T08-B1 && git diff -- src/sqlfluff/core/parser/segments/base.py | head -80
+SubagentHandback:

@@ -1,0 +1,51 @@
+Bash: cd "<scratch>/pilot/runs/T11-C1" && pwd && git status --short | head -20 && ls && cat src/sqlfluff/api/info.py 2>/dev/null; cat src/sqlfluff/api/__init__.py 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T11-C1" && grep -rn "list_dialects\|DialectTuple\|list_dialect_names" --include=*.py --include=*.rst --include=*.md . | grep -v "^./sqlfluffrs" | head -40; grep -n "def dialect_readout" -A15 src/sqlfluff/core/dialects/*.py src/sqlfluff/core/*.py | head -30
+Bash: cd "<scratch>/pilot/runs/T11-C1" && cat test/api/info_test.py; sed -n 1,30p src/sqlfluff/__init__.py; ls test/api; grep -n "api\|info" docs -r 2>/dev/null | grep -i "list_dialects\|api.info" | head
+Bash: cd "<scratch>/pilot/runs/T11-C1" && python3 - <<'EOF'
+import re
+p = "src/sqlfluff/api/info.py"
+s = open(p, encoding="utf-8").read()
+old = '''def list_dialects() -> list[DialectTuple]:
+    """Return a list of available dialect info."""
+    return list(dialect_readout())
+'''
+new = old + '''
+
+def list_dialect_names() -> list[str]:
+    """Return the labels of all available dialects, sorted alphabetically."""
+    return sorted(dialect.label for dialect in list_dialects())
+'''
+assert s.count(old) == 1
+open(p, "w", encoding="utf-8", newline="").write(s.replace(old, new))
+
+p = "src/sqlfluff/api/__init__.py"
+s = open(p, encoding="utf-8").read()
+s2 = s.replace("from sqlfluff.api.info import list_dialects, list_rules",
+               "from sqlfluff.api.info import list_dialect_names, list_dialects, list_rules")
+s2 = s2.replace('    "list_dialects",\n)', '    "list_dialects",\n    "list_dialect_names",\n)')
+assert s2.count("list_dialect_names") == 2
+open(p, "w", encoding="utf-8", newline="").write(s2)
+
+p = "test/api/info_test.py"
+s = open(p, encoding="utf-8").read()
+anchor = '\n\ndef test__api__info_rules():'
+new_test = '''
+
+def test__api__info_dialect_names():
+    """Dialect names are a sorted list of plain labels."""
+    names = sqlfluff.api.list_dialect_names()
+    assert isinstance(names, list)
+    assert all(type(name) is str for name in names)
+    assert names == sorted(names)
+    assert "ansi" in names
+    assert "postgres" in names
+    assert names == [dialect.label for dialect in sqlfluff.api.list_dialects()]
+'''
+assert s.count(anchor) == 1
+s = s.replace(anchor, new_test + anchor)
+s = s.replace("import sqlfluff\nfrom sqlfluff.core.linter import RuleTuple",
+              "import sqlfluff\nimport sqlfluff.api\nfrom sqlfluff.core.linter import RuleTuple")
+open(p, "w", encoding="utf-8", newline="").write(s)
+EOF
+git diff -- src/sqlfluff/api test/api/info_test.py
+SubagentHandback:

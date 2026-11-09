@@ -1,6 +1,6 @@
 # Unified Context Notation (UCN)
 
-**What it is (v0.6):** a checked, traceable **intent and architecture layer** that keeps coding agents, and humans, consistent with a system's requirements and architecture. It records requirements, decisions, invariants, conventions, an architecture skeleton, trace links, conflicts and approved deviations, each with its provenance.
+**What it is (v0.6):** a checked, traceable **intent and architecture layer** meant to keep coding agents, and humans, consistent with a system's requirements and architecture. It records requirements, decisions, invariants, conventions, an architecture skeleton, trace links, conflicts and approved deviations, each with its provenance.
 - **Deterministic tools** check this model against the code on every commit, in about 1 s on real repositories, without touching the build.
 - The same rules **compile to existing checkers** (dependency-cruiser, import-linter), so the model can be the single source of truth.
 - A projection turns the model into compact context for agents, and anything relevant it leaves out is named.
@@ -14,7 +14,12 @@
 - **excalidraw:** it found circular, undeclared runtime dependencies between published packages.
 - **cosmicpython, agent experiment:** on a small, clean codebase it did **not** change agent behavior, and neither did an equivalent `AGENTS.md`, because even agents with no instructions followed the existing patterns.
 
-Whether UCN is worth its upkeep on a large, eroded codebase is the open question; a pilot with pre-registered kill criteria decides it ([docs/05](docs/05-usefulness-and-tooling.md)).
+**Pilot ([docs/08](docs/08-pilot.md)):** 60 agent runs on sqlfluff, using 12 tasks written by another model, each with a hidden behavioral grader.
+- UCN with the validator in the loop matched AGENTS.md with import-linter in the loop: 24/24 success and 0 violations each.
+- It used about 11% fewer tokens, lower on every task.
+- **Limits:** both arms hit a ceiling, and the token saving is explained by document size. So the pilot does not show that UCN keeps agents more consistent than the checker alone.
+
+Two independent reviews ([docs/09](docs/09-review-synthesis-v0.6.md)) agree: UCN's demonstrated value is one rules file that generates the checker configs, plus governance those tools lack (approved, expiring deviations, and recorded rule-vs-code conflicts). New features are frozen until a harder, size-controlled experiment shows an agent benefit.
 
 ## Contents
 
@@ -28,10 +33,11 @@ Whether UCN is worth its upkeep on a large, eroded codebase is the open question
 | [docs/06-review-synthesis-v0.3.md](docs/06-review-synthesis-v0.3.md) | Two independent reviews of v0.3, the fix plan, and its status after v0.4 |
 | [docs/07-trial-results.md](docs/07-trial-results.md) | Trials on sqlfluff, excalidraw and cosmicpython: findings, upkeep over history, agent experiments, container comparisons |
 | [docs/08-pilot.md](docs/08-pilot.md) | The pilot: reconstruction tests on sqlfluff with independently written tasks and hidden graders |
+| [docs/09-review-synthesis-v0.6.md](docs/09-review-synthesis-v0.6.md) | Two independent reviews of v0.6 and the pilot: findings, fixes and decisions |
 | [examples/shortly/](examples/shortly/) | Worked example: model, a small real TypeScript codebase, L0 card, task slice |
 | [trials/](trials/) | Models, results and scripts from the real-repository trials |
 | [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, evidence, staleness, gates, diff, propose), `ucn_project.py` (default projector), `ucn_export.py` (dependency-cruiser and import-linter configs), `recon.py` (reconstruction harness), `pilot_eval.py` (pilot decision) |
-| [tests/](tests/) | 77 tests (earlier counts double-ran 9 inherited tests), including a regression test for each reproduction from the v0.3 reviews |
+| [tests/](tests/) | 85 tests, including a regression test for each reproduction from the v0.3 and v0.6 reviews |
 | [reviews/](reviews/) | The raw reviews |
 
 ## Try it

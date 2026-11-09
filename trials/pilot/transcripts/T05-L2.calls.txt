@@ -1,0 +1,277 @@
+Bash: cd "<scratch>/pilot/runs/T05-L2" && find . -name AGENTS.md -not -path "./.git/*" && cat AGENTS.md && cat src/sqlfluff/core/rules/context.py && cat src/sqlfluff/utils/identifers.py && grep -rn "identifiers_policy_applicable\|identifier_policy" --include=*.py . | head -50
+Bash: cd "<scratch>/pilot/runs/T05-L2" && cat src/sqlfluff/AGENTS.md | head -150; grep -n -A25 "importlinter" pyproject.toml; ls src/sqlfluff/utils test/utils 2>/dev/null; grep -rln "identifers\|RuleContext" test | head -20; cat src/sqlfluff/utils/__init__.py 2>/dev/null | head -20; cat test/AGENTS.md | head -80
+Bash: cd "<scratch>/pilot/runs/T05-L2" && cat src/sqlfluff/core/rules/__init__.py | head -60; ls test/core/rules test/utils/analysis; sed -n 1,60p test/core/rules/crawlers_test.py; grep -n "def is_type" -A12 src/sqlfluff/core/parser/segments/base.py; sed -n 110,130p src/sqlfluff/rules/capitalisation/CP02.py; cat docsv/*.md 2>/dev/null | grep -n "identifiers_policy" | head
+Bash: cd "<scratch>/pilot/runs/T05-L2" && cat > src/sqlfluff/core/rules/context.py <<'EOF'
+"""Define RuleContext class."""
+
+import pathlib
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
+from sqlfluff.core.config import FluffConfig
+from sqlfluff.core.dialects import Dialect
+from sqlfluff.core.parser import BaseSegment, RawSegment
+from sqlfluff.core.templaters.base import TemplatedFile
+
+
+def identifiers_policy_applicable(
+    policy: str, parent_stack: tuple[BaseSegment, ...]
+) -> bool:
+    """Does `(un)quoted_identifiers_policy` apply to this segment?
+
+    This is the shared implementation behind
+    `RuleContext.identifier_policy_applies()`, and is also re-exported
+    from `sqlfluff.utils.identifers` for existing callers (CP02, RF04
+    and RF05).
+    """
+    if policy == "all":
+        return True
+    if policy == "none":
+        return False
+    is_alias = parent_stack and parent_stack[-1].is_type(
+        "alias_expression", "column_definition", "with_compound_statement"
+    )
+    if policy == "aliases" and is_alias:
+        return True
+    # Walk outward from the identifier looking for the nearest of
+    # "select_clause" or "from_clause". A column alias that belongs to a
+    # derived table's own SELECT (e.g. `FROM (SELECT 1 AS x) sub`) is
+    # nested inside that inner select_clause, which is itself nested
+    # inside the *outer* from_clause - so scanning the whole parent_stack
+    # for any from_clause wrongly classifies it as a table alias. Stopping
+    # at the first select_clause encountered keeps such a column alias
+    # scoped to the SELECT it actually belongs to.
+    is_inside_from = False
+    for p in reversed(parent_stack):
+        if p.is_type("select_clause"):
+            break
+        if p.is_type("from_clause"):
+            is_inside_from = True
+            break
+    if policy == "column_aliases" and is_alias and not is_inside_from:
+        return True
+    if policy == "table_aliases" and is_alias and is_inside_from:
+        return True
+    return False
+
+
+@dataclass
+class RuleContext:
+    """Class for holding the context passed to rule eval functions."""
+
+    # These don't change within a file.
+    dialect: Dialect
+    fix: bool
+    templated_file: Optional[TemplatedFile]
+    path: Optional[pathlib.Path]
+    config: FluffConfig
+
+    # These change within a file.
+    # segment: The segment in question
+    segment: BaseSegment
+    # parent_stack: A tuple of the path from the root to this segment.
+    parent_stack: tuple[BaseSegment, ...] = field(default=tuple())
+    # raw_stack: All of the raw segments so far in the file
+    raw_stack: tuple[RawSegment, ...] = field(default=tuple())
+    # memory: Arbitrary storage for the rule
+    memory: Any = field(default_factory=dict)
+    # segment_idx: The index of this segment in the parent
+    segment_idx: int = field(default=0)
+
+    @property
+    def siblings_pre(self) -> tuple[BaseSegment, ...]:  # pragma: no cover
+        """Return sibling segments prior to self.segment."""
+        if self.parent_stack:
+            return self.parent_stack[-1].segments[: self.segment_idx]
+        else:
+            return tuple()
+
+    @property
+    def siblings_post(self) -> tuple[BaseSegment, ...]:
+        """Return sibling segments after self.segment."""
+        if self.parent_stack:
+            return self.parent_stack[-1].segments[self.segment_idx + 1 :]
+        else:
+            return tuple()  # pragma: no cover
+
+    def identifier_policy_applies(self, policy: str) -> bool:
+        """Does `(un)quoted_identifiers_policy` apply at the current position?
+
+        Args:
+            policy: One of `all`, `none`, `aliases`, `column_aliases`
+                or `table_aliases`.
+
+        Returns:
+            True if the policy covers the identifier at `self.parent_stack`.
+        """
+        return identifiers_policy_applicable(policy, self.parent_stack)
+EOF
+cat > src/sqlfluff/utils/identifers.py <<'EOF'
+"""Helper utilities for identifiers.
+
+These are primarily common functions used by multiple rule
+bundles. Defined here to avoid duplication, but also avoid
+circular imports.
+
+The implementation lives in `sqlfluff.core.rules.context` (so that
+`RuleContext` can use it without `core` importing `utils`); this
+module keeps the existing public import path working.
+"""
+
+from sqlfluff.core.parser import BaseSegment
+from sqlfluff.core.rules.context import identifiers_policy_applicable as _applicable
+
+
+def identifiers_policy_applicable(
+    policy: str, parent_stack: tuple[BaseSegment, ...]
+) -> bool:
+    """Does `(un)quoted_identifiers_policy` apply to this segment?
+
+    This method is used in CP02, RF04 and RF05.
+    """
+    return _applicable(policy, parent_stack)
+EOF
+git diff --stat
+Bash: cd "<scratch>/pilot/runs/T05-L2" && cat > test/core/rules/context_test.py <<'EOF'
+"""Tests for RuleContext helpers."""
+
+from collections.abc import Iterator
+
+import pytest
+
+from sqlfluff.core.config import FluffConfig
+from sqlfluff.core.linter.linter import Linter
+from sqlfluff.core.parser import BaseSegment
+from sqlfluff.core.rules.context import RuleContext
+from sqlfluff.core.templaters.base import TemplatedFile
+from sqlfluff.utils.identifers import identifiers_policy_applicable
+
+POLICIES = ["all", "none", "aliases", "column_aliases", "table_aliases"]
+
+
+def _walk(
+    segment: BaseSegment, parent_stack: tuple[BaseSegment, ...] = ()
+) -> Iterator[tuple[BaseSegment, tuple[BaseSegment, ...]]]:
+    """Yield every segment with the parent stack leading to it."""
+    yield segment, parent_stack
+    for child in getattr(segment, "segments", ()):
+        yield from _walk(child, parent_stack + (segment,))
+
+
+def _contexts(sql: str) -> Iterator[RuleContext]:
+    """Yield a RuleContext positioned at every segment in the parsed SQL."""
+    cfg = FluffConfig(overrides={"dialect": "ansi"})
+    root = Linter(config=cfg).parse_string(sql).tree
+    for segment, parent_stack in _walk(root):
+        yield RuleContext(
+            dialect=cfg.get("dialect_obj"),
+            fix=False,
+            templated_file=TemplatedFile(sql, "<test-case>"),
+            path=None,
+            config=cfg,
+            segment=segment,
+            parent_stack=parent_stack,
+        )
+
+
+def _alias_context(sql: str, alias_raw: str) -> RuleContext:
+    """Return the context of the alias_expression whose raw text is `alias_raw`."""
+    for ctx in _contexts(sql):
+        if ctx.segment.is_type("alias_expression") and ctx.segment.raw == alias_raw:
+            return ctx
+    raise AssertionError(f"No alias_expression {alias_raw!r} in {sql!r}")
+
+
+@pytest.mark.parametrize(
+    "sql,alias_raw,expected",
+    [
+        # Column alias in the select list.
+        (
+            "SELECT a AS x FROM t",
+            "AS x",
+            {
+                "all": True,
+                "none": False,
+                "aliases": True,
+                "column_aliases": True,
+                "table_aliases": False,
+            },
+        ),
+        # Table alias in the from clause.
+        (
+            "SELECT a FROM t AS y",
+            "AS y",
+            {
+                "all": True,
+                "none": False,
+                "aliases": True,
+                "column_aliases": False,
+                "table_aliases": True,
+            },
+        ),
+        # Column alias inside a derived table: belongs to the inner SELECT,
+        # so it is a column alias even though it sits inside an outer FROM.
+        (
+            "SELECT sub.x FROM (SELECT 1 AS x) AS sub",
+            "AS x",
+            {
+                "all": True,
+                "none": False,
+                "aliases": True,
+                "column_aliases": True,
+                "table_aliases": False,
+            },
+        ),
+    ],
+)
+def test_identifier_policy_applies(sql, alias_raw, expected):
+    """The method answers each policy for the position in the context."""
+    ctx = _alias_context(sql, alias_raw)
+    for policy in POLICIES:
+        assert ctx.identifier_policy_applies(policy) is expected[policy], policy
+
+
+def test_identifier_policy_applies_matches_utility_everywhere():
+    """The method agrees with the utility at every position in a file."""
+    sql = (
+        "WITH cte AS (SELECT a AS x FROM t AS y) "
+        "SELECT sub.x, cte.z AS w FROM cte "
+        "JOIN (SELECT 1 AS x) AS sub ON TRUE"
+    )
+    checked = 0
+    for ctx in _contexts(sql):
+        for policy in POLICIES:
+            expected = identifiers_policy_applicable(policy, ctx.parent_stack)
+            assert ctx.identifier_policy_applies(policy) is expected
+            checked += 1
+    assert checked > 0
+EOF
+git status --short
+Bash: cd "<scratch>/pilot/runs/T05-L2" && python - <<'EOF'
+import re
+p = "test/core/rules/context_test.py"
+s = open(p).read()
+s = s.replace('''def _alias_context(sql: str, alias_raw: str) -> RuleContext:
+    """Return the context of the alias_expression whose raw text is `alias_raw`."""
+    for ctx in _contexts(sql):
+        if ctx.segment.is_type("alias_expression") and ctx.segment.raw == alias_raw:
+            return ctx
+    raise AssertionError(f"No alias_expression {alias_raw!r} in {sql!r}")
+''', '''def _alias_context(sql: str, alias_name: str) -> RuleContext:
+    """Return the context of the identifier `alias_name` inside an alias."""
+    for ctx in _contexts(sql):
+        if (
+            ctx.parent_stack
+            and ctx.parent_stack[-1].is_type("alias_expression")
+            and ctx.segment.raw == alias_name
+        ):
+            return ctx
+    raise AssertionError(f"No alias {alias_name!r} in {sql!r}")
+''')
+s = s.replace('"AS x",', '"x",').replace('"AS y",', '"y",')
+open(p, "w").write(s)
+EOF
+grep -n '"x",\|"y",\|alias_raw' test/core/rules/context_test.py
+Bash: cd "<scratch>/pilot/runs/T05-L2" && sed -i 's/alias_raw/alias_name/g' test/core/rules/context_test.py && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T05-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -60
+Bash: cd "<scratch>/pilot/runs/T05-L2" && awk 'length > 88 {print FILENAME": "FNR": "length}' src/sqlfluff/core/rules/context.py src/sqlfluff/utils/identifers.py test/core/rules/context_test.py; grep -n "line-length\|line_length" pyproject.toml | head -3; git status --short
+SubagentHandback:

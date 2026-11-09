@@ -1,0 +1,51 @@
+Bash: cd "<scratch>/pilot/runs/T08-C1" && git status --short && ls && cat src/sqlfluff/core/parser/segments/base.py | head -100 && grep -n "def \|noqa" src/sqlfluff/core/parser/segments/base.py | head -150
+Bash: cd "<scratch>/pilot/runs/T08-C1" && sed -n 1150,1300p src/sqlfluff/core/parser/segments/base.py && grep -rn "noqa" src/sqlfluff/core/parser/ src/sqlfluff/core/linter/*.py | grep -i "comment\|startswith\|regex\|re.compile" | head -30; grep -rn "inline_comment\|block_comment" src/sqlfluff/core/parser/segments/*.py | head; grep -rn "noqa" src/sqlfluff/core/parser/segments/comment.py 2>/dev/null | head
+Bash: cd "<scratch>/pilot/runs/T08-C1" && grep -rn "noqa" src/sqlfluff/core/parser/ src/sqlfluff/core/rules/noqa.py | head -40; grep -rln "inline_comment" src/sqlfluff/core | head; grep -rn "def remove_comment\|_remove_comment\|--.*#\|\"\\*/\"\|/\\*" src/sqlfluff/core/rules/noqa.py | head
+Bash: cd "<scratch>/pilot/runs/T08-C1" && sed -n 60,230p src/sqlfluff/core/rules/noqa.py; grep -n "inline_comment\|block_comment" src/sqlfluff/core/parser/segments/client_commands.py src/sqlfluff/core/parser/*.py | head; grep -rn "\"comment\"\|inline_comment\|block_comment" src/sqlfluff/core/parser/segments/*.py | head
+Bash: cd "<scratch>/pilot/runs/T08-C1" && sed -n 30,60p src/sqlfluff/core/parser/segments/common.py; sed -n 360,412p src/sqlfluff/core/parser/segments/base.py; sed -n 905,912p src/sqlfluff/core/parser/segments/base.py; grep -rn "class_types\|\"comment\"" src/sqlfluff/core/dialects/base.py | head -5; ls test/core/parser/ | head -50; ls test/core/parser/segments* 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T08-C1" && sed -n 405,440p src/sqlfluff/core/parser/segments/base.py; sed -n 1,60p test/core/parser/segments/segments_base_test.py; grep -n "^def \|^@pytest" test/core/parser/segments/segments_base_test.py | tail -30; grep -n "def test" test/core/parser/segments/segments_base_test.py | wc -l; sed -n 1,30p test/core/parser/segments/conftest.py; grep -rn "def test_.*noqa\|parse_string" test/core/rules/noqa_test.py 2>/dev/null | head -5
+Bash: cd "<scratch>/pilot/runs/T08-C1" && grep -n "Linter(" -A3 test/core/parser/segments/segments_base_test.py | head -30; sed -n 1288,1292p src/sqlfluff/core/parser/segments/base.py; tail -20 test/core/parser/segments/segments_base_test.py; grep -rn "mysql" test/core/parser/segments/*.py | head -3
+Edit: <scratch>/pilot/runs/T08-C1/src/sqlfluff/core/parser/segments/base.py
+Bash: cd "<scratch>/pilot/runs/T08-C1" && grep -rn "inline_comment" -A3 src/sqlfluff/dialects/dialect_mysql.py | head -12; grep -n "inline_comment" -A3 src/sqlfluff/dialects/dialect_ansi.py | head -8
+Bash: cd "<scratch>/pilot/runs/T08-C1" && cat >> test/core/parser/segments/segments_base_test.py <<'EOF'
+
+
+def test__parser__base_segments_get_noqa_comments():
+    """Test .get_noqa_comments() returns only noqa directive comments, in order."""
+    sql = (
+        "-- noqa: LT05\n"
+        "SELECT 1 -- see the noqa docs\n"
+        "FROM t /* noqa: disable=all */\n"
+        "WHERE a = 1 -- note -- noqa: CP01\n"
+        "# noqa\n"
+        "/* NOQA */\n"
+    )
+    tree = Linter(dialect="ansi").parse_string(sql).tree
+    assert [seg.raw for seg in tree.get_noqa_comments()] == [
+        "-- noqa: LT05",
+        "/* noqa: disable=all */",
+        "-- note -- noqa: CP01",
+        "# noqa",
+    ]
+
+
+def test__parser__base_segments_get_noqa_comments_self_and_subtree():
+    """Test .get_noqa_comments() on a comment itself and on a non-comment."""
+    tree = Linter(dialect="ansi").parse_string("SELECT 1 -- noqa\n").tree
+    comments = tree.get_noqa_comments()
+    assert len(comments) == 1
+    # A noqa comment includes itself when called on it.
+    assert comments[0].get_noqa_comments() == comments
+    # A segment without any comments below it returns an empty list.
+    select_kw = next(tree.recursive_crawl("keyword"))
+    assert select_kw.get_noqa_comments() == []
+
+
+def test__parser__base_segments_get_noqa_comments_none():
+    """Test .get_noqa_comments() on a file with no noqa directives."""
+    sql = "SELECT 1 -- just a note\n/* a block */\n"
+    tree = Linter(dialect="ansi").parse_string(sql).tree
+    assert tree.get_noqa_comments() == []
+EOF
+git diff --stat
+SubagentHandback:

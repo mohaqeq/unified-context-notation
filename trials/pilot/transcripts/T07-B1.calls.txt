@@ -1,0 +1,226 @@
+Bash: cd "<scratch>/pilot/runs/T07-B1" && cat context.ucn && echo ---- && cat src/sqlfluff/core/rules/context.py && echo ---- && ls test/ | head -50
+Bash: cd "<scratch>/pilot/runs/T07-B1" && grep -rn "def is_code\|def is_meta\|def is_comment\|def is_whitespace\|def is_type\|def is_code" src/sqlfluff/core/parser/segments/base.py src/sqlfluff/core/parser/segments/meta.py 2>/dev/null | head; echo ----; grep -rln "siblings_pre\|siblings_post\|RuleContext(" test src | head -20; echo ----; ls test/core/rules/ ; echo ----; git status --short; ls D:/personal/repos/unified-context-notation/tools/ 2>/dev/null; ls model.ucn 2>/dev/null
+Bash: cd "<scratch>/pilot/runs/T07-B1" && sed -n 335,395p src/sqlfluff/core/parser/segments/base.py; echo ----; grep -n "is_meta" -r src/sqlfluff/core/parser/segments/*.py | head -5; echo ----; sed -n 1,80p src/sqlfluff/utils/functional/context.py; echo ----; grep -n "RuleContext" -A12 test/core/rules/crawlers_test.py | head -60; echo ----; cat /dev/null; python -c "print(1)"
+Bash: cd "<scratch>/pilot/runs/T07-B1" && sed -n 20,40p test/core/rules/crawlers_test.py; echo ----; grep -n "class \|is_code\|is_meta\|is_comment\|is_whitespace\|def __init__" src/sqlfluff/core/parser/segments/raw.py src/sqlfluff/core/parser/segments/meta.py | head -60; echo ----; grep -n "class RawSegment\|class BaseSegment\|def __init__" -A8 src/sqlfluff/core/parser/segments/base.py | sed -n 1,40p; echo ----; grep -n "is_code\|is_meta" src/sqlfluff/core/parser/segments/meta.py src/sqlfluff/core/parser/segments/raw.py src/sqlfluff/core/parser/segments/base.py | head -30; git log --oneline -1 -- test/core/rules | cat
+Edit: <scratch>/pilot/runs/T07-B1/src/sqlfluff/core/rules/context.py
+Bash: cd "<scratch>/pilot/runs/T07-B1" && cat > test/core/rules/context_test.py <<'EOF'
+"""Tests for the RuleContext sibling helpers."""
+
+from typing import Optional
+
+import pytest
+
+from sqlfluff.core import FluffConfig, Linter
+from sqlfluff.core.parser import BaseSegment
+from sqlfluff.core.rules.context import RuleContext
+from sqlfluff.core.templaters.base import TemplatedFile
+
+
+def _walk_contexts(sql):
+    """Yield (context, parent_segments, index) for every segment in the tree."""
+    cfg = FluffConfig(overrides={"dialect": "ansi"})
+    root = Linter(config=cfg).parse_string(sql).tree
+    dialect = cfg.get("dialect_obj")
+    templated_file = TemplatedFile(sql, "<test-case>")
+
+    yield RuleContext(
+        dialect=dialect,
+        fix=True,
+        templated_file=templated_file,
+        path=None,
+        segment=root,
+        config=cfg,
+    )
+
+    def recurse(parent, parent_stack):
+        for idx, seg in enumerate(parent.segments):
+            ctx = RuleContext(
+                dialect=dialect,
+                fix=True,
+                templated_file=templated_file,
+                path=None,
+                segment=seg,
+                config=cfg,
+                parent_stack=parent_stack + (parent,),
+                segment_idx=idx,
+            )
+            yield ctx
+            yield from recurse(seg, parent_stack + (parent,))
+
+    yield from recurse(root, (root,)[:0] + (root,))
+
+
+def _expected_sibling(
+    siblings: tuple[BaseSegment, ...], start: int, step: int
+) -> Optional[BaseSegment]:
+    """Brute-force reference: nearest code, non-meta sibling walking by step."""
+    idx = start + step
+    while 0 <= idx < len(siblings):
+        seg = siblings[idx]
+        if seg.is_code and not seg.is_meta:
+            return seg
+        idx += step
+    return None
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT 1",
+        "SELECT a, b /* a comment */\nFROM t -- trailing\nWHERE a = 1\n",
+        "SELECT\n    a,\n\n    -- note\n    b\nFROM t\n",
+    ],
+)
+def test_code_sibling_helpers_match_reference(sql):
+    """previous/next_code_sibling agree with a brute-force scan of siblings."""
+    checked = 0
+    skipped = 0
+    for ctx in _walk_contexts(sql):
+        if not ctx.parent_stack:
+            assert ctx.previous_code_sibling is None
+            assert ctx.next_code_sibling is None
+            continue
+        parent = ctx.parent_stack[-1]
+        idx = ctx.segment_idx
+        assert parent.segments[idx] is ctx.segment
+        assert ctx.previous_code_sibling is _expected_sibling(
+            parent.segments, idx, -1
+        )
+        assert ctx.next_code_sibling is _expected_sibling(parent.segments, idx, 1)
+        checked += 1
+        prev_adjacent = parent.segments[idx - 1] if idx > 0 else None
+        if (
+            prev_adjacent is not None
+            and not prev_adjacent.is_code
+            and ctx.previous_code_sibling is not None
+        ):
+            skipped += 1
+    assert checked > 0
+    if "--" in sql or "/*" in sql or "\n\n" in sql:
+        # Comments and blank lines should force at least one skip.
+        assert skipped > 0
+
+
+def test_code_sibling_helpers_skip_comments_and_whitespace():
+    """A code segment separated from its neighbours by trivia is still found."""
+    sql = "SELECT a /* c */ , b\n"
+    found = False
+    for ctx in _walk_contexts(sql):
+        if not ctx.parent_stack or not ctx.segment.is_code:
+            continue
+        prev = ctx.previous_code_sibling
+        if prev is not None and prev.raw == "a" and ctx.segment.raw == ","
+            found = True
+            assert ctx.next_code_sibling is not None
+            assert ctx.next_code_sibling.raw == "b"
+    assert found
+EOF
+echo written
+Bash: cd "<scratch>/pilot/runs/T07-B1" && cat > test/core/rules/context_test.py <<'EOF'
+"""Tests for the RuleContext code-sibling helpers."""
+
+from typing import Optional
+
+import pytest
+
+from sqlfluff.core import FluffConfig, Linter
+from sqlfluff.core.parser import BaseSegment
+from sqlfluff.core.rules.context import RuleContext
+from sqlfluff.core.templaters.base import TemplatedFile
+
+
+def _all_contexts(sql):
+    """Return a RuleContext for the root and for every segment in the tree."""
+    cfg = FluffConfig(overrides={"dialect": "ansi"})
+    root = Linter(config=cfg).parse_string(sql).tree
+    dialect = cfg.get("dialect_obj")
+    templated_file = TemplatedFile(sql, "<test-case>")
+
+    def make(segment, parent_stack, idx):
+        return RuleContext(
+            dialect=dialect,
+            fix=True,
+            templated_file=templated_file,
+            path=None,
+            segment=segment,
+            config=cfg,
+            parent_stack=parent_stack,
+            segment_idx=idx,
+        )
+
+    contexts = [make(root, (), 0)]
+
+    def recurse(parent, parent_stack):
+        # parent_stack is the path from the root down to, and including, parent.
+        for idx, seg in enumerate(parent.segments):
+            contexts.append(make(seg, parent_stack, idx))
+            recurse(seg, parent_stack + (seg,))
+
+    recurse(root, (root,))
+    return contexts
+
+
+def _reference_code_sibling(
+    siblings: tuple[BaseSegment, ...], idx: int, step: int
+) -> Optional[BaseSegment]:
+    """Brute-force reference: the nearest code, non-meta sibling in one direction."""
+    pos = idx + step
+    while 0 <= pos < len(siblings):
+        seg = siblings[pos]
+        if seg.is_code and not seg.is_meta:
+            return seg
+        pos += step
+    return None
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT 1",
+        "SELECT a, b /* a comment */\nFROM t -- trailing\nWHERE a = 1\n",
+        "SELECT\n    a,\n\n    -- note\n    b\nFROM t\n",
+    ],
+)
+def test_code_sibling_helpers_match_reference(sql):
+    """previous/next_code_sibling agree with a brute-force scan of the siblings."""
+    contexts = _all_contexts(sql)
+    checked = 0
+    for ctx in contexts:
+        if not ctx.parent_stack:
+            assert ctx.previous_code_sibling is None
+            assert ctx.next_code_sibling is None
+            continue
+        siblings = ctx.parent_stack[-1].segments
+        assert siblings[ctx.segment_idx] is ctx.segment
+        assert ctx.previous_code_sibling is _reference_code_sibling(
+            siblings, ctx.segment_idx, -1
+        )
+        assert ctx.next_code_sibling is _reference_code_sibling(
+            siblings, ctx.segment_idx, 1
+        )
+        checked += 1
+    assert checked > 0
+
+
+def test_code_sibling_helpers_skip_trivia():
+    """Trivia between code siblings is skipped, so the nearest code is returned."""
+    sql = "SELECT a /* c */ , b\n"
+    contexts = _all_contexts(sql)
+    # Find a context whose immediate previous sibling is trivia (not code) and
+    # whose previous code sibling lies further back.
+    skips = 0
+    for ctx in contexts:
+        if not ctx.parent_stack or ctx.segment_idx == 0:
+            continue
+        siblings = ctx.parent_stack[-1].segments
+        immediate = siblings[ctx.segment_idx - 1]
+        if not immediate.is_code and ctx.previous_code_sibling is not None:
+            assert ctx.previous_code_sibling.is_code
+            assert ctx.previous_code_sibling is not immediate
+            skips += 1
+    assert skips > 0
+EOF
+python -c "import ast,sys; ast.parse(open('test/core/rules/context_test.py').read()); print('syntax ok')"
+Bash: cd "<scratch>/pilot/runs/T07-B1" && python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"; git status --short
+Bash: cd "<scratch>/pilot/runs/T07-B1" && grep -n "BaseSegment" src/sqlfluff/core/parser/__init__.py | head -3; grep -n "^from sqlfluff.core import\|^from sqlfluff.core.parser import" test/core/rules/*.py | head -5; grep -n "Linter\|FluffConfig" src/sqlfluff/core/__init__.py | head -3
+SubagentHandback:

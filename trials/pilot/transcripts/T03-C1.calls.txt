@@ -1,0 +1,43 @@
+Bash: cd "<scratch>/pilot/runs/T03-C1" && pwd && git status --short | head -20 && ls && ls src test 2>/dev/null | head -50
+Bash: cd /tmp/claude/1d11edbaacebcf92/a36fd43d-7e35-4353-a3ad-ea5859286a7a/scratchpad/pilot/runs/T03-C1 && git rev-parse --show-toplevel && git log --oneline -1 && ls src/sqlfluff/core/parser/ && cat src/sqlfluff/core/parser/helpers.py 2>/dev/null; echo ---; grep -rn "RF01\|reference" src/sqlfluff/core/rules/ -l | head; echo ---; ls test/core/parser/ | head -50
+Bash: cd /tmp/claude/1d11edbaacebcf92/a36fd43d-7e35-4353-a3ad-ea5859286a7a/scratchpad/pilot/runs/T03-C1 && cat src/sqlfluff/core/rules/reference.py | head -120; echo ---; head -40 test/core/parser/helpers_test.py; grep -n "^def \|^import\|^from" test/core/parser/helpers_test.py
+Edit: <scratch>/pilot/runs/T03-C1/src/sqlfluff/core/parser/helpers.py
+Edit: <scratch>/pilot/runs/T03-C1/src/sqlfluff/core/parser/helpers.py
+Edit: <scratch>/pilot/runs/T03-C1/test/core/parser/helpers_test.py
+Bash: cd /tmp/claude/1d11edbaacebcf92/a36fd43d-7e35-4353-a3ad-ea5859286a7a/scratchpad/pilot/runs/T03-C1 && cat >> test/core/parser/helpers_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "first,second,expected",
+    [
+        # Equal references overlap.
+        (("schema", "tbl"), ("schema", "tbl"), True),
+        (("tbl",), ("tbl",), True),
+        # A trailing part of the other reference overlaps.
+        (("tbl",), ("schema", "tbl"), True),
+        (("schema", "tbl"), ("tbl",), True),
+        (("b", "c"), ("a", "b", "c"), True),
+        (("a", "b", "c"), ("b", "c"), True),
+        # A leading part does not overlap.
+        (("schema",), ("schema", "tbl"), False),
+        (("schema", "tbl"), ("schema",), False),
+        # Different trailing parts do not overlap.
+        (("schema", "tbl"), ("other", "tbl2"), False),
+        (("a", "c"), ("a", "b", "c"), False),
+        # Comparison is case-sensitive and exact.
+        (("Tbl",), ("tbl",), False),
+        (("SCHEMA", "tbl"), ("schema", "tbl"), False),
+        (("tb",), ("tbl",), False),
+        # Empty references never overlap anything.
+        ((), (), False),
+        ((), ("tbl",), False),
+        (("tbl",), (), False),
+    ],
+)
+def test__parser__helper_references_overlap(first, second, expected):
+    """Test references_overlap, in both argument orders."""
+    assert references_overlap(first, second) is expected
+    assert references_overlap(second, first) is expected
+EOF
+git diff --stat; python -c "import ast,sys; [ast.parse(open(f).read()) for f in ['src/sqlfluff/core/parser/helpers.py','test/core/parser/helpers_test.py']]; print('syntax ok')"
+SubagentHandback:

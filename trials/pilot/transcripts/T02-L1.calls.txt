@@ -1,0 +1,112 @@
+Bash: cd "<scratch>/pilot/runs/T02-L1" && git status --short && find . -name AGENTS.md -not -path "./.git/*" && ls src/sqlfluff/api && cat AGENTS.md
+Bash: cd "<scratch>/pilot/runs/T02-L1" && cat src/sqlfluff/AGENTS.md; echo ----; cat test/AGENTS.md | head -150; echo ----; cat src/sqlfluff/api/__init__.py; echo ----; cat src/sqlfluff/api/info.py; echo ----; cat src/sqlfluff/__init__.py; echo ----; grep -n -A40 "importlinter" pyproject.toml
+Bash: cd "<scratch>/pilot/runs/T02-L1" && ls test/api && cat test/api/info_test.py 2>/dev/null; grep -rn "list_dialects\|list_rules" test --include=*.py | head
+Bash: cd "<scratch>/pilot/runs/T02-L1" && cat > src/sqlfluff/api/info.py <<'EOF'
+"""Information API."""
+
+import platform
+import sys
+from importlib import metadata
+
+from sqlfluff.core import Linter, dialect_readout
+from sqlfluff.core.dialects import DialectTuple
+from sqlfluff.core.linter import RuleTuple
+
+
+def list_rules() -> list[RuleTuple]:
+    """Return a list of available rule tuples."""
+    linter = Linter()
+    return linter.rule_tuples()
+
+
+def list_dialects() -> list[DialectTuple]:
+    """Return a list of available dialect info."""
+    return list(dialect_readout())
+
+
+def version_info() -> dict[str, str]:
+    """Return the versions of sqlfluff and Python in use.
+
+    This is intended for bug reports, so that the exact sqlfluff and
+    Python build can be identified.
+
+    Returns:
+        A dictionary with the string keys ``"sqlfluff"`` (the installed
+        sqlfluff version, as in ``sqlfluff.__version__``), ``"python"``
+        (the interpreter version as ``major.minor.micro``) and
+        ``"implementation"`` (the lowercase Python implementation name,
+        e.g. ``"cpython"`` or ``"pypy"``).
+    """
+    version = sys.version_info
+    return {
+        # Read the metadata directly rather than importing
+        # ``sqlfluff.__version__``, which is defined after this package
+        # is imported and so would be a circular import.
+        "sqlfluff": metadata.version("sqlfluff"),
+        "python": f"{version.major}.{version.minor}.{version.micro}",
+        "implementation": platform.python_implementation().lower(),
+    }
+EOF
+cat > src/sqlfluff/api/__init__.py <<'EOF'
+"""Elements which wrap the sqlfluff core library for public use."""
+
+# Expose the simple api
+from sqlfluff.api.info import list_dialects, list_rules, version_info
+from sqlfluff.api.simple import APIParsingError, fix, lint, parse
+
+__all__ = (
+    "lint",
+    "fix",
+    "parse",
+    "APIParsingError",
+    "list_rules",
+    "list_dialects",
+    "version_info",
+)
+EOF
+git diff --stat
+Bash: cd "<scratch>/pilot/runs/T02-L1" && python - <<'EOF'
+p = "test/api/info_test.py"
+s = open(p, encoding="utf-8").read()
+s = s.replace('''import sqlfluff
+from sqlfluff.core.linter import RuleTuple
+''', '''import platform
+import re
+import sys
+
+import sqlfluff
+from sqlfluff.api.info import version_info
+from sqlfluff.core.linter import RuleTuple
+''', 1)
+s = s.rstrip("\n") + '''
+
+
+def test__api__info_version_info():
+    """Check the version information reported for bug reports."""
+    info = version_info()
+    assert set(info.keys()) == {"sqlfluff", "python", "implementation"}
+    assert all(isinstance(value, str) for value in info.values())
+    # The sqlfluff version matches the package version.
+    assert info["sqlfluff"] == sqlfluff.__version__
+    # The Python version is major.minor.micro of the running interpreter.
+    assert re.fullmatch(r"\\d+\\.\\d+\\.\\d+", info["python"])
+    assert info["python"] == (
+        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+    # The implementation is the lowercase implementation name.
+    assert info["implementation"] == platform.python_implementation().lower()
+    assert info["implementation"] == info["implementation"].lower()
+    assert sqlfluff.api.version_info is version_info
+'''
+open(p, "w", encoding="utf-8").write(s)
+EOF
+git diff test/
+Bash: cd "<scratch>/pilot/runs/T02-L1" && python - <<'EOF'
+p = "test/api/info_test.py"
+s = open(p, "rb").read()
+s = s.replace(b'    assert info["implementation"] == info["implementation"].lower()\r\n', b'').replace(b'    assert info["implementation"] == info["implementation"].lower()\n', b'')
+open(p, "wb").write(s)
+EOF
+for f in test/api/info_test.py src/sqlfluff/api/info.py src/sqlfluff/api/__init__.py; do printf "%s CRLF=" $f; git show HEAD:$f | grep -c $'\r$'; printf "  now CRLF="; grep -c $'\r$' $f; done; git diff --stat; grep -n "lower()" test/api/info_test.py
+Bash: cd "<scratch>/pilot/runs/T02-L1" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T02-L1:/repo:ro" ucn-il --no-cache 2>&1; echo "exit=$?"
+SubagentHandback:

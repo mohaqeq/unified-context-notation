@@ -1,0 +1,48 @@
+Read: <scratch>/pilot/runs/T03-B1/context.ucn
+Bash: cd <scratch>/pilot/runs/T03-B1 && git status --short && ls && find src/sqlfluff/core/parser -name "helpers*" && ls test/core/parser 2>/dev/null
+Bash: cd <scratch>/pilot/runs/T03-B1 && cat src/sqlfluff/core/parser/helpers.py && echo ---- && cat test/core/parser/helpers_test.py && echo ---- && grep -rn "overlap\|trailing" src/sqlfluff/core/rules/ src/sqlfluff/rules/ 2>/dev/null | head -20
+Edit: <scratch>/pilot/runs/T03-B1/src/sqlfluff/core/parser/helpers.py
+Edit: <scratch>/pilot/runs/T03-B1/test/core/parser/helpers_test.py
+Bash: cd <scratch>/pilot/runs/T03-B1 && cat >> test/core/parser/helpers_test.py <<'EOF'
+
+
+@pytest.mark.parametrize(
+    "first,second,expected",
+    [
+        (("schema", "tbl"), ("schema", "tbl"), True),
+        (("tbl",), ("schema", "tbl"), True),
+        (("schema", "tbl"), ("tbl",), True),
+        (("b", "c"), ("a", "b", "c"), True),
+        (("schema",), ("schema", "tbl"), False),
+        (("schema", "tbl"), ("other", "tbl2"), False),
+        (("Tbl",), ("tbl",), False),
+        (("a", "b"), ("b", "a"), False),
+        ((), (), False),
+        ((), ("tbl",), False),
+        (("tbl",), (), False),
+    ],
+)
+def test__parser__helper_references_overlap(first, second, expected):
+    """Test references_overlap, including symmetry."""
+    assert references_overlap(first, second) is expected
+    assert references_overlap(second, first) is expected
+EOF
+python -c "
+import ast,sys
+for f in ['src/sqlfluff/core/parser/helpers.py','test/core/parser/helpers_test.py']:
+    ast.parse(open(f,encoding='utf8').read()); print('ok', f)
+"
+python - <<'EOF'
+import re
+src=open('src/sqlfluff/core/parser/helpers.py',encoding='utf8').read()
+ns={}
+start=src.index('def references_overlap'); end=src.index('def inside_next_segment_flags')
+exec(src[start:end],ns)
+f=ns['references_overlap']
+cases=[(("schema","tbl"),("schema","tbl"),True),(("tbl",),("schema","tbl"),True),(("b","c"),("a","b","c"),True),(("schema",),("schema","tbl"),False),(("Tbl",),("tbl",),False),((),(),False),((),("x",),False)]
+for a,b,e in cases:
+    assert f(a,b) is e and f(b,a) is e,(a,b)
+print("all ok")
+EOF
+Bash: cd <scratch>/pilot/runs/T03-B1 && head -8 test/core/parser/helpers_test.py && python D:/personal/repos/unified-context-notation/tools/ucn_validate.py model.ucn; echo "exit=$?"
+SubagentHandback:

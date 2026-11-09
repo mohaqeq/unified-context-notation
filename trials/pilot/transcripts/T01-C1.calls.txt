@@ -1,0 +1,11 @@
+Bash: cd "<scratch>/pilot/runs/T01-C1" && git status --short && git log --oneline -1 && ls && grep -n "def desc\|class SQLBaseError\|class SQLLintError\|^import\|^from" src/sqlfluff/core/errors.py
+Read: <scratch>/pilot/runs/T01-C1/src/sqlfluff/core/errors.py
+Bash: cd "<scratch>/pilot/runs/T01-C1" && ls test/core | grep -i err; grep -rln "SQLBaseError\|SQLLintError" test/core | head; grep -n "textwrap" -r src/sqlfluff | head -3
+Bash: cd "<scratch>/pilot/runs/T01-C1" && sed -n 1,40p src/sqlfluff/cli/helpers.py; echo ----; sed -n 1,30p test/core/errors_test.py; echo ----; grep -n "^def \|^@pytest" test/core/errors_test.py | tail -20; echo ----; tail -30 test/core/errors_test.py; echo ---; sed -n 285,300p src/sqlfluff/core/errors.py
+Edit: <scratch>/pilot/runs/T01-C1/src/sqlfluff/core/errors.py
+Edit: <scratch>/pilot/runs/T01-C1/src/sqlfluff/core/errors.py
+Edit: <scratch>/pilot/runs/T01-C1/test/core/errors_test.py
+Bash: cd "<scratch>/pilot/runs/T01-C1" && python -c "import textwrap as t; print(t.wrap('Expected only one of the following words in the statement', width=20)); print(t.wrap('Some words to wrap here', width=10)); print(t.wrap('abcdefghij', width=4))"; grep -n "class SQLParseError\|class SQLLintError" -A 40 src/sqlfluff/core/errors.py | grep -n "def __init__" -A 12 | head -40
+Edit: <scratch>/pilot/runs/T01-C1/test/core/errors_test.py
+Bash: cd "<scratch>/pilot/runs/T01-C1" && sed -n 324,336p src/sqlfluff/core/errors.py
+SubagentHandback:
