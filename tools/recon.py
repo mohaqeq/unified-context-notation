@@ -17,6 +17,7 @@ Conditions: C = no agent docs; L = the project's AGENTS.md + its import-linter i
             B = UCN projection (context.ucn) + the validator in the loop.
 """
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -41,6 +42,26 @@ def sha(path):
         return hashlib.sha256(fh.read()).hexdigest()
 
 
+def prose_excerpt(repo, task, size):
+    """The AGENTS.md sections and docs/adr records that share the most words with the task, cut to `size` characters."""
+    words = lambda t: {w for w in re.findall(r"[a-z][a-z_]{3,}", t.lower())}
+    want, parts = words(task), []
+    agents = os.path.join(repo, "AGENTS.md")
+    if os.path.exists(agents):
+        parts += ["## " + p if i else p for i, p in enumerate(open(agents, encoding="utf-8").read().split("\n## "))]
+    adr = os.path.join(repo, "docs", "adr")
+    for n in sorted(os.listdir(adr)) if os.path.isdir(adr) else []:
+        if n.endswith(".md"):
+            parts.append(open(os.path.join(adr, n), encoding="utf-8").read())
+    ranked = sorted(parts, key=lambda p: -len(want & words(p)) / (1 + len(words(p))) ** 0.5)
+    out = "# Excerpts from the project's AGENTS.md and docs/adr relevant to this task\n\n"
+    for p in ranked:
+        if len(out) >= size:
+            break
+        out += p.strip()[: max(0, size - len(out))] + "\n\n"
+    return out
+
+
 def run(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", **kw)
 
@@ -52,6 +73,8 @@ def tasks_of(spec):
         if os.path.isfile(os.path.join(d, "task.md")):
             meta = json.load(open(os.path.join(d, "meta.json"), encoding="utf-8")) if os.path.exists(os.path.join(d, "meta.json")) else {}
             out.append({"id": name, "dir": d, "text": open(os.path.join(d, "task.md"), encoding="utf-8").read().strip(), **meta})
+    if spec.get("kinds"):  # e.g. ["tempting"] for the screening runs
+        out = [t for t in out if t.get("kind") in spec["kinds"]]
     return out
 
 
@@ -59,6 +82,12 @@ def instructions(cond, ws, spec):
     ws = ws.replace("\\", "/")
     if cond == "C":
         return "Read the code for context."
+    if cond == "S":
+        return ("Read context.md first: it holds the parts of the project's architecture and decision documents that are "
+                "relevant to this task. Follow them; if you think one of them should change, say so in your summary instead.")
+    if cond == "L" and not spec.get("lint_image"):
+        return ("Read AGENTS.md (in the repository root, and the AGENTS.md files in subdirectories) first: it describes the "
+                "conventions and rules you must follow; the decision records it points to are in docs/adr.")
     if cond == "L":
         return ("Read AGENTS.md (in the repository root, and the AGENTS.md files in subdirectories) first: they describe the "
                 "conventions and architecture rules you must follow. The architecture contracts are enforced in CI with "
@@ -68,8 +97,8 @@ def instructions(cond, ws, spec):
                 "Do not edit the import-linter contracts in pyproject.toml; if you think they should change, say so in your summary instead.")
     return ("Read context.ucn first: it is the part of the project's architecture model that is relevant to this task, in UCN "
             "format (indentation means containment; `forbids`, `layers` and `independent` are enforced rules; `deviation` "
-            "blocks are approved exceptions; `more:` lines name what was left out; the policy is deny-list: anything not "
-            "forbidden is allowed). The architecture is enforced in CI. Before you finish, run "
+            "blocks are approved exceptions; `req`, `decision` and `rule` lines are requirements and decisions you must "
+            "respect; `more:` lines name what was left out; the policy is deny-list: anything not forbidden is allowed). The architecture is enforced in CI. Before you finish, run "
             f"`python {spec['validator']} model.ucn` from the repository root and fix every VIOLATION by changing the code "
             "(KNOWN-CONFLICT lines are pre-existing and not yours to fix). Do not edit model.ucn or context.ucn; if you think "
             "the architecture itself should change, say so in your summary instead.")
@@ -85,15 +114,22 @@ def prepare(spec, out):
                 rid = f"{t['id']}-{cond}{r}"
                 ws = os.path.abspath(os.path.join(out, rid))
                 if not os.path.exists(ws):
-                    run(["git", "clone", "-q", "--no-tags", spec["repo"], ws])
+                    run(["git", "-c", "core.symlinks=false", "-c", "core.longpaths=true", "clone", "-q", "--no-tags", spec["repo"], ws])
                     run(["git", "-C", ws, "checkout", "-q", spec["rev"]])
-                if cond in ("C", "B"):
+                if cond in ("C", "B", "S"):
                     for d, _, names in os.walk(ws):
                         if ".git" in d.split(os.sep):
                             continue
                         for n in names:
                             if n in ("AGENTS.md", "CLAUDE.md"):
                                 os.remove(os.path.join(d, n))
+                for rel in spec.get("remove", {}).get(cond, []):  # e.g. {"C": ["docs/adr"]}: no decision docs at all
+                    p = os.path.join(ws, rel)
+                    shutil.rmtree(p) if os.path.isdir(p) else (os.remove(p) if os.path.exists(p) else None)
+                if cond == "S":  # size-matched prose: the most relevant doc sections, cut to the size of the UCN context
+                    size = len(ucn_project.project(spec["model"], t["text"], spec.get("budget", 2500))[0])
+                    with open(os.path.join(ws, "context.md"), "w", encoding="utf-8", newline="\n") as fh:
+                        fh.write(prose_excerpt(spec["repo"], t["text"], size))
                 if cond == "B":
                     shutil.copy(spec["model"], os.path.join(ws, "model.ucn"))
                     text, errs = ucn_project.project(os.path.join(ws, "model.ucn"), t["text"], spec.get("budget", 2500))
@@ -101,8 +137,7 @@ def prepare(spec, out):
                         raise SystemExit(f"{rid}: projection failed: {errs}")
                     with open(os.path.join(ws, "context.ucn"), "w", encoding="utf-8", newline="\n") as fh:
                         fh.write(text)
-                ctx = os.path.join(ws, "context.ucn")
-                guarded = {"context.ucn": sha(ctx)} if os.path.exists(ctx) else {}
+                guarded = {n: sha(os.path.join(ws, n)) for n in ("context.ucn", "context.md") if os.path.exists(os.path.join(ws, n))}
                 prompt = (f"You are a developer working in the git repository at {ws.replace(chr(92), '/')} (Windows; use forward "
                           f"slashes). {instructions(cond, ws, spec)}\n\nTask: {t['text']}\n\n{SUFFIX}")
                 with open(os.path.join(out, f"{rid}.prompt.txt"), "w", encoding="utf-8", newline="\n") as fh:
@@ -122,17 +157,27 @@ def grade_one(spec, entry, task, baseline):
     old = os.path.join(junit_dir, f"{entry['run']}.xml")
     if os.path.exists(old):  # never re-read a previous grading's results if the container fails to start
         os.remove(old)
-    g = run(["docker", "run", "--rm", "-v", f"{ws}:/repo:ro", "-v", f"{os.path.join(task['dir'], 'grader')}:/grader:ro",
-             "-v", f"{junit_dir}:/out", spec["grader_image"], f"--junitxml=/out/{entry['run']}.xml"])
+    g = run(["docker", "run", "--rm", *spec.get("grader_docker_args", []), "-v", f"{ws}:/repo:ro",
+             "-v", f"{os.path.join(task['dir'], 'grader')}:/grader:ro", "-v", f"{junit_dir}:/out", spec["grader_image"],
+             f"--junitxml=/out/{entry['run']}.xml", *spec.get("grader_args", [])])
     cases = ucn_validate.load_test_results([os.path.join(junit_dir, f"{entry['run']}.xml")]) if os.path.exists(
         os.path.join(junit_dir, f"{entry['run']}.xml")) else []
     res["grader"] = {"passed": sum(c["status"] == "passed" for c in cases), "total": len(cases)}
-    res["success"] = int(bool(cases) and all(c["status"] == "passed" for c in cases))
+    behavior = [c for c in cases if c["name"].startswith("test_behavior")]
+    rules = [c for c in cases if c["name"].startswith("test_rule")]
+    if behavior or rules:  # graders that separate "task done" from "documented rule kept"
+        res["success"] = int(bool(behavior) and all(c["status"] == "passed" for c in behavior))
+        res["rule_failed"] = sorted(c["name"] for c in rules if c["status"] != "passed")
+    else:
+        res["success"] = int(bool(cases) and all(c["status"] == "passed" for c in cases))
+        res["rule_failed"] = []
     # 2. the project's own import-linter contracts
-    il = run(["docker", "run", "--rm", "-v", f"{ws}:/repo:ro", spec["lint_image"], "--no-cache"])
-    line = next((l for l in il.stdout.splitlines() if l.startswith("Contracts:")), "")
+    il = run(["docker", "run", "--rm", "-v", f"{ws}:/repo:ro", spec["lint_image"], "--no-cache"]) if spec.get("lint_image") else None
+    line = next((l for l in il.stdout.splitlines() if l.startswith("Contracts:")), "") if il else ""
     res["import_linter"] = line
-    if "broken" in line:
+    if il is None:
+        broken = 0
+    elif "broken" in line:
         kept, broken = int(line.split()[1]), int(line.split("kept,")[1].split("broken")[0])
         if spec.get("contracts") and kept + broken != spec["contracts"]:  # a contract went missing: fail closed
             broken = max(broken, 1)
@@ -148,7 +193,7 @@ def grade_one(spec, entry, task, baseline):
     os.remove(gm)
     found = {f["message"] for f in r["findings"] if f["class"] in ("VIOLATION", "CONFLICT") and f["check"] in ("architecture", "conventions")}
     res["validator_new"] = sorted(found - baseline)
-    res["violations"] = int(bool(res["validator_new"]) or broken > 0)
+    res["violations"] = int(bool(res["validator_new"]) or broken > 0 or bool(res["rule_failed"]))
     # 4. tampering and scope
     st = run(["git", "-C", ws, "status", "--porcelain", "--untracked-files=all"]).stdout
     changed = [l[3:] for l in st.splitlines() if l.strip()]
