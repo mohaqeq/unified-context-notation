@@ -1,0 +1,103 @@
+diff --git a/src/sqlfluff/core/rules/context.py b/src/sqlfluff/core/rules/context.py
+index c5da6ea..9d7f6fa 100644
+--- a/src/sqlfluff/core/rules/context.py
++++ b/src/sqlfluff/core/rules/context.py
+@@ -33,6 +33,10 @@ class RuleContext:
+     # segment_idx: The index of this segment in the parent
+     segment_idx: int = field(default=0)
+ 
++    def identifier_policy_applies(self, policy: str) -> bool:
++        """Does an identifier policy apply to this context's segment?"""
++        return identifier_policy_applies(policy, self.parent_stack)
++
+     @property
+     def siblings_pre(self) -> tuple[BaseSegment, ...]:  # pragma: no cover
+         """Return sibling segments prior to self.segment."""
+@@ -48,3 +52,41 @@ class RuleContext:
+             return self.parent_stack[-1].segments[self.segment_idx + 1 :]
+         else:
+             return tuple()  # pragma: no cover
++
++
++def identifier_policy_applies(
++    policy: str, parent_stack: tuple[BaseSegment, ...]
++) -> bool:
++    """Does `(un)quoted_identifiers_policy` apply to this segment?
++
++    This method is used in CP02, RF04 and RF05.
++    """
++    if policy == "all":
++        return True
++    if policy == "none":
++        return False
++    is_alias = parent_stack and parent_stack[-1].is_type(
++        "alias_expression", "column_definition", "with_compound_statement"
++    )
++    if policy == "aliases" and is_alias:
++        return True
++    # Walk outward from the identifier looking for the nearest of
++    # "select_clause" or "from_clause". A column alias that belongs to a
++    # derived table's own SELECT (e.g. `FROM (SELECT 1 AS x) sub`) is
++    # nested inside that inner select_clause, which is itself nested
++    # inside the *outer* from_clause - so scanning the whole parent_stack
++    # for any from_clause wrongly classifies it as a table alias. Stopping
++    # at the first select_clause encountered keeps such a column alias
++    # scoped to the SELECT it actually belongs to.
++    is_inside_from = False
++    for p in reversed(parent_stack):
++        if p.is_type("select_clause"):
++            break
++        if p.is_type("from_clause"):
++            is_inside_from = True
++            break
++    if policy == "column_aliases" and is_alias and not is_inside_from:
++        return True
++    if policy == "table_aliases" and is_alias and is_inside_from:
++        return True
++    return False
+diff --git a/src/sqlfluff/utils/identifers.py b/src/sqlfluff/utils/identifers.py
+index 0b9342d..154d6aa 100644
+--- a/src/sqlfluff/utils/identifers.py
++++ b/src/sqlfluff/utils/identifers.py
+@@ -6,6 +6,7 @@ circular imports.
+ """
+ 
+ from sqlfluff.core.parser import BaseSegment
++from sqlfluff.core.rules.context import identifier_policy_applies
+ 
+ 
+ def identifiers_policy_applicable(
+@@ -15,32 +16,4 @@ def identifiers_policy_applicable(
+ 
+     This method is used in CP02, RF04 and RF05.
+     """
+-    if policy == "all":
+-        return True
+-    if policy == "none":
+-        return False
+-    is_alias = parent_stack and parent_stack[-1].is_type(
+-        "alias_expression", "column_definition", "with_compound_statement"
+-    )
+-    if policy == "aliases" and is_alias:
+-        return True
+-    # Walk outward from the identifier looking for the nearest of
+-    # "select_clause" or "from_clause". A column alias that belongs to a
+-    # derived table's own SELECT (e.g. `FROM (SELECT 1 AS x) sub`) is
+-    # nested inside that inner select_clause, which is itself nested
+-    # inside the *outer* from_clause - so scanning the whole parent_stack
+-    # for any from_clause wrongly classifies it as a table alias. Stopping
+-    # at the first select_clause encountered keeps such a column alias
+-    # scoped to the SELECT it actually belongs to.
+-    is_inside_from = False
+-    for p in reversed(parent_stack):
+-        if p.is_type("select_clause"):
+-            break
+-        if p.is_type("from_clause"):
+-            is_inside_from = True
+-            break
+-    if policy == "column_aliases" and is_alias and not is_inside_from:
+-        return True
+-    if policy == "table_aliases" and is_alias and is_inside_from:
+-        return True
+-    return False
++    return identifier_policy_applies(policy, parent_stack)

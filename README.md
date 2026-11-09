@@ -1,6 +1,6 @@
 # Unified Context Notation (UCN)
 
-**What it is (v0.5):** a checked, traceable **intent and architecture layer** that keeps coding agents, and humans, consistent with a system's requirements and architecture. It records requirements, decisions, invariants, conventions, an architecture skeleton, trace links, conflicts and approved deviations, each with its provenance.
+**What it is (v0.6):** a checked, traceable **intent and architecture layer** that keeps coding agents, and humans, consistent with a system's requirements and architecture. It records requirements, decisions, invariants, conventions, an architecture skeleton, trace links, conflicts and approved deviations, each with its provenance.
 - **Deterministic tools** check this model against the code on every commit, in about 1 s on real repositories, without touching the build.
 - The same rules **compile to existing checkers** (dependency-cruiser, import-linter), so the model can be the single source of truth.
 - A projection turns the model into compact context for agents, and anything relevant it leaves out is named.
@@ -26,10 +26,11 @@ Whether UCN is worth its upkeep on a large, eroded codebase is the open question
 | [docs/04-review-synthesis.md](docs/04-review-synthesis.md) | Two independent reviews of v0.1 and what changed in v0.2 |
 | [docs/05-usefulness-and-tooling.md](docs/05-usefulness-and-tooling.md) | Is it worth it? What to keep or cut; what deterministic tools can do; performance; pilot protocol |
 | [docs/06-review-synthesis-v0.3.md](docs/06-review-synthesis-v0.3.md) | Two independent reviews of v0.3, the fix plan, and its status after v0.4 |
-| [docs/07-trial-results.md](docs/07-trial-results.md) | Trials on sqlfluff, excalidraw and cosmicpython: findings, upkeep over history, agent experiment, performance |
+| [docs/07-trial-results.md](docs/07-trial-results.md) | Trials on sqlfluff, excalidraw and cosmicpython: findings, upkeep over history, agent experiments, container comparisons |
+| [docs/08-pilot.md](docs/08-pilot.md) | The pilot: reconstruction tests on sqlfluff with independently written tasks and hidden graders |
 | [examples/shortly/](examples/shortly/) | Worked example: model, a small real TypeScript codebase, L0 card, task slice |
 | [trials/](trials/) | Models, results and scripts from the real-repository trials |
-| [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, gates, diff, propose), `ucn_export.py` (dependency-cruiser and import-linter configs), `pilot_eval.py` (pilot decision) |
+| [tools/](tools/) | `ucn_parse.py` (parser, linter, projection checker), `ucn_validate.py` (consistency validator, evidence, staleness, gates, diff, propose), `ucn_project.py` (default projector), `ucn_export.py` (dependency-cruiser and import-linter configs), `recon.py` (reconstruction harness), `pilot_eval.py` (pilot decision) |
 | [tests/](tests/) | 77 tests (earlier counts double-ran 9 inherited tests), including a regression test for each reproduction from the v0.3 reviews |
 | [reviews/](reviews/) | The raw reviews |
 

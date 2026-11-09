@@ -1,0 +1,461 @@
+{
+ "criteria": {},
+ "tasks": [
+  {
+   "id": "T01-r1",
+   "kind": "tempting",
+   "cluster": "T01",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 62883,
+     "seconds": 55.2
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 48476,
+     "seconds": 53.9
+    }
+   }
+  },
+  {
+   "id": "T01-r2",
+   "kind": "tempting",
+   "cluster": "T01",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 59890,
+     "seconds": 63.9
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 56197,
+     "seconds": 69.2
+    }
+   }
+  },
+  {
+   "id": "T02-r1",
+   "kind": "tempting",
+   "cluster": "T02",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 55320,
+     "seconds": 62.9
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 50925,
+     "seconds": 62.4
+    }
+   }
+  },
+  {
+   "id": "T02-r2",
+   "kind": "tempting",
+   "cluster": "T02",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 54902,
+     "seconds": 46.3
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 51183,
+     "seconds": 53.0
+    }
+   }
+  },
+  {
+   "id": "T03-r1",
+   "kind": "tempting",
+   "cluster": "T03",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 55027,
+     "seconds": 62.1
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 45469,
+     "seconds": 41.5
+    }
+   }
+  },
+  {
+   "id": "T03-r2",
+   "kind": "tempting",
+   "cluster": "T03",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 52158,
+     "seconds": 36.2
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 45206,
+     "seconds": 41.1
+    }
+   }
+  },
+  {
+   "id": "T04-r1",
+   "kind": "tempting",
+   "cluster": "T04",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 55106,
+     "seconds": 70.5
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 53693,
+     "seconds": 50.8
+    }
+   }
+  },
+  {
+   "id": "T04-r2",
+   "kind": "tempting",
+   "cluster": "T04",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 58515,
+     "seconds": 69.9
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 48668,
+     "seconds": 61.7
+    }
+   }
+  },
+  {
+   "id": "T05-r1",
+   "kind": "tempting",
+   "cluster": "T05",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 64000,
+     "seconds": 132.0
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 61562,
+     "seconds": 131.5
+    }
+   }
+  },
+  {
+   "id": "T05-r2",
+   "kind": "tempting",
+   "cluster": "T05",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 59049,
+     "seconds": 104.2
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 61214,
+     "seconds": 119.1
+    }
+   }
+  },
+  {
+   "id": "T06-r1",
+   "kind": "change",
+   "cluster": "T06",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 49498,
+     "seconds": 61.1
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 45881,
+     "seconds": 53.0
+    }
+   }
+  },
+  {
+   "id": "T06-r2",
+   "kind": "change",
+   "cluster": "T06",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 48895,
+     "seconds": 45.0
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 44288,
+     "seconds": 72.2
+    }
+   }
+  },
+  {
+   "id": "T07-r1",
+   "kind": "tempting",
+   "cluster": "T07",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 69161,
+     "seconds": 113.3
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 54730,
+     "seconds": 111.4
+    }
+   }
+  },
+  {
+   "id": "T07-r2",
+   "kind": "tempting",
+   "cluster": "T07",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 64773,
+     "seconds": 120.8
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 62563,
+     "seconds": 141.2
+    }
+   }
+  },
+  {
+   "id": "T08-r1",
+   "kind": "tempting",
+   "cluster": "T08",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 71174,
+     "seconds": 106.1
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 66155,
+     "seconds": 105.4
+    }
+   }
+  },
+  {
+   "id": "T08-r2",
+   "kind": "tempting",
+   "cluster": "T08",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 79039,
+     "seconds": 114.6
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 65183,
+     "seconds": 95.4
+    }
+   }
+  },
+  {
+   "id": "T09-r1",
+   "kind": "tempting",
+   "cluster": "T09",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 52915,
+     "seconds": 74.1
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 45798,
+     "seconds": 49.7
+    }
+   }
+  },
+  {
+   "id": "T09-r2",
+   "kind": "tempting",
+   "cluster": "T09",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 49654,
+     "seconds": 66.3
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 45326,
+     "seconds": 60.7
+    }
+   }
+  },
+  {
+   "id": "T10-r1",
+   "kind": "tempting",
+   "cluster": "T10",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 65825,
+     "seconds": 80.3
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 57476,
+     "seconds": 80.9
+    }
+   }
+  },
+  {
+   "id": "T10-r2",
+   "kind": "tempting",
+   "cluster": "T10",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 61074,
+     "seconds": 71.7
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 54363,
+     "seconds": 80.9
+    }
+   }
+  },
+  {
+   "id": "T11-r1",
+   "kind": "change",
+   "cluster": "T11",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 53252,
+     "seconds": 65.2
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 41833,
+     "seconds": 47.6
+    }
+   }
+  },
+  {
+   "id": "T11-r2",
+   "kind": "change",
+   "cluster": "T11",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 54586,
+     "seconds": 55.7
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 51685,
+     "seconds": 65.8
+    }
+   }
+  },
+  {
+   "id": "T12-r1",
+   "kind": "change",
+   "cluster": "T12",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 49863,
+     "seconds": 54.0
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 44275,
+     "seconds": 63.8
+    }
+   }
+  },
+  {
+   "id": "T12-r2",
+   "kind": "change",
+   "cluster": "T12",
+   "results": {
+    "light": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 49652,
+     "seconds": 63.6
+    },
+    "ucn": {
+     "success": 1,
+     "violations": 0,
+     "tokens": 50328,
+     "seconds": 58.0
+    }
+   }
+  }
+ ]
+}

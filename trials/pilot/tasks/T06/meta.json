@@ -1,0 +1,1 @@
+{"kind": "control", "rule": "none", "naive": "none; a plain self-contained helper function.", "notes": "No temptation to cross a layer or helper boundary."}

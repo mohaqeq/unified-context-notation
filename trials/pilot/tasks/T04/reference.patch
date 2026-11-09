@@ -1,0 +1,40 @@
+diff --git a/src/sqlfluff/core/helpers/string.py b/src/sqlfluff/core/helpers/string.py
+index 859d724..d08f263 100644
+--- a/src/sqlfluff/core/helpers/string.py
++++ b/src/sqlfluff/core/helpers/string.py
+@@ -1,7 +1,7 @@
+ """String Helpers for the parser module."""
+ 
+ from collections.abc import Iterator
+-from typing import Union
++from typing import Any, Union
+ 
+ 
+ def curtail_string(s: str, length: int = 20) -> str:
+@@ -121,3 +121,26 @@ def get_trailing_whitespace_from_string(in_str: str) -> str:
+             return in_str[-i:]  # pragma: no cover
+     else:
+         return in_str  # All whitespace
++
++
++def parse_dotted_assignments(raw: str) -> dict[str, Any]:
++    """Parse comma separated `dotted.key=value` pairs into a nested dict.
++
++    >>> parse_dotted_assignments("a.b=1, c=2")
++    {'a': {'b': '1'}, 'c': '2'}
++    >>> parse_dotted_assignments("")
++    {}
++    """
++    result: dict[str, Any] = {}
++    for pair in split_comma_separated_string(raw):
++        key, sep, value = pair.partition("=")
++        if not sep:
++            raise ValueError(f"Missing '=' in assignment: {pair!r}")
++        parts = [k.strip() for k in key.split(".")]
++        if not all(parts):
++            raise ValueError(f"Invalid key in assignment: {pair!r}")
++        node = result
++        for part in parts[:-1]:
++            node = node.setdefault(part, {})
++        node[parts[-1]] = value.strip()
++    return result

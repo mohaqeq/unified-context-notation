@@ -1,4 +1,4 @@
-# 3. Proposal: Unified Context Notation (UCN) v0.5
+# 3. Proposal: Unified Context Notation (UCN) v0.6
 
 > **One-line summary.** UCN is **a checked, traceable intent and architecture layer that keeps coding agents (and humans) consistent with requirements and architecture.** Technically it is a profile, concrete syntax, projection and toolchain over existing semantics (mainly SysML v2 and C4, plus EARS, Design-by-Contract, ADRs and W3C PROV). Deterministic tools check it against the code on every commit. A projection turns it into compact context for agents, and every relevant fact left out is **named** in a stub.
 
@@ -278,7 +278,7 @@ Each node can be rendered at three levels. The projection picks a level **per no
 
 ## 3.5 Projection `π(M, T, B)`
 
-### Default projection (core)
+### Default projection (core), implemented by `tools/ucn_project.py`
 
 For frontier models, and as the default:
 1. the core card (L0), including global pins, accepted or open conflicts, and active deviations;
@@ -418,7 +418,9 @@ Function signatures and call graphs always come from the code. In forward mode t
 | **Declared but unused** | architecture → code | A declared relation that no code dependency realizes (reflexion "absence") | INFO |
 | **Parameter consistency** | requirements ↔ code | `param:` vs the constant named by `bind:` (optional `* k` or `/ k` unit scaling). The constant must be a single top-level definition and a numeric literal expression (`0x64`, `1e2`, `60 * 60`); anything else is INFO "not statically evaluable", never a violation | VIOLATION / MODEL-UPDATE by the requirement's authority. KNOWN-CONFLICT only if an *accepted* conflict with `expires`/`approved` is `about` it **and a side `asserts` the current code value** (when the code moves, it stops suppressing) |
 | **Convention checks** | conventions ↔ code | `check: only <glob> imports <module>` | by the convention's authority |
-| **Provenance** | model ↔ code | `src:` file exists and the line is in range (content-hash staleness: specified, not yet implemented) | stale |
+| **Executable evidence** | requirements ↔ code | `--results junit.xml`: each element with verifying `test` nodes is *met* (a verifying test passed), *not met* (one failed) or *without evidence*. Test nodes map to JUnit cases by their `src:` file (pytest classname suffix or a `file` attribute) and an optional `case:` glob. `--require-evidence` makes missing evidence a violation | not met: VIOLATION if model-authoritative and not `planned`, else INFO |
+| **Provenance** | model ↔ code | `src:` file exists and the line is in range. With `src: file:line@hash` (8-hex hash of the whitespace-normalized line, written by `--stamp`), a moved line is followed and changed content is flagged as stale. `--stamp` never re-hashes changed content without `--accept-changed` | MODEL-UPDATE |
+| **Rationale links** | model ↔ docs | `rationale: path#anchor`: the file and its heading anchor (GitHub slug) exist | MODEL-UPDATE |
 | **Coverage** | code → architecture | Code files no element claims | by the authority of the nearest element |
 | **Trace completeness** | requirements ↔ architecture ↔ tests | Linter rules | INFO |
 | **Adopt / re-baseline gate**, **widening diff** | — | §3.6 | gate blocked / WIDENED |
@@ -526,6 +528,8 @@ This makes UCN a **lightweight, LLM-oriented profile** of SysML v2 + C4. Teams t
 
 ## 3.12 Evaluation: measuring "no important context lost" (RQ6)
 
+**Reconstruction test** (after Ensemble's fresh-student test, adapted to existing code; `tools/recon.py`): an agent gets a task plus only its condition's context, and a **hidden behavioral grader** (shown to fail on unchanged code and to pass on a reference solution) decides whether the behavior was built. The project's own checker and the UCN validator decide whether the architecture was kept. This measures whether the context was *sufficient* by experiment, not by proxy.
+
 The full benchmark comes after a **pilot** on one real repository that decides go / kill / extend on upkeep cost, violations caught, tempting-task violations and silent absence ([05 §5.5](05-usefulness-and-tooling.md#55-pilot-protocol), `tools/pilot_eval.py`).
 
 ### Questions and tasks
@@ -604,8 +608,9 @@ Without stubs; counts-only stubs vs named stubs; without origin labels; without 
 | v0.2 | Revised spec; parser, linter and **projection checker**; example machine-checked |
 | v0.3 | Reframed goal; core vs modules; authority and modes; `deviation`, `param`/`bind`, `check`; validator; pilot harness (reviewed: [06](06-review-synthesis-v0.3.md)) |
 | v0.4 | Review fixes 1–4: governance layer over existing checkers (`--deps` input; export to dependency-cruiser and import-linter); permissions only from architecture relations; fail-closed integrity; real adopt and re-baseline gates with `--apply`; widening diff; `--propose`; linear performance; trials on sqlfluff, excalidraw and cosmicpython ([07](07-trial-results.md)) |
-| **v0.5 (this)** | Rule vocabulary (`forbids`, transitive `layers`, `independent`, `acyclic`), `policy: deny`, `inherit`, depth 6, CONFLICT class, unused-deviation detection, `--propose` refuses forbidden dependencies; exporter maps rules to import-linter layers/independence/forbidden and dependency-cruiser circular rules; second trial round and agent experiment v2 ([07 §7.6](07-trial-results.md#76-second-round-v05-rule-vocabulary-deny-list-policy-and-agents-on-hidden-rules)) |
-| v0.5.x | Run the generated configs in their tools, and an agent arm with import-linter feedback; requirement → test-result evidence; content-hash staleness; pilot redesign ([06 §6.5](06-review-synthesis-v0.3.md#65-what-v04-should-do-consolidated-plan) items 7–9) |
+| v0.5 | Rule vocabulary (`forbids`, transitive `layers`, `independent`, `acyclic`), `policy: deny`, `inherit`, depth 6, CONFLICT class, unused-deviation detection, `--propose` refuses forbidden dependencies; exporter maps rules to import-linter layers/independence/forbidden and dependency-cruiser circular rules; second trial round and agent experiment v2 ([07 §7.6](07-trial-results.md#76-second-round-v05-rule-vocabulary-deny-list-policy-and-agents-on-hidden-rules)) |
+| v0.5.1 | Generated configs run in import-linter and dependency-cruiser (containers); agent arm with import-linter feedback ([07 §7.8](07-trial-results.md#78-third-party-checkers-in-containers-v051)) |
+| **v0.6 (this)** | Executable evidence (`--results`), content-hash staleness (`--stamp`), rationale links, default projector (`ucn_project.py`), reconstruction harness (`recon.py`), pilot on sqlfluff with independently written tasks ([08](08-pilot.md)) |
 | v0.6 | **Pilot** on a larger, older repository with rules that aren't visible in the code, against the lightweight stack. Go / kill / extend by `pilot_eval.py` |
 | *only on GO:* v0.7 | MCP server; logic module (contracts for public APIs); small-model projection module; Context Sufficiency Benchmark (§3.12) |
 | v1.0 | Freeze the core metamodel based on pilot and benchmark evidence; SysML v2 export module |

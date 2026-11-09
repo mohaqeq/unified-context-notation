@@ -1,0 +1,27 @@
+diff --git a/src/sqlfluff/core/rules/context.py b/src/sqlfluff/core/rules/context.py
+index c5da6ea..b5a0c0e 100644
+--- a/src/sqlfluff/core/rules/context.py
++++ b/src/sqlfluff/core/rules/context.py
+@@ -41,6 +41,22 @@ class RuleContext:
+         else:
+             return tuple()
+ 
++    @property
++    def previous_code_sibling(self) -> Optional[BaseSegment]:
++        """Return the nearest code sibling before self.segment, if any."""
++        for seg in reversed(self.siblings_pre):
++            if seg.is_code:
++                return seg
++        return None
++
++    @property
++    def next_code_sibling(self) -> Optional[BaseSegment]:
++        """Return the nearest code sibling after self.segment, if any."""
++        for seg in self.siblings_post:
++            if seg.is_code:
++                return seg
++        return None
++
+     @property
+     def siblings_post(self) -> tuple[BaseSegment, ...]:
+         """Return sibling segments after self.segment."""

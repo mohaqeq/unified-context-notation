@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="10" time="4.566" timestamp="2026-11-09T09:15:01.902942+00:00" hostname="55d87dfa0047"><testcase classname="test_t04" name="test_basic" time="0.001" /><testcase classname="test_t04" name="test_merge_prefix_and_whitespace" time="0.001" /><testcase classname="test_t04" name="test_empty" time="0.001" /><testcase classname="test_t04" name="test_value_may_contain_equals" time="0.000" /><testcase classname="test_t04" name="test_later_duplicate_wins" time="0.001"><failure message="ValueError: Conflicting assignments for 'a.b'.">def test_later_duplicate_wins():
+&gt;       assert parse_dotted_assignments("a.b=1,a.b=2") == {"a": {"b": "2"}}
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test_t04.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+raw = 'a.b=1,a.b=2'
+
+    def parse_dotted_assignments(raw: str) -&gt; dict[str, Any]:
+        """Parses comma separated ``dotted.key=value`` pairs into a nested dict.
+    
+        Dotted keys are expanded into nested dicts, and keys sharing a prefix
+        are merged. Values are kept as (stripped) strings. Whitespace around
+        keys, values and commas is ignored, and empty segments (e.g. from a
+        trailing comma) are skipped.
+    
+        &gt;&gt;&gt; parse_dotted_assignments("rules.LT01.foo=1, core.dialect=ansi")
+        {'rules': {'LT01': {'foo': '1'}}, 'core': {'dialect': 'ansi'}}
+        &gt;&gt;&gt; parse_dotted_assignments("")
+        {}
+        &gt;&gt;&gt; parse_dotted_assignments("a.b=1, a.c=2")
+        {'a': {'b': '1', 'c': '2'}}
+    
+        Pairs without an ``=``, empty key segments, and conflicting
+        assignments (the same key used as a value and as a section, or
+        assigned twice) raise a ``ValueError``.
+    
+        &gt;&gt;&gt; parse_dotted_assignments("a..b=1")
+        Traceback (most recent call last):
+        ...
+        ValueError: Empty key segment in 'a..b'.
+        """
+        result: dict[str, Any] = {}
+        for pair in raw.split(","):
+            pair = pair.strip()
+            if not pair:
+                continue
+            if "=" not in pair:
+                raise ValueError(f"Expected 'key=value' but got {pair!r}.")
+            key_str, _, value = pair.partition("=")
+            key = key_str.strip()
+            key_parts = [part.strip() for part in key.split(".")]
+            if not all(key_parts):
+                raise ValueError(f"Empty key segment in {key!r}.")
+            node = result
+            for part in key_parts[:-1]:
+                child = node.setdefault(part, {})
+                if not isinstance(child, dict):
+                    raise ValueError(f"Conflicting assignments for {key!r}.")
+                node = child
+            leaf = key_parts[-1]
+            if leaf in node:
+&gt;               raise ValueError(f"Conflicting assignments for {key!r}.")
+E               ValueError: Conflicting assignments for 'a.b'.
+
+/repo/src/sqlfluff/core/helpers/string.py:137: ValueError</failure></testcase><testcase classname="test_t04" name="test_invalid[novalue]" time="0.001" /><testcase classname="test_t04" name="test_invalid[a..b=1]" time="0.001" /><testcase classname="test_t04" name="test_invalid[.a=1]" time="0.001" /><testcase classname="test_t04" name="test_invalid[a.=1]" time="0.001" /><testcase classname="test_t04" name="test_invalid[=1]" time="0.001" /></testsuite></testsuites>

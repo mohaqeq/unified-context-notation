@@ -1,0 +1,22 @@
+diff --git a/src/sqlfluff/core/parser/helpers.py b/src/sqlfluff/core/parser/helpers.py
+index 053943a..6f16c29 100644
+--- a/src/sqlfluff/core/parser/helpers.py
++++ b/src/sqlfluff/core/parser/helpers.py
+@@ -84,3 +84,17 @@ def inside_next_segment_flags(segments: tuple["BaseSegment", ...]) -> list[bool]
+         elif next_start is not None:
+             flags[idx] = next_start < pos_marker.templated_slice.start
+     return flags
++
++
++def references_overlap(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
++    """Do two object references point at the same thing?
++
++    They do if they are equal, or if one is a (non-empty) trailing part of
++    the other, e.g. `("b", "c")` and `("a", "b", "c")`. This is optimistic
++    about the parts which are left out (i.e. it assumes an earlier
++    "USE <<database>>" or similar). Empty references never match.
++    """
++    if not first or not second:
++        return False
++    shorter, longer = sorted((first, second), key=len)
++    return longer[len(longer) - len(shorter) :] == shorter

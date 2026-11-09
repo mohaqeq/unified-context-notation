@@ -1,0 +1,26 @@
+diff --git a/src/sqlfluff/api/info.py b/src/sqlfluff/api/info.py
+index cc81a12..3ac6b44 100644
+--- a/src/sqlfluff/api/info.py
++++ b/src/sqlfluff/api/info.py
+@@ -1,5 +1,8 @@
+ """Information API."""
+ 
++import sys
++from importlib import metadata
++
+ from sqlfluff.core import Linter, dialect_readout
+ from sqlfluff.core.dialects import DialectTuple
+ from sqlfluff.core.linter import RuleTuple
+@@ -14,3 +17,12 @@ def list_rules() -> list[RuleTuple]:
+ def list_dialects() -> list[DialectTuple]:
+     """Return a list of available dialect info."""
+     return list(dialect_readout())
++
++
++def version_info() -> dict[str, str]:
++    """Return version information for sqlfluff and the python runtime."""
++    return {
++        "sqlfluff": metadata.version("sqlfluff"),
++        "python": "{0[0]}.{0[1]}.{0[2]}".format(sys.version_info),
++        "implementation": sys.implementation.name,
++    }

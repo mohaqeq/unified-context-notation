@@ -1,0 +1,21 @@
+diff --git a/src/sqlfluff/core/helpers/string.py b/src/sqlfluff/core/helpers/string.py
+index 859d724..4e8cc32 100644
+--- a/src/sqlfluff/core/helpers/string.py
++++ b/src/sqlfluff/core/helpers/string.py
+@@ -26,6 +26,16 @@ def findall(substr: str, in_str: str) -> Iterator[int]:
+         idx = in_str.find(substr, idx + 1)
+ 
+ 
++def findall_slices(substr: str, in_str: str) -> Iterator[slice]:
++    """Yields a slice of in_str for each occurrence of substr.
++
++    >>> list(findall_slices("ab", "abcab"))
++    [slice(0, 2, None), slice(3, 5, None)]
++    """
++    for idx in findall(substr, in_str):
++        yield slice(idx, idx + len(substr))
++
++
+ def split_colon_separated_string(in_str: str) -> tuple[tuple[str, ...], str]:
+     r"""Converts a colon separated string.
+ 

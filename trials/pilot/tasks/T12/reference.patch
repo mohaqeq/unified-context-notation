@@ -1,0 +1,22 @@
+diff --git a/src/sqlfluff/core/helpers/string.py b/src/sqlfluff/core/helpers/string.py
+index 859d724..d84dad9 100644
+--- a/src/sqlfluff/core/helpers/string.py
++++ b/src/sqlfluff/core/helpers/string.py
+@@ -82,12 +82,14 @@ def should_split_on_colon(value: str) -> bool:
+     return True
+ 
+ 
+-def split_comma_separated_string(raw: Union[str, list[str]]) -> list[str]:
++def split_comma_separated_string(
++    raw: Union[str, list[str], tuple[str, ...]],
++) -> list[str]:
+     """Converts comma separated string to List, stripping whitespace."""
+     if isinstance(raw, str):
+         return [s.strip() for s in raw.split(",") if s.strip()]
+-    assert isinstance(raw, list)
+-    return raw
++    assert isinstance(raw, (list, tuple))
++    return [s.strip() for s in raw if s.strip()]
+ 
+ 
+ def get_trailing_whitespace_from_string(in_str: str) -> str:

@@ -1,0 +1,27 @@
+diff --git a/src/sqlfluff/core/parser/segments/base.py b/src/sqlfluff/core/parser/segments/base.py
+index e209082..964d681 100644
+--- a/src/sqlfluff/core/parser/segments/base.py
++++ b/src/sqlfluff/core/parser/segments/base.py
+@@ -1219,6 +1219,22 @@ class BaseSegment(metaclass=SegmentMetaclass):
+                 buff.append(seg)
+         return buff
+ 
++    def get_noqa_comments(self) -> list[BaseSegment]:
++        """Find the comments below this segment which hold a noqa directive."""
++        found: list[BaseSegment] = []
++        for comment in self.recursive_crawl("comment"):
++            if not comment.is_type("inline_comment", "block_comment"):
++                continue
++            content = cast(Any, comment).raw_trimmed().strip()
++            if content.endswith("*/"):
++                content = content[:-2].rstrip()
++            if content.startswith("/*"):
++                content = content[2:].lstrip()
++            # Comments can be chained e.g. `-- some text -- noqa: LT05`.
++            if content.split("--")[-1].strip().startswith("noqa"):
++                found.append(comment)
++        return found
++
+     def recursive_crawl_all(self, reverse: bool = False) -> Iterator[BaseSegment]:
+         """Recursively crawl all descendant segments."""
+         if reverse:

@@ -1,0 +1,14 @@
+diff --git a/src/sqlfluff/core/helpers/slice.py b/src/sqlfluff/core/helpers/slice.py
+index 3f78a49..4453a26 100644
+--- a/src/sqlfluff/core/helpers/slice.py
++++ b/src/sqlfluff/core/helpers/slice.py
+@@ -49,3 +49,9 @@ def slice_overlaps(s1: slice, s2: slice) -> bool:
+         return False
+ 
+     return True
++
++
++def slice_contains(s: slice, i: int) -> bool:
++    """Check whether an index falls within a closed, positive slice."""
++    assert s.start is not None and s.stop is not None, f"{s} is not closed"
++    return bool(s.start <= i < s.stop)

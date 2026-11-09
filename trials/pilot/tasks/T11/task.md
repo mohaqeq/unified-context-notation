@@ -1,0 +1,1 @@
+Tools that build a dialect picker currently have to call `sqlfluff.api.list_dialects()` and pull the labels out of each tuple. Please add `list_dialect_names()` to `sqlfluff.api.info`, export it from `sqlfluff.api`, and have it return the labels of all available dialects as a plain `list[str]`, sorted alphabetically.

@@ -1,0 +1,43 @@
+diff --git a/src/sqlfluff/api/__init__.py b/src/sqlfluff/api/__init__.py
+index c45ead7..ffb79e0 100644
+--- a/src/sqlfluff/api/__init__.py
++++ b/src/sqlfluff/api/__init__.py
+@@ -2,11 +2,12 @@
+ 
+ # Expose the simple api
+ from sqlfluff.api.info import list_dialects, list_rules
+-from sqlfluff.api.simple import APIParsingError, fix, lint, parse
++from sqlfluff.api.simple import APIParsingError, fix, format_violations, lint, parse
+ 
+ __all__ = (
+     "lint",
+     "fix",
++    "format_violations",
+     "parse",
+     "APIParsingError",
+     "list_rules",
+diff --git a/src/sqlfluff/api/simple.py b/src/sqlfluff/api/simple.py
+index f50b2b5..263ba2c 100644
+--- a/src/sqlfluff/api/simple.py
++++ b/src/sqlfluff/api/simple.py
+@@ -112,6 +112,20 @@ def lint(
+     return [] if not result_records else result_records[0]["violations"]
+ 
+ 
++def format_violations(violations: list[dict[str, Any]]) -> str:
++    """Render violations (as returned by `lint`) as plain text, one per line."""
++    lines = []
++    for v in violations:
++        desc = v["description"]
++        if v.get("name"):
++            desc += f" [{v['name']}]"
++        lines.append(
++            f"L:{v['start_line_no']:4d} | P:{v['start_line_pos']:4d} | "
++            f"{v['code'].rjust(4)} | {desc}"
++        )
++    return "\n".join(lines)
++
++
+ def fix(
+     sql: str,
+     dialect: Optional[str] = None,

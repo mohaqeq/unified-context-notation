@@ -1,0 +1,17 @@
+{
+ "repo": "<clone of github.com/sqlfluff/sqlfluff>",
+ "rev": "1682e11",
+ "model": "trials/sqlfluff/model.deny.ucn",
+ "tasks": "trials/pilot/tasks",
+ "conditions": {
+  "C": 1,
+  "L": 2,
+  "B": 2
+ },
+ "budget": 2500,
+ "grader_image": "ucn-sqlfluff-tests",
+ "lint_image": "ucn-il",
+ "validator": "tools/ucn_validate.py",
+ "today": "2026-11-09",
+ "usage": "trials/pilot/results/usage.json"
+}
