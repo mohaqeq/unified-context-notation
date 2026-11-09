@@ -124,6 +124,7 @@ class Example(unittest.TestCase):
         d = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, d)
         shutil.copytree(os.path.join(EX, "src"), os.path.join(d, "src"))
+        shutil.copytree(os.path.join(EX, "docs"), os.path.join(d, "docs"))
         write(os.path.join(d, "model.ucn"), model_text or read(MODEL))
         if edit:
             edit(d)
@@ -479,6 +480,25 @@ class Stale(Tmp):
     def test_indentation_does_not_matter(self):
         write(self.code, read(self.code).replace("export function", "    export   function"))
         self.assertFalse(any(f["check"] == "provenance" for f in run(self.path)["findings"]))
+
+
+# ------------------------------------------------------------------------------------------- rationale links (v0.6)
+class Rationale(Example):
+    def test_links_resolve_and_breakage_is_reported(self):
+        r = run(MODEL)
+        self.assertEqual(r.get("rationale"), 4)
+        self.assertFalse(any(f["check"] == "rationale" for f in r["findings"]))
+
+        def break_docs(d):
+            p = os.path.join(d, "docs", "adr", "003-immutable-codes.md")
+            write(p, read(p).replace("## Why immutable", "## Rationale"))
+            os.remove(os.path.join(d, "docs", "adr", "002-cache-aside.md"))
+        r = run(self.copy(edit=break_docs))
+        self.assertTrue(has(r, "MODEL-UPDATE", "no heading with anchor #why-immutable"))
+        self.assertTrue(has(r, "MODEL-UPDATE", "002-cache-aside.md#why-cache-aside: file not found"))
+
+    def test_slugs(self):
+        self.assertEqual(ucn_validate.heading_slugs("# A b\n## Why: (now)?\n## A b\n"), {"a-b", "why-now", "a-b-1"})
 
 
 # ------------------------------------------------------------------------------------------- export

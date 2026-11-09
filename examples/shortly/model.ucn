@@ -174,6 +174,7 @@ deviation StatsDirectDb: the stats component reads Postgres directly instead of 
   expires: 2027-03-31
   approved: person:maintainer
   lifecycle: accepted
+  rationale: docs/adr/004-stats-direct-db.md#why-a-deviation
   src: docs/adr/004.md
 deviation WebReadsFlag: the legacy UI imports the server's feature flag at build time
   allows Form reads AliasesEnabled
@@ -188,16 +189,19 @@ decision RandomCodes: random base62 codes, not URL hashes
   why: the same URL from different owners must get different codes, and stats must stay per owner
   affects Codes
   lifecycle: accepted
+  rationale: docs/adr/001-random-codes.md#why-random
   src: docs/adr/001.md
 decision CacheAside: Redis cache-aside for resolve, Postgres as the source of truth
   why: p99 under 50 ms without a read replica
   affects Api, Cache
   lifecycle: accepted
+  rationale: docs/adr/002-cache-aside.md#why-cache-aside
   src: docs/adr/002.md
 decision ImmutableCodes: never retarget an existing code
   why: printed QR codes and old emails must not start pointing somewhere else
   affects Links, Links.CodeImmutable
   lifecycle: accepted
+  rationale: docs/adr/003-immutable-codes.md#why-immutable
   src: docs/adr/003.md
 
 # ---------- how to work ----------

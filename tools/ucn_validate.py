@@ -95,6 +95,20 @@ def line_hash(text):
     return hashlib.sha1(" ".join(text.split()).encode("utf-8")).hexdigest()[:8]
 
 
+def heading_slugs(markdown):
+    """GitHub-style anchors for every Markdown heading (duplicates get -1, -2, ...)."""
+    seen, out = {}, set()
+    for line in markdown.split("\n"):
+        mh = re.match(r"^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$", line)
+        if not mh:
+            continue
+        slug = re.sub(r"[^\w\- ]", "", mh.group(1).strip().lower()).replace(" ", "-")
+        n = seen.get(slug, 0)
+        seen[slug] = n + 1
+        out.add(slug if n == 0 else f"{slug}-{n}")
+    return out
+
+
 def parse_date(s):
     try:
         return datetime.date.fromisoformat(s.strip())
@@ -1052,6 +1066,18 @@ def check(m, ctx):
                     else:
                         add(UPDATE, "provenance", f"{nid}: src {s}: the referenced code changed; review the fact, then --stamp --accept-changed", el=nid)
                         stats["stale"] = stats.get("stale", 0) + 1
+
+    # ---- 6b. rationale links: decisions (or any node) may point to a longer document section
+    for nid in m.nodes:
+        for link in m.attrs(nid, "rationale"):
+            path, _, anchor = link.partition("#")
+            p = os.path.normpath(os.path.join(ctx.model_dir, path))
+            if not os.path.exists(p):
+                add(UPDATE, "rationale", f"{nid}: rationale {link}: file not found", el=nid)
+            elif anchor and anchor not in heading_slugs(slurp(p)):
+                add(UPDATE, "rationale", f"{nid}: rationale {link}: no heading with anchor #{anchor}", el=nid)
+            else:
+                stats["rationale"] = stats.get("rationale", 0) + 1
 
     # ---- 7. coverage (class from the nearest element's authority)
     if changed_set is None:
