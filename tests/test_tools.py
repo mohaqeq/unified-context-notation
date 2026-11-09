@@ -713,6 +713,16 @@ class PythonSubmoduleConvention(Tmp):
         self.assertEqual(len(bad), 1)
         self.assertIn("app/c/y.py imports django.db.models.signals", bad[0])
 
+    def test_uses_pattern_convention(self):
+        extra = ("rule NoSiteId: never read settings.SITE_ID outside the site picker\n"
+                 "  check: only app/a/** uses settings\\.SITE_ID\\b\n")
+        path = self.project(files={"app/a/x.ts": "export const x = 1;\n",
+                                   "app/a/pick.py": "site_id = settings.SITE_ID\n",
+                                   "app/c/y.py": "# settings.SITE_ID in a comment is fine\nx = settings.SITE_ID\n"},
+                            extra=extra)
+        bad = [f["message"] for f in run(path)["findings"] if f["check"] == "conventions"]
+        self.assertEqual(bad, ["app/c/y.py:2 uses /settings\\.SITE_ID\\b/, but NoSiteId allows it only in app/a/**"])
+
 
 class ReconGrading(Tmp):
     """recon.grade_one with the containers faked: it must fail closed and catch tampering (review v0.6)."""

@@ -72,6 +72,7 @@ JS_TO_TS = {".js": [".ts", ".tsx"], ".jsx": [".tsx"], ".mjs": [".mts"], ".cjs": 
 
 SRC_CODE = re.compile(r"^([\w./@-]+(?:" + "|".join(re.escape(e) for e in CODE_EXT) + r"))(?::(\d+))?(?:@([0-9a-f]{8}))?$")
 CHECK_ONLY = re.compile(r"^only\s+(\S+)\s+imports\s+(\S+)$")
+CHECK_USES = re.compile(r"^only\s+(\S+)\s+uses\s+(.+)$")
 JS_STATIC = re.compile(r"(?m)^[ \t]*(?:import|export)\b[^;'\"`]*?\bfrom\s*['\"]([^'\"\n]+)['\"]")
 JS_SIDE = re.compile(r"(?m)^[ \t]*import\s*['\"]([^'\"\n]+)['\"]")
 JS_CALL = re.compile(r"\b(?:require|import|jest\.mock|vi\.mock|require\.resolve)\s*\(\s*['\"]([^'\"\n]+)['\"]\s*[,)]")
@@ -994,9 +995,31 @@ def check(m, ctx):
     # ---- 5. convention checks
     for nid in m.nodes:
         for chk in m.attrs(nid, "check"):
+            um = CHECK_USES.match(chk)
+            if um:  # only <glob> uses <regex>: a code pattern that is not an import (an attribute, a call, a setting)
+                ok_glob, n_bad = glob_re(um.group(1)), 0
+                try:
+                    pat = re.compile(um.group(2))
+                except re.error as e:
+                    add(VIOLATION, "integrity", f"{nid}: bad regex in check '{chk}': {e}")
+                    continue
+                for f in sorted(deps):
+                    if ok_glob.match(f) or n_bad >= 20:
+                        continue
+                    for i, line in enumerate(slurp(os.path.join(root, f)).split("\n"), 1):
+                        s = line.lstrip()
+                        if s.startswith(("#", "//", "*", "/*")):  # comments do not count
+                            continue
+                        if pat.search(line):
+                            n_bad += 1
+                            add(VIOLATION if m.authority(nid) == "model" else UPDATE, "conventions",
+                                f"{f}:{i} uses /{um.group(2)}/, but {nid} allows it only in {um.group(1)}", el=nid)
+                            break
+                continue
             cm = CHECK_ONLY.match(chk)
             if not cm:
-                add(VIOLATION, "integrity", f"{nid}: unknown check syntax '{chk}' (supported: only <glob> imports <module>)")
+                add(VIOLATION, "integrity", f"{nid}: unknown check syntax '{chk}' "
+                    "(supported: only <glob> imports <module>; only <glob> uses <regex>)")
                 continue
             ok_glob, module = glob_re(cm.group(1)), cm.group(2)
             for f, items in deps.items():

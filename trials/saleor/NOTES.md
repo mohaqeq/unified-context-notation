@@ -22,36 +22,39 @@ user-perspective Gherkin specs, but it needs a PHP import scanner.
 
 ## Done so far (verified)
 
-- **Draft model:** [model.ucn](model.ucn) contains 3 requirements and 2 decisions taken from ADRs 0001 and 0010,
-  3 rules from AGENTS.md, the signals convention, 7 components and 2 test links.
-- **The model validates on the clean checkout:** 0 violations.
-- **Evidence:** the two linked test files ran in the container (30 passed, 4.4 min including test-database setup).
-  `--results` reports both requirements verified.
-- **The signals convention works:** a probe file importing `django.db.models.signals` is reported.
-  - This needed a validator fix. Python third-party imports were recorded by top-level package only, so
-    `only X imports django.db.models.signals` could never fire.
-  - The fix has a regression test.
+- **Model:** [model.ucn](model.ucn) covers all 12 ADRs and 4 AGENTS.md rules:
+  - 7 requirements, 7 decisions, 6 rules and 1 convention;
+  - 8 components;
+  - 7 test links.
+- **Clean checkout:** 0 violations.
+- **Evidence:** the 7 linked test files ran in the container (253 passed, about 4 min). `--results` reports 7 elements
+  verified and none failing.
+- **Three machine checks:**
+  - `NoDjangoSignals`, an import check. A probe file importing `django.db.models.signals` is reported. This needed a
+    validator fix, because Python third-party imports were recorded by top-level package only. The fix has a
+    regression test.
+  - `NoSiteIdReads`, the new `only <glob> uses <regex>` check. On first run it found 3 readers in tests and fixtures,
+    which the rule does not target, so tests are exempt.
+  - `NoBlockingWaits` (`time.sleep` outside tests): no findings.
+- **Not covered by tests:** `GiftCardBearer`. The rules `AtomicBalance`, `NoInProcessState` and `ManualAssignmentOnly`
+  are stated for agents only.
 
 ## Gaps found in UCN
 
-1. **Rules that are not imports.**
-   - `NoSiteIdReads` (attribute access `settings.SITE_ID`) and `GiftCardNoLeak` (error text) cannot be checked by the
-     validator.
-   - A small `check: only <glob> uses <regex>` would cover the first.
-   - Behaviour rules like the second are only covered through linked tests (evidence).
-2. **`from django.db.models import signals`** records `django.db.models`, so the convention misses this form.
-3. **Speed:** 23–100 s on 4,374 files with the built-in scanner, against the "about 1 s" measured on smaller repos.
-   This needs `--deps` from a real dependency tool or a faster scanner before CI use.
+1. **Behaviour rules are covered only through linked tests**, for example "a rejected gift card does not reveal its
+   owner" (`GiftCardNoLeak`). Design rules like "atomic balance updates" have no check at all.
+2. **`from django.db.models import signals`** records `django.db.models`, so the import convention misses this form.
+3. **Speed:** 10–100 s on 4,374 files with the built-in scanner, depending on the OS file cache, against about 1 s on
+   smaller repos. This needs `--deps` from a real dependency tool or a faster scanner before CI use.
 
 ## Next steps
 
-1. Extend the model to all 12 ADRs and the AGENTS.md rules. Add `check: only <glob> uses <regex>`.
-2. Write the pre-registration, committed **with** the tasks and graders (or their hashes).
-3. Write about 20 tempting tasks, ideally by a non-Claude author, where the shortcut breaks an ADR or a rule. Examples:
+1. Write the pre-registration, committed **with** the tasks and graders (or their hashes).
+2. Write about 20 tempting tasks, ideally by a non-Claude author, where the shortcut breaks an ADR or a rule. Examples:
    - "show customers their transactions": the shortcut opens `Order.transactions`;
    - "react to an order save": the shortcut is a signal;
    - "explain why a gift card was rejected": the shortcut leaks the owner.
 
    Hidden graders check the **requirement**.
-4. Screen the tasks with no-docs agents (keep those broken in at least half the runs). Then run four arms: no docs,
+3. Screen the tasks with no-docs agents (keep those broken in at least half the runs). Then run four arms: no docs,
    AGENTS.md + tests, size-matched prose, and the UCN context + validator.

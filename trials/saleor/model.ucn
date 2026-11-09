@@ -1,31 +1,54 @@
 ucn 0.5 system: Saleor level: L1 origin: stated mode: forward baseline: 1d707dc policy: deny root: .
-# Draft model for github.com/saleor/saleor (commit 1d707dc), built from docs/adr and AGENTS.md. Paths are relative to
-# the repository root (copy this file there to validate). Requirements and decisions come from the ADRs; their tests
-# are linked as evidence. Only the signals convention is machine-checked by imports; the SITE_ID rule is a text rule
-# (see trials/saleor/NOTES.md for what the validator cannot check yet).
+# Model for github.com/saleor/saleor (commit 1d707dc), built from all ADRs in docs/adr and the rules in AGENTS.md.
+# Paths are relative to the repository root (copy this file there to validate). Behavioural requirements are covered
+# by linked tests (evidence); code-pattern rules by checks; the rest are stated for agents only (see NOTES.md).
 
 goal Commerce: headless commerce API for storefronts, staff and apps
   src: README.md
 
+# ---- gift cards (ADR 0001-0005)
 req GiftCardBearer: an unassigned gift card can be spent by whoever holds the code, including in guest checkout
-  src: docs/adr/0001-gift-cards-remain-bearer-instruments.md
   rationale: docs/adr/0001-gift-cards-remain-bearer-instruments.md
-req GiftCardNoLeak: rejecting a restricted gift card at checkout must be generic and never reveal that, or to whom, it is assigned
-  src: docs/adr/0001-gift-cards-remain-bearer-instruments.md
+req GiftCardNoLeak: rejecting a restricted gift card at checkout is generic and never reveals that, or to whom, it is assigned; restricted cards cannot be used in guest checkout
   rationale: docs/adr/0001-gift-cards-remain-bearer-instruments.md#enforcement-must-not-leak-who-a-card-belongs-to
-req PaymentHistoryProjection: customers see payment history only through Order.transactionSummaries, an allowlisted projection without card digits, expiry or zero-amount attempts
-  src: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
-  rationale: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
-
-decision AssignmentNotUsedBy: gift card assignment is its own field and is never derived from the deprecated used_by
+req RestrictedAfterDelete: deleting the assigned customer never frees the card; it stays locked until staff reassign it
+  rationale: docs/adr/0002-assignment-survives-user-deletion.md
+decision ManualAssignmentOnly: cards are assigned only by explicit staff action; no auto-assign on use or payment
+  rationale: docs/adr/0003-manual-assignment-only-no-auto-assign.md
+decision AssignmentNotUsedBy: assignment is its own field and is never derived from the deprecated used_by
   rationale: docs/adr/0001-gift-cards-remain-bearer-instruments.md#assignment-is-a-new-concept-separate-from-used_by
+rule AtomicBalance: every gift card balance change is a single atomic update (no read, decide, write back in separate steps)
+  rationale: docs/adr/0004-race-safe-balance-adjustments.md
+decision AssigneeEmailVisibility: MANAGE_GIFT_CARD may read denormalized assignee, created-by and used-by emails; the full User object requires MANAGE_USERS
+  rationale: docs/adr/0005-email-identifier-visible-without-manage-users.md
+
+# ---- storefront traffic, webhooks, trees, payloads, thumbnails, payments (ADR 0006-0011)
+decision StorefrontBlockAcceptedRisks: storefront traffic blocking is traffic control, not a security boundary (cache and replica delays, rejection after parsing are accepted)
+  rationale: docs/adr/0006-storefront-traffic-blocking-accepted-risks.md
+req StorefrontBlockAll: with allowStorefrontTraffic = false, every non-privileged request is rejected with 401 before execution, including introspection and token mutations
+  rationale: docs/adr/0007-storefront-traffic-blocking-applies-to-introspection-and-auth.md
+req WebhookIdentifierAppOnly: webhookUpdate and webhookDelete accept identifier only from an app for its own webhook; staff must use id
+  rationale: docs/adr/0008-webhook-identifier-is-an-app-only-pointer.md
+rule MpttWritesLocked: structural writes to category and menu trees are serialized by a per-tree advisory lock
+  rationale: docs/adr/0009-mptt-tree-writes-serialized-by-advisory-lock.md
+decision DeferredPayloads: high-volume async webhook payloads are built later and reflect state at generation time, not at trigger time
+  rationale: docs/adr/0011-deferred-webhook-payloads-reflect-state-at-generation-time.md
+req ThumbnailRoundsUp: a thumbnail size that is not in the fixed set rounds up by default (sizeRounding UP)
+  rationale: docs/adr/0011-thumbnail-size-rounds-up-by-default.md
+req PaymentHistoryProjection: customers see payment history only through Order.transactionSummaries, an allowlisted projection without card digits, expiry or zero-amount attempts
+  rationale: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
 decision NoOpenedTransactions: Order.transactions stays staff-only; customer access never widens its permissions
   rationale: docs/adr/0010-order-payment-history-is-a-projection-not-an-opened-transaction.md
 
-rule NoSiteIdReads: never read settings.SITE_ID to identify the current site; there may be several sites
+# ---- engineering rules (AGENTS.md)
+rule NoSiteIdReads: never read settings.SITE_ID to identify the current site; only the site pickers may
   src: AGENTS.md#multi-tenancy-never-rely-on-settingssite_id
+  check: only saleor/{site/patch_sites.py,graphql/site/dataloaders.py,**/tests/**} uses settings\.SITE_ID\b|getattr\(settings,\s*["']SITE_ID
 rule NoInProcessState: no module globals or in-memory caches as a source of truth; workers and pods do not share memory
   src: AGENTS.md
+rule NoBlockingWaits: never block a request or worker thread (no time.sleep, no unbounded retry loops)
+  src: AGENTS.md
+  check: only saleor/**/tests/** uses \btime\.sleep\(
 convention NoDjangoSignals: business logic is called explicitly, never through Django signals (post_migrate is the one exception)
   src: AGENTS.md
   check: only saleor/*/{migrations/**,apps.py} imports django.db.models.signals
@@ -40,6 +63,8 @@ container Saleor [derived]: the saleor Django project
     code: saleor/order/**
   component Payment: payments and transactions
     code: saleor/payment/**
+  component Webhook: webhooks and their payloads
+    code: saleor/webhook/**
   component Site: site settings and the site picker
     code: saleor/site/**
   component GraphQL: the public GraphQL API
@@ -47,9 +72,27 @@ container Saleor [derived]: the saleor Django project
 component Entrypoints [derived]: Django entry point and the pytest root configuration
   code: {manage.py,conftest.py}
 
-test GiftCardRejectionTests [derived]: promo/gift card rejection details at checkout
+test GiftCardRejectionTests [derived]: promo and gift card rejection details at checkout
   src: saleor/graphql/checkout/tests/mutations/test_checkout_add_promo_code_rejection_details.py
   verifies GiftCardNoLeak
+test GiftCardModelTests [derived]: deleting an assigned customer is protected
+  src: saleor/giftcard/tests/test_models.py
+  case: test_deleting_assigned_customer_is_protected
+  verifies RestrictedAfterDelete
+test StorefrontViewTests [derived]: the GraphQL view's storefront traffic guard
+  src: saleor/graphql/core/tests/test_view.py
+  case: test_storefront_traffic_*
+  verifies StorefrontBlockAll
+test WebhookUpdateTests [derived]: webhook update by id and identifier
+  src: saleor/graphql/webhook/tests/mutations/test_webhook_update.py
+  verifies WebhookIdentifierAppOnly
+test LockTests [derived]: advisory locks
+  src: saleor/core/db/tests/test_locks.py
+  verifies MpttWritesLocked
+test ThumbnailRoundingTests [derived]: media thumbnail size rounding
+  src: saleor/graphql/product/tests/queries/test_product_query.py
+  case: test_query_product_media_by_id_*size_rounding*
+  verifies ThumbnailRoundsUp
 test TransactionSummaryTests [derived]: Order.transactionSummaries query
   src: saleor/graphql/order/tests/queries/test_order_transaction_summaries.py
   verifies PaymentHistoryProjection
