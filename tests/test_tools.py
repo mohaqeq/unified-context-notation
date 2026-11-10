@@ -69,7 +69,10 @@ def rmtree(d):
     def onexc(func, path, exc):  # git marks object files read-only on Windows
         os.chmod(path, 0o700)
         func(path)
-    shutil.rmtree(d, onexc=onexc)
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(d, onexc=onexc)
+    else:  # Python 3.10/3.11 only know onerror
+        shutil.rmtree(d, onerror=onexc)
 
 
 class Tmp(unittest.TestCase):
