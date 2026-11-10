@@ -700,6 +700,15 @@ class Rules(Tmp):
 
 
 # ------------------------------------------------------------------------------------------- pilot harness
+class Cli(unittest.TestCase):
+    def test_subcommands(self):
+        sys.path.insert(0, ROOT)
+        from ucn import cli
+        self.assertEqual(cli.main(["lint", MODEL]), 0)
+        self.assertEqual(cli.main(["nonsense"]), 2)
+        self.assertEqual(cli.main(["--help"]), 0)
+
+
 class PythonSubmoduleConvention(Tmp):
     """'only X imports django.db.models.signals' must see submodule imports (found on saleor, v0.6 follow-up)."""
 

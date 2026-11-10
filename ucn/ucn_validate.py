@@ -1,7 +1,7 @@
 """UCN consistency validator: checks a model against its code. Deterministic: no LLM, no build, no network.
 
 Usage:
-  python tools/ucn_validate.py MODEL.ucn [options]
+  ucn check MODEL.ucn [options]
 
 Options:
   --today YYYY-MM-DD        date used for expiry checks (default: today)

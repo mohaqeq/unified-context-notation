@@ -1,8 +1,8 @@
-"""UCN 0.5 parser, linter and projection checker. The consistency validator is tools/ucn_validate.py.
+"""UCN 0.5 parser, linter and projection checker. The consistency validator is ucn/ucn_validate.py (`ucn check`).
 
 Usage:
-  python tools/ucn_parse.py MODEL.ucn [--json] [--lint] [--tokens]
-  python tools/ucn_parse.py PROJECTION.ucn --against MODEL.ucn [--tokens]
+  ucn lint MODEL.ucn [--json] [--lint] [--tokens]
+  ucn lint PROJECTION.ucn --against MODEL.ucn [--tokens]
 
 --lint     checks a full model: references, relation domain/range, trace gaps, pins, machines.
 --against  checks a projection against its model: every node exists in the model, every

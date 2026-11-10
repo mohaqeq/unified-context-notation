@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ucn"
+version = "0.7.0"
+description = "Check a codebase against its documented architecture rules, decisions and requirements; generate import-linter and dependency-cruiser configs."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+ucn = "ucn.cli:main"
+
+[tool.setuptools]
+packages = ["ucn"]
