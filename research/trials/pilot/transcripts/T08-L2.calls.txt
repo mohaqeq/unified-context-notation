@@ -63,7 +63,7 @@ def test__parser__base_segments_get_noqa_comments_order_and_subtree():
 EOF
 git diff --stat
 Bash: cd "<scratch>/pilot/runs/T08-L2" && MSYS_NO_PATHCONV=1 docker run --rm -v "<scratch>/pilot/runs/T08-L2:/repo:ro" ucn-il --no-cache 2>&1 | tail -40
-Bash: cd "C:/Users/mohaq/AppData/Local/Temp/claude/1d11edbaacebcf92/a36fd43d-7e35-4353-a3ad-ea5859286a7a/scratchpad" && cat > noqa_check.py <<'EOF'
+Bash: cd "<home-path>" && cat > noqa_check.py <<'EOF'
 def _is_noqa_comment(raw: str) -> bool:
     text = raw.strip()
     if text.startswith("/*"):
