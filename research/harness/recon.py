@@ -23,7 +23,7 @@ import shutil
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ucn"))
 import ucn_project  # noqa: E402
 import ucn_validate  # noqa: E402
 

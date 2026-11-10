@@ -10,7 +10,8 @@ import textwrap
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
+sys.path.insert(0, os.path.join(ROOT, "ucn"))
+sys.path.insert(0, os.path.join(ROOT, "research", "harness"))
 import pilot_eval  # noqa: E402
 import ucn_export  # noqa: E402
 import ucn_project  # noqa: E402
@@ -738,7 +739,7 @@ class ReconGrading(Tmp):
         shutil.copy(self.model, self.pristine)
         self.addCleanup(os.remove, self.pristine)
         os.makedirs(os.path.join(self.d, "_task", "grader"))
-        self.spec = {"model": self.pristine, "validator": os.path.join(ROOT, "tools", "ucn_validate.py"),
+        self.spec = {"model": self.pristine, "validator": os.path.join(ROOT, "ucn", "ucn_validate.py"),
                      "grader_image": "G", "lint_image": "L"}
 
     def grade(self, lint_stdout, cond="L", guarded=None):
@@ -825,7 +826,7 @@ class Pilot(unittest.TestCase):
         self.assertEqual(r["decision"], "EXTEND")
 
     def test_template_runs(self):
-        with open(os.path.join(ROOT, "examples", "pilot", "template.json")) as f:
+        with open(os.path.join(ROOT, "research", "harness", "pilot_template.json")) as f:
             self.assertIn(pilot_eval.evaluate(json.load(f))["decision"], ("GO", "KILL", "EXTEND"))
 
 

@@ -1,7 +1,7 @@
 # 8. Pilot: reconstruction tests on sqlfluff
 
 The pilot follows the pre-registration in [trials/pilot/PREREGISTRATION.md](../trials/pilot/PREREGISTRATION.md), which was
-committed before any run (commit `fcc29eb`). Everything needed to rerun it is in [trials/pilot/](../trials/pilot/): the
+committed before any run (commit `fcc29eb`). Everything needed to rerun it is in [trials/pilot/](../trials/pilot): the
 tasks with hidden graders and reference patches, the spec, the B contexts, the per-run results and the JUnit files.
 
 ## 8.1 Setup
@@ -35,7 +35,7 @@ tasks with hidden graders and reference patches, the spec, the B contexts, the p
 
 ### Compliance and contamination audit (after the runs, from the agent transcripts)
 
-The tool calls of every run are in [trials/pilot/transcripts/](../trials/pilot/transcripts/) (commands and paths
+The tool calls of every run are in [trials/pilot/transcripts/](../trials/pilot/transcripts) (commands and paths
 only).
 
 - **Every checked agent ran its checker:** all 24 L runs ran import-linter, and all 24 B runs ran the validator.

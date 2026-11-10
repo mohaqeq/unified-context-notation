@@ -11,7 +11,7 @@ import sys
 import tarfile
 import tempfile
 
-sys.path.insert(0, "D:/personal/repos/unified-context-notation/tools")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ucn"))
 import ucn_validate  # noqa: E402
 
 repo, model, out = sys.argv[1], sys.argv[2], sys.argv[3]

@@ -148,7 +148,7 @@ Ordered by how much each item affects the core claim. Every reproduction in both
 
 ## 6.7 Status after v0.4
 
-Items 1–4 of §6.5 are implemented, and every reproduction from both reviews that they cover is a regression test in [tests/test_tools.py](../tests/test_tools.py) (60 tests). The tools were then run against three real repositories ([07](07-trial-results.md)).
+Items 1–4 of §6.5 are implemented, and every reproduction from both reviews that they cover is a regression test in [tests/test_tools.py](../../tests/test_tools.py) (60 tests). The tools were then run against three real repositories ([07](07-trial-results.md)).
 
 | Plan item | Status |
 |---|---|

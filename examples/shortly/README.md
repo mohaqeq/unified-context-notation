@@ -5,7 +5,7 @@ A small, fictional system that shows UCN v0.4 end to end: a model, a small **rea
 | File | What it shows | Tokens (o200k) |
 |---|---|---|
 | [model.ucn](model.ucn) | The full model. Mode `forward` since Shortly `v1.4.0`; container `Web` is still reverse engineered (`authority: source`). 7 requirements (two with typed `param:`), 4 containers, 6 components, 5 functions, 3 decisions, 2 conventions (one with a machine `check:`), 3 tests, 1 accepted conflict, 2 deviations | 2,049 |
-| [src/](src/) | The code: `api/*.ts`, `web/app.tsx`, tests, a k6 script | — |
+| [src/](src) | The code: `api/*.ts`, `web/app.tsx`, tests, a k6 script | — |
 | [card.L0.ucn](card.L0.ucn) | System card: goals, containers, global pins, the conflict, the active deviation; scoped pins named; the rest counted | 299 |
 | [slice.alias.ucn](slice.alias.ucn) | Projection for "implement custom aliases", budget 1200: core first, task slice last, relevant omissions named | 843 |
 
@@ -50,4 +50,4 @@ Things to notice:
 - **As-is vs to-be.** `req Alias` is `lifecycle: planned`. The code has no alias yet, and the slice says nothing satisfies or verifies it.
 - **Governance in context.** The accepted conflict and the active deviation are in the card, so an agent neither copies the deviation nor "fixes" it.
 
-Caveats: token counts use o200k (tiktoken 0.14.0). The codebase is a toy written to exercise each check; real repositories bring path aliases, generated code and dependency injection (see [05 §5.3](../../docs/05-usefulness-and-tooling.md#53-how-much-can-tools-do-without-an-llm)).
+Caveats: token counts use o200k (tiktoken 0.14.0). The codebase is a toy written to exercise each check; real repositories bring path aliases, generated code and dependency injection (see [05 §5.3](../../research/docs/05-usefulness-and-tooling.md#53-how-much-can-tools-do-without-an-llm)).

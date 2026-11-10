@@ -163,7 +163,7 @@ That probably gets 60–70% of the value. UCN must beat it by enough to justify 
 
 Task-success gains are a secondary signal, accumulated across pilots.
 
-**Data and harness:** [examples/pilot/template.json](../examples/pilot/template.json) shows the input format, with illustrative numbers that are *not* results:
+**Data and harness:** [examples/pilot/template.json](../harness/pilot_template.json) shows the input format, with illustrative numbers that are *not* results:
 
 ```sh
 python tools/pilot_eval.py examples/pilot/template.json

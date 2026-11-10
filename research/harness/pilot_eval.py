@@ -2,7 +2,7 @@
 
 Usage: python tools/pilot_eval.py PILOT.json [--json]
 
-Input (see examples/pilot/template.json):
+Input (see research/harness/pilot_template.json):
   criteria  pre-registered thresholds, fixed before the pilot starts
   tasks     each task run under both conditions ("light" = structured AGENTS.md + ADRs + architecture rules
             in CI + requirement IDs; "ucn" = UCN core). kind: question | change | tempting.

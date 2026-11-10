@@ -4,9 +4,9 @@ After implementing the first four items of the v0.4 plan ([06 §6.5](06-review-s
 
 | Repository | Language, size | What it tested | Artifacts |
 |---|---|---|---|
-| [sqlfluff/sqlfluff](https://github.com/sqlfluff/sqlfluff) @ `1682e11` | Python, 269 package files | The full reverse → adopt → forward workflow on a project that **already has the lightweight stack** (`AGENTS.md` files and import-linter contracts in CI); upkeep over 5.5 months of history | [trials/sqlfluff/](../trials/sqlfluff/) |
-| [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw) @ `701b901` | TypeScript monorepo, 723 files, tsconfig path aliases | Import resolution in a modern TS monorepo; the declared architecture (workspace `package.json` dependencies) against the code | [trials/excalidraw/](../trials/excalidraw/) |
-| [cosmicpython/code](https://github.com/cosmicpython/code) @ `14c8479` | Python, 21 files, layered DDD architecture | Whether UCN changes how a coding agent behaves on tasks that tempt architecture violations | [trials/cosmicpython/](../trials/cosmicpython/) |
+| [sqlfluff/sqlfluff](https://github.com/sqlfluff/sqlfluff) @ `1682e11` | Python, 269 package files | The full reverse → adopt → forward workflow on a project that **already has the lightweight stack** (`AGENTS.md` files and import-linter contracts in CI); upkeep over 5.5 months of history | [trials/sqlfluff/](../trials/sqlfluff) |
+| [excalidraw/excalidraw](https://github.com/excalidraw/excalidraw) @ `701b901` | TypeScript monorepo, 723 files, tsconfig path aliases | Import resolution in a modern TS monorepo; the declared architecture (workspace `package.json` dependencies) against the code | [trials/excalidraw/](../trials/excalidraw) |
+| [cosmicpython/code](https://github.com/cosmicpython/code) @ `14c8479` | Python, 21 files, layered DDD architecture | Whether UCN changes how a coding agent behaves on tasks that tempt architecture violations | [trials/cosmicpython/](../trials/cosmicpython) |
 
 ---
 
@@ -42,7 +42,7 @@ sqlfluff is the reviewers' "lightweight stack" in practice. It has five `AGENTS.
 
 **Finding 2: a method flaw.** In step 3, `--propose` accepted `Rules → Dialects` as observed reality, because the prose rule wasn't encoded. **Bootstrapping a model from code launders contradictions with prose rules**, unless stated "never" rules are encoded first. That needs a `forbids` relation (v0.4 plan item 6), so `--propose` can refuse to propose a forbidden dependency and emit a conflict candidate instead.
 
-**Finding 3: upkeep is low.** I replayed the 600 commits between 2026-05-23 and 2026-11-05 ([history.json](../trials/sqlfluff/history.json), [replay.py](../trials/replay.py)):
+**Finding 3: upkeep is low.** I replayed the 600 commits between 2026-05-23 and 2026-11-05 ([history.json](../trials/sqlfluff/history.json), [replay.py](../harness/replay.py)):
 
 | Metric | Value |
 |---|---|
@@ -211,7 +211,7 @@ The config has still not been *run* through import-linter (blocked in this envir
 
 ### Agent experiment v2: sqlfluff, rules that aren't visible locally
 
-**Setup** ([agent-experiment/](../trials/sqlfluff/agent-experiment/)):
+**Setup** ([agent-experiment/](../trials/sqlfluff/agent-experiment)):
 - **Tasks:** 4, each tempting a violation of a non-local rule:
   - T1, logging rule codes and the ANSI root segment from the linter (core → rules or dialects);
   - T2, a segment-describing helper in the lowest layer (helpers → parser);
@@ -261,7 +261,7 @@ The config has still not been *run* through import-linter (blocked in this envir
 
 ## 7.8 Third-party checkers in containers (v0.5.1)
 
-The comparisons that needed third-party code were run with **import-linter 2.15** and **dependency-cruiser 16.10.4**, each in a Docker container with the repository mounted read-only ([trials/containers/](../trials/containers/)).
+The comparisons that needed third-party code were run with **import-linter 2.15** and **dependency-cruiser 16.10.4**, each in a Docker container with the repository mounted read-only ([trials/containers/](../trials/containers)).
 
 ### import-linter on sqlfluff
 

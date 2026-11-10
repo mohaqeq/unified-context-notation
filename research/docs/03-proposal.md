@@ -255,7 +255,7 @@ conflict RateLimitValue [pin]: the ticket and the code disagree on the hourly li
     src: api/guard.ts:44
 ```
 
-The full example is [examples/shortly/model.ucn](../examples/shortly/model.ucn).
+The full example is [examples/shortly/model.ucn](../../examples/shortly/model.ucn).
 
 ---
 
@@ -436,7 +436,7 @@ Function signatures and call graphs always come from the code. In forward mode t
 
 **Behavioral consistency** (does the running code meet a requirement?) is not decidable in general. It is covered by evidence: tests that *assert* a requirement (`verifies` plus `verified:`), runtime monitors for `machine` definitions (module), and, for critical kernels, formal tools via export. Prose-level contradictions ("the doc says X, the code does Y") are found by bound parameters where possible, and otherwise by LLM-proposed conflict candidates that a human reviews.
 
-**Example output** (Shortly, [examples/shortly](../examples/shortly), mode forward):
+**Example output** (Shortly, [examples/shortly](../../examples/shortly), mode forward):
 
 ```
 VIOLATION      architecture Api.Guard depends on Api.Links, which the model does not allow  [api/guard.ts -> api/links.ts]
