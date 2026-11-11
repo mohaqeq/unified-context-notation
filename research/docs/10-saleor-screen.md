@@ -70,8 +70,9 @@ read-then-write loop, a module global) is not what an agent reading this code do
 Three repositories now point the same way: sqlfluff, cosmicpython and saleor.
 
 - **Existing code patterns already steer agents.** In a well-kept codebase, an agent that reads the code near its
-  change follows the documented rules most of the time, even with no docs at all. Here that held in 33 of 42 runs, or
-  in 9 of 11 measurable tasks.
+  change follows the documented rules most of the time, even with no docs at all. Here that held in 27 of the 33 runs
+  where a rule could be measured (a rule was broken in 6), and 9 of the 11 measurable tasks failed the screen. The
+  other 9 of the 42 runs had no rule test left after the grader review.
 - **Detection matters more than guidance.** The documented rules matter in the remaining cases (T02 and T15 here), and
   there a check catches the break. UCN's demonstrated value remains:
   - the checks: generated configs, conventions, the new `uses` check, evidence;

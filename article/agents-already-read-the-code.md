@@ -115,8 +115,9 @@ did not justify. The task hashes were committed before any run.
 The pre-registration included a screen. First, run agents with **no docs at all**, 3 times per tempting task, and keep
 only the tasks where they break the rule at least twice. Only then compare the arms.
 
-**2 of 14 tasks survived the screen.** Agents with no AGENTS.md and no ADRs kept the documented rules in 33 of 42
-runs. The experiment stopped there, as pre-registered.
+**2 of 14 tasks survived the screen.** Agents with no AGENTS.md and no ADRs kept the documented rules in 27 of the 33
+runs where a rule could be measured, and broke one in only 6. (In the other 9 runs, the grader review had removed
+every rule test.) The experiment stopped there, as pre-registered.
 
 ## Why: the agents read the code
 
@@ -179,3 +180,5 @@ and the agents' tool-call logs. See [github.com/mohaqeq/unified-context-notation
 
 *The task authors, agents and most reviewers in these experiments were Claude models (Haiku, Sonnet, Fable). One
 grader review used Nvidia Nemotron.*
+
+*Correction (2026-11-11): an earlier version said the no-docs agents kept the rules in "33 of 42 runs". The right figure is 27 of the 33 runs where a rule could be measured (6 broke a rule; in 9 runs every rule test had been excluded by the grader review).*

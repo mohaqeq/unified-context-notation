@@ -94,7 +94,7 @@ The full write-up is in [article/](article/agents-already-read-the-code.md); the
      and import-linter: 24/24 success and 0 violations each.
    - The UCN arm used 11% fewer tokens, but that is explained by its shorter text.
 3. **The codebase already guides agents.** On saleor, a customer-facing commerce API whose rules live in ADRs, agents
-   with **no docs at all** kept the documented rules in 33 of 42 runs. They copied the patterns next to their change.
+   with **no docs at all** kept the documented rules in 27 of the 33 runs where a rule could be measured. They copied the patterns next to their change.
    The pre-registered screen therefore stopped the experiment.
 
 So a check in the loop prevents violations, and a well-kept codebase shows agents the way. A context language adds
