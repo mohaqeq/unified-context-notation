@@ -19,6 +19,7 @@ the claims that later evidence corrected. Read them in order, or start with the
 | 8 | [08 Pilot](docs/08-pilot.md) | Pre-registered: 60 agent runs on sqlfluff with independent tasks and hidden graders. UCN matched AGENTS.md + import-linter at a ceiling |
 | 9 | [09 Review synthesis v0.6](docs/09-review-synthesis-v0.6.md) | Two independent reviews. "Supported" was close to vacuous; bugs fixed; new features frozen |
 | 10 | [10 saleor screen](docs/10-saleor-screen.md) | A customer-facing, ADR-driven repository. 20 verified tasks; agents with no docs kept the rules, so the screen failed |
+| 11 | [11 Next phase](docs/11-next-phase.md) | Plan, not yet run: where agents break rules (the code around the change) and what prevents it cheaply. Reviewed by a second model |
 
 ## Data and code
 
