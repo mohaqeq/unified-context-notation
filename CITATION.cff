@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this tool or these results, please cite this repository."
+title: "Unified Context Notation: a checked context layer for AI coding agents, and the experiments that tested it"
+authors:
+  - family-names: Mohaqeq
+    given-names: Hamidreza
+repository-code: "https://github.com/mohaqeq/unified-context-notation"
+url: "https://mohaqeq.github.io"
+license: MIT
+version: 0.7.0
+date-released: 2026-11-09

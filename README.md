@@ -109,3 +109,10 @@ little on top of both. UCN is kept as the checker and governance tool above.
 | [examples/shortly/](examples/shortly/README.md) | A worked example |
 | [article/](article/agents-already-read-the-code.md) | The blog article about the experiments |
 | [research/](research/README.md) | The research record: design documents, reviews, trials, pre-registrations, tasks, graders, results, agent tool-call logs, and the harness that ran them |
+
+## Licence and citation
+
+- **Code** (`ucn/`, `tests/`, `research/harness`, `examples/`): [MIT](LICENSE).
+- **Article, research record, tasks and data:** [CC BY 4.0](LICENSE-docs.md). Reuse is welcome with a reference to
+  this repository.
+- To cite the work, use the "Cite this repository" button on GitHub ([CITATION.cff](CITATION.cff)).
