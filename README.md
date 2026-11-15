@@ -9,6 +9,10 @@ requirements and architecture?* After about 130 agent runs on three real codebas
 the reason we expected**. The research record is in [research/](research/README.md). The rest of this page is about the
 tool that survived it.
 
+**Phase 2 continues in a different repository.** The experiments on when agents break project rules, and what
+prevents it, are now in [agent-rule-compliance](https://github.com/mohaqeq/agent-rule-compliance). That repository
+starts from the tag `phase1-and-study-a` of this one.
+
 ## What the tool does
 
 ```text

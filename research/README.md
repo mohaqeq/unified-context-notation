@@ -5,6 +5,10 @@ coding agents follow a project's requirements and architecture. The documents ar
 the claims that later evidence corrected. Read them in order, or start with the
 [article](../article/agents-already-read-the-code.md).
 
+**This record is frozen at the tag `phase1-and-study-a` (2026-11-15).** It contains phase 1 and Study A of phase 2.
+Study B and all later work are in [agent-rule-compliance](https://github.com/mohaqeq/agent-rule-compliance). The
+Study A files stay here because the pre-registration was published here before any run. Do not change them here.
+
 ## Timeline
 
 | # | Document | What happened |
